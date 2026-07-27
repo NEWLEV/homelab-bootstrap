@@ -1,0 +1,7 @@
+/srv/data/backups/restic
+/srv/data/services/docker
+/srv/data/services/netdata/cache
+/srv/data/services/netdata/lib
+/srv/data/scratch
+/srv/data/temp
+/home/nlc/.cache

@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly REPOSITORY="/srv/data/backups/restic"
+readonly PASSWORD_FILE="/home/nlc/.config/restic/password"
+readonly EXCLUDES="/srv/data/git/homelab-bootstrap/configs/restic-excludes.txt"
+readonly LOG_DIR="/srv/data/logs/backups"
+
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/backup-$(date +%Y%m%d-%H%M%S).log"
+readonly LOG_FILE
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+export RESTIC_REPOSITORY="$REPOSITORY"
+export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
+
+if ! mountpoint -q /srv/data; then
+    echo "ERROR: /srv/data is not mounted." >&2
+    exit 1
+fi
+
+echo "Stopping write-heavy services briefly..."
+
+docker stop uptime-kuma portainer filebrowser homepage 2>/dev/null || true
+
+restart_services() {
+    docker start homepage filebrowser portainer uptime-kuma 2>/dev/null || true
+}
+trap restart_services EXIT
+
+restic backup \
+    /etc \
+    /home/nlc \
+    /srv/data/git \
+    /srv/data/services \
+    /srv/data/policies \
+    --exclude-file "$EXCLUDES" \
+    --one-file-system \
+    --tag aisha \
+    --tag automated
+
+restart_services
+trap - EXIT
+
+restic forget \
+    --keep-daily 7 \
+    --keep-weekly 5 \
+    --keep-monthly 12 \
+    --prune
+
+restic check
+
+echo "Backup completed: $LOG_FILE"
