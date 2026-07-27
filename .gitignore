@@ -4,3 +4,6 @@
 *.key
 *.crt
 /srv/data/services/traefik/certs/
+
+# OpenClaw workspace runtime state
+workspaces/*/openclaw-workspace-state.json
