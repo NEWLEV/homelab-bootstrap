@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CERT_DIR="/srv/data/services/traefik/certs"
+HOST="$(tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//')"
+
+sudo install -d -m 0755 "$CERT_DIR"
+
+sudo tailscale cert \
+  --cert-file "$CERT_DIR/aisha.crt" \
+  --key-file "$CERT_DIR/aisha.key" \
+  "$HOST"
+
+sudo chmod 644 "$CERT_DIR/aisha.crt"
+sudo chmod 600 "$CERT_DIR/aisha.key"
+
+docker kill --signal=HUP traefik >/dev/null 2>&1 || \
+  docker restart traefik
