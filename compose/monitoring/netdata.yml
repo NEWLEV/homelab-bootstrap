@@ -1,0 +1,30 @@
+services:
+  netdata:
+    image: netdata/netdata:stable
+    container_name: netdata
+    hostname: aisha
+    restart: unless-stopped
+
+    ports:
+      - "19999:19999"
+
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+
+    security_opt:
+      - apparmor:unconfined
+
+    volumes:
+      - /srv/data/services/netdata/config:/etc/netdata
+      - /srv/data/services/netdata/lib:/var/lib/netdata
+      - /srv/data/services/netdata/cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
