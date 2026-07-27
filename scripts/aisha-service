@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REPO="/srv/data/git/homelab-bootstrap"
+
+declare -A STACKS=(
+  [homepage]="$REPO/compose/core/homepage.yml"
+  [portainer]="$REPO/compose/core/portainer.yml"
+  [filebrowser]="$REPO/compose/core/filebrowser.yml"
+  [uptime-kuma]="$REPO/compose/monitoring/uptime-kuma.yml"
+  [netdata]="$REPO/compose/monitoring/netdata.yml"
+)
+
+usage() {
+  cat <<'HELP'
+Usage:
+  aisha-service list
+  aisha-service ps
+  aisha-service up <service|all>
+  aisha-service down <service|all>
+  aisha-service restart <service|all>
+  aisha-service pull <service|all>
+  aisha-service update <service|all>
+  aisha-service logs <service>
+  aisha-service config <service>
+HELP
+}
+
+require_stack() {
+  local name="$1"
+  [[ -n "${STACKS[$name]:-}" ]] || {
+    echo "Unknown service: $name" >&2
+    exit 1
+  }
+}
+
+run_one() {
+  local action="$1"
+  local name="$2"
+  local file
+
+  require_stack "$name"
+  file="${STACKS[$name]}"
+
+  case "$action" in
+    up)
+      docker compose -f "$file" up -d
+      ;;
+    down)
+      docker compose -f "$file" down
+      ;;
+    restart)
+      docker compose -f "$file" restart
+      ;;
+    pull)
+      docker compose -f "$file" pull
+      ;;
+    update)
+      docker compose -f "$file" pull
+      docker compose -f "$file" up -d --remove-orphans
+      ;;
+    logs)
+      docker compose -f "$file" logs --tail=100 -f
+      ;;
+    config)
+      docker compose -f "$file" config
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+run_all() {
+  local action="$1"
+  local name
+
+  for name in "${!STACKS[@]}"; do
+    echo
+    echo "=== $action: $name ==="
+    run_one "$action" "$name"
+  done
+}
+
+command="${1:-}"
+target="${2:-}"
+
+case "$command" in
+  list)
+    printf '%s\n' "${!STACKS[@]}" | sort
+    ;;
+  ps)
+    docker ps --format \
+      'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+    ;;
+  up|down|restart|pull|update)
+    [[ -n "$target" ]] || {
+      usage
+      exit 1
+    }
+
+    if [[ "$target" == "all" ]]; then
+      run_all "$command"
+    else
+      run_one "$command" "$target"
+    fi
+    ;;
+  logs|config)
+    [[ -n "$target" ]] || {
+      usage
+      exit 1
+    }
+    run_one "$command" "$target"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
