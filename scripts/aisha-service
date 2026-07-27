@@ -12,109 +12,58 @@ declare -A STACKS=(
 )
 
 usage() {
-  cat <<'HELP'
+cat <<HELP
 Usage:
   aisha-service list
   aisha-service ps
   aisha-service up <service|all>
   aisha-service down <service|all>
   aisha-service restart <service|all>
-  aisha-service pull <service|all>
   aisha-service update <service|all>
   aisha-service logs <service>
-  aisha-service config <service>
 HELP
 }
 
-require_stack() {
-  local name="$1"
-  [[ -n "${STACKS[$name]:-}" ]] || {
-    echo "Unknown service: $name" >&2
-    exit 1
-  }
+compose() {
+    docker compose -f "${STACKS[$1]}" "${@:2}"
 }
 
-run_one() {
-  local action="$1"
-  local name="$2"
-  local file
-
-  require_stack "$name"
-  file="${STACKS[$name]}"
-
-  case "$action" in
-    up)
-      docker compose -f "$file" up -d
-      ;;
-    down)
-      docker compose -f "$file" down
-      ;;
-    restart)
-      docker compose -f "$file" restart
-      ;;
-    pull)
-      docker compose -f "$file" pull
-      ;;
-    update)
-      docker compose -f "$file" pull
-      docker compose -f "$file" up -d --remove-orphans
-      ;;
-    logs)
-      docker compose -f "$file" logs --tail=100 -f
-      ;;
-    config)
-      docker compose -f "$file" config
-      ;;
-    *)
-      usage
-      exit 1
-      ;;
-  esac
-}
-
-run_all() {
-  local action="$1"
-  local name
-
-  for name in "${!STACKS[@]}"; do
-    echo
-    echo "=== $action: $name ==="
-    run_one "$action" "$name"
-  done
-}
-
-command="${1:-}"
-target="${2:-}"
-
-case "$command" in
-  list)
-    printf '%s\n' "${!STACKS[@]}" | sort
+case "${1:-}" in
+list)
+    printf "%s\n" "${!STACKS[@]}" | sort
     ;;
-  ps)
-    docker ps --format \
-      'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-    ;;
-  up|down|restart|pull|update)
-    [[ -n "$target" ]] || {
-      usage
-      exit 1
-    }
 
-    if [[ "$target" == "all" ]]; then
-      run_all "$command"
+ps)
+    docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+    ;;
+
+up|down|restart)
+    if [[ "${2:-}" == "all" ]]; then
+        for s in "${!STACKS[@]}"; do
+            compose "$s" "$1"
+        done
     else
-      run_one "$command" "$target"
+        compose "$2" "$1"
     fi
     ;;
-  logs|config)
-    [[ -n "$target" ]] || {
-      usage
-      exit 1
-    }
-    run_one "$command" "$target"
+
+update)
+    if [[ "${2:-}" == "all" ]]; then
+        for s in "${!STACKS[@]}"; do
+            compose "$s" pull
+            compose "$s" up -d
+        done
+    else
+        compose "$2" pull
+        compose "$2" up -d
+    fi
     ;;
-  *)
+
+logs)
+    compose "$2" logs -f --tail=100
+    ;;
+
+*)
     usage
-    exit 1
     ;;
 esac
