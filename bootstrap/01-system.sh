@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 readonly LOG_DIR="/srv/data/logs/bootstrap"
-readonly LOG_FILE="${LOG_DIR}/01-system-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${LOG_DIR}/01-system-$(date +%Y%m%d-%H%M%S).log"
+readonly LOG_FILE
 
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
