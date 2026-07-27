@@ -29,12 +29,11 @@ restart_services() {
 }
 trap restart_services EXIT
 
-restic backup \
+sudo --preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD_FILE restic backup \
     /etc \
     /home/nlc \
     /srv/data/git \
     /srv/data/services \
-    /srv/data/policies \
     --exclude-file "$EXCLUDES" \
     --one-file-system \
     --tag aisha \
@@ -43,12 +42,12 @@ restic backup \
 restart_services
 trap - EXIT
 
-restic forget \
+sudo --preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD_FILE restic forget \
     --keep-daily 7 \
     --keep-weekly 5 \
     --keep-monthly 12 \
     --prune
 
-restic check
+sudo --preserve-env=RESTIC_REPOSITORY,RESTIC_PASSWORD_FILE restic check
 
 echo "Backup completed: $LOG_FILE"
