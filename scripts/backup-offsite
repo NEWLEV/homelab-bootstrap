@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly ENV_FILE="/root/.config/aisha/restic-offsite.env"
+readonly EXCLUDES="/srv/data/git/homelab-bootstrap/configs/restic-excludes.txt"
+readonly LOG_DIR="/srv/data/logs/backups"
+
+[[ "$EUID" -eq 0 ]] || {
+    echo "ERROR: Run this script as root." >&2
+    exit 1
+}
+
+mountpoint -q /srv/data || {
+    echo "ERROR: /srv/data is not mounted." >&2
+    exit 1
+}
+
+[[ -r "$ENV_FILE" ]] || {
+    echo "ERROR: Missing off-site environment file." >&2
+    exit 1
+}
+
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/offsite-$(date +%Y%m%d-%H%M%S).log"
+readonly LOG_FILE
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
+
+echo "Stopping write-heavy services briefly..."
+
+docker stop uptime-kuma portainer filebrowser homepage 2>/dev/null || true
+
+restart_services() {
+    docker start homepage filebrowser portainer uptime-kuma 2>/dev/null || true
+}
+trap restart_services EXIT
+
+restic backup \
+    /etc \
+    /home/nlc \
+    /srv/data/git \
+    /srv/data/services \
+    --exclude-file "$EXCLUDES" \
+    --one-file-system \
+    --tag aisha \
+    --tag offsite
+
+restart_services
+trap - EXIT
+
+restic forget \
+    --keep-daily 7 \
+    --keep-weekly 5 \
+    --keep-monthly 12 \
+    --prune
+
+restic check
+
+echo "Off-site backup completed: $LOG_FILE"
