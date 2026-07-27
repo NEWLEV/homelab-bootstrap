@@ -47,6 +47,8 @@ services:
       - --providers.docker.endpoint=tcp://socket-proxy:2375
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
@@ -57,6 +59,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
+
+    volumes:
+      - /srv/data/services/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /srv/data/services/traefik/certs:/certs:ro
 
     networks:
       - socket

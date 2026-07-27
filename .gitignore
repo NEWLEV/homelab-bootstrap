@@ -1,1 +1,6 @@
 *.broken
+
+# Private TLS material
+*.key
+*.crt
+/srv/data/services/traefik/certs/
