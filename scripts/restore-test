@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly REPOSITORY="/srv/data/backups/restic"
+readonly PASSWORD_FILE="/home/nlc/.config/restic/password"
+readonly TARGET="/srv/data/scratch/restore-test"
+readonly TEST_FILE="/srv/data/git/homelab-bootstrap/README.md"
+
+export RESTIC_REPOSITORY="$REPOSITORY"
+export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
+
+mountpoint -q /srv/data || {
+    echo "ERROR: /srv/data is not mounted." >&2
+    exit 1
+}
+
+[[ -r "$PASSWORD_FILE" ]] || {
+    echo "ERROR: Restic password file is not readable." >&2
+    exit 1
+}
+
+SNAPSHOT_ID="$(
+    restic snapshots \
+        --latest 1 \
+        --json |
+    jq -r '.[0].short_id // empty'
+)"
+readonly SNAPSHOT_ID
+
+[[ -n "$SNAPSHOT_ID" ]] || {
+    echo "ERROR: No Restic snapshot found." >&2
+    exit 1
+}
+
+rm -rf "$TARGET"
+mkdir -p "$TARGET"
+
+echo "Testing snapshot: $SNAPSHOT_ID"
+
+restic restore "$SNAPSHOT_ID" \
+    --target "$TARGET" \
+    --include "$TEST_FILE"
+
+RESTORED="${TARGET}${TEST_FILE}"
+
+[[ -f "$RESTORED" ]] || {
+    echo "ERROR: Restored test file was not found." >&2
+    exit 1
+}
+
+cmp --silent "$TEST_FILE" "$RESTORED" || {
+    echo "ERROR: Restored file differs from the live file." >&2
+    exit 1
+}
+
+rm -rf "$TARGET"
+
+echo "RESTORE TEST PASSED"

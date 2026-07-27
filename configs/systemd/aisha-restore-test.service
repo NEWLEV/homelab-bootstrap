@@ -1,0 +1,10 @@
+[Unit]
+Description=Test restoration from latest Aisha backup
+RequiresMountsFor=/srv/data
+After=aisha-backup.service
+
+[Service]
+Type=oneshot
+User=nlc
+ExecStart=/srv/data/git/homelab-bootstrap/scripts/restore-test
+TimeoutStartSec=1h
