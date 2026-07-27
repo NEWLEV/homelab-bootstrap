@@ -9,6 +9,7 @@ declare -A STACKS=(
   [filebrowser]="$REPO/compose/core/filebrowser.yml"
   [uptime-kuma]="$REPO/compose/monitoring/uptime-kuma.yml"
   [netdata]="$REPO/compose/monitoring/netdata.yml"
+  [traefik]="$REPO/compose/networking/traefik.yml"
 )
 
 usage() {
