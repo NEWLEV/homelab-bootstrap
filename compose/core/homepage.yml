@@ -11,7 +11,22 @@ services:
       - /srv/data/services/homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.homepage.rule: "Host(`aisha.tail4553c9.ts.net`)"
+      traefik.http.routers.homepage.entrypoints: "websecure"
+      traefik.http.routers.homepage.tls: "true"
+      traefik.http.services.homepage.loadbalancer.server.port: "3000"
+
+    networks:
+      - proxy
+
     environment:
       PUID: "1000"
       PGID: "1000"
       HOMEPAGE_ALLOWED_HOSTS: "aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000"
+
+networks:
+  proxy:
+    external: true
