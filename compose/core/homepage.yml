@@ -2,7 +2,6 @@ services:
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
-
     restart: unless-stopped
 
     ports:
@@ -10,9 +9,9 @@ services:
 
     volumes:
       - /srv/data/services/homepage/config:/app/config
-
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
     environment:
-      PUID: 1000
-      PGID: 1000
+      PUID: "1000"
+      PGID: "1000"
+      HOMEPAGE_ALLOWED_HOSTS: "aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000"
