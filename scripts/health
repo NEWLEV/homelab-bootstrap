@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+green="\e[32m"
+yellow="\e[33m"
+red="\e[31m"
+blue="\e[36m"
+reset="\e[0m"
+
+ok()   { echo -e "${green}✓${reset} $1"; }
+warn() { echo -e "${yellow}!${reset} $1"; }
+bad()  { echo -e "${red}✗${reset} $1"; }
+
+echo
+echo -e "${blue}========== AISHA SYSTEM ==========${reset}"
+echo
+
+echo "Hostname : $(hostname)"
+echo "Kernel   : $(uname -r)"
+echo "Uptime   : $(uptime -p)"
+echo
+
+echo "CPU Temp : $(vcgencmd measure_temp 2>/dev/null || echo N/A)"
+echo "Memory   :"
+free -h | awk 'NR==2 {print "  Used: "$3" / "$2}'
+echo
+
+echo "Storage:"
+df -h / | awk 'NR==2 {print "  System: "$3" / "$2" ("$5")"}'
+df -h /srv/data | awk 'NR==2 {print "  Data  : "$3" / "$2" ("$5")"}'
+echo
+
+echo "Docker:"
+if systemctl is-active --quiet docker; then
+    ok "Docker running"
+else
+    bad "Docker stopped"
+fi
+
+echo "Pironman:"
+if systemctl is-active --quiet pironman5; then
+    ok "Pironman running"
+else
+    bad "Pironman stopped"
+fi
+
+echo "Tailscale:"
+if tailscale status >/dev/null 2>&1; then
+    ok "$(tailscale ip -4 | head -1)"
+else
+    bad "Disconnected"
+fi
+
+echo
+
+echo "Containers:"
+docker ps --format "  • {{.Names}} ({{.Status}})"
+
+echo
+
+echo "Updates:"
+updates=$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l)
+
+if [ "$updates" -eq 0 ]; then
+    ok "System up to date"
+else
+    warn "$updates package(s) available"
+fi
+
+echo
+
+echo "NVMe Health:"
+
+for d in /dev/nvme*n1; do
+    echo
+    echo "$(basename "$d")"
+
+    sudo smartctl -H "$d" | grep "SMART overall-health" || true
+    sudo smartctl -A "$d" | egrep "Temperature|Percentage Used|Data Units Written|Power On Hours" || true
+done
+
+echo
+echo "=================================="
