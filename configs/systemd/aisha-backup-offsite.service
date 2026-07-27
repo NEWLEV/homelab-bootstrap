@@ -1,0 +1,14 @@
+[Unit]
+Description=Aisha encrypted off-site backup
+RequiresMountsFor=/srv/data
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/srv/data/git/homelab-bootstrap/scripts/backup-offsite
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=8h
