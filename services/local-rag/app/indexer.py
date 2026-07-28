@@ -1,6 +1,7 @@
 import hashlib
 import os
 from pathlib import Path
+from typing import Any
 
 import chromadb
 import httpx
@@ -95,19 +96,30 @@ def embed(text: str) -> list[float]:
     return embeddings[0]
 
 
-def index_repository() -> dict[str, int]:
+def chunk_id(
+    relative_path: str,
+    line_start: int,
+    line_end: int,
+    chunk: str,
+) -> str:
+    value = f"{relative_path}:{line_start}:{line_end}:{chunk}"
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def index_repository() -> dict[str, Any]:
     client = chromadb.PersistentClient(path=str(CHROMA_PATH))
     collection = client.get_or_create_collection(
         name="homelab_bootstrap",
         metadata={"description": "Aisha homelab repository"},
     )
 
-    documents: list[str] = []
-    embeddings: list[list[float]] = []
-    metadatas: list[dict[str, str | int]] = []
-    ids: list[str] = []
+    existing = collection.get(include=["metadatas"])
+    existing_ids = set(existing.get("ids", []))
 
+    desired_ids: set[str] = set()
     indexed_files = 0
+    added_chunks = 0
+    skipped_chunks = 0
 
     for path in sorted(SOURCE_ROOT.rglob("*")):
         if not is_allowed(path):
@@ -119,17 +131,25 @@ def index_repository() -> dict[str, int]:
             continue
 
         relative = path.relative_to(SOURCE_ROOT).as_posix()
-        file_chunks = chunk_text(text)
+        indexed_files += 1
 
-        for line_start, line_end, chunk in file_chunks:
-            digest = hashlib.sha256(
-                f"{relative}:{line_start}:{line_end}:{chunk}".encode()
-            ).hexdigest()
+        new_ids: list[str] = []
+        new_documents: list[str] = []
+        new_embeddings: list[list[float]] = []
+        new_metadatas: list[dict[str, str | int]] = []
 
-            ids.append(digest)
-            documents.append(chunk)
-            embeddings.append(embed(chunk))
-            metadatas.append(
+        for line_start, line_end, chunk in chunk_text(text):
+            digest = chunk_id(relative, line_start, line_end, chunk)
+            desired_ids.add(digest)
+
+            if digest in existing_ids:
+                skipped_chunks += 1
+                continue
+
+            new_ids.append(digest)
+            new_documents.append(chunk)
+            new_embeddings.append(embed(chunk))
+            new_metadatas.append(
                 {
                     "path": relative,
                     "line_start": line_start,
@@ -137,17 +157,24 @@ def index_repository() -> dict[str, int]:
                 }
             )
 
-        indexed_files += 1
+        if new_ids:
+            collection.upsert(
+                ids=new_ids,
+                documents=new_documents,
+                embeddings=new_embeddings,
+                metadatas=new_metadatas,
+            )
+            added_chunks += len(new_ids)
 
-    if ids:
-        collection.upsert(
-            ids=ids,
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas,
-        )
+    stale_ids = sorted(existing_ids - desired_ids)
+
+    if stale_ids:
+        collection.delete(ids=stale_ids)
 
     return {
         "files": indexed_files,
-        "chunks": len(ids),
+        "added_chunks": added_chunks,
+        "skipped_chunks": skipped_chunks,
+        "removed_chunks": len(stale_ids),
+        "total_chunks": collection.count(),
     }
