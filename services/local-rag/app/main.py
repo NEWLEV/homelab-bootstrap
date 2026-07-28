@@ -119,3 +119,19 @@ def index_documents() -> dict[str, Any]:
         "status": "indexed",
         **result,
     }
+
+
+@app.get("/stats")
+def stats() -> dict[str, Any]:
+    sample = collection.peek(limit=5)
+
+    return {
+        "collection": collection.name,
+        "chunks": collection.count(),
+        "sample_ids": sample.get("ids", []),
+        "sample_paths": [
+            metadata.get("path")
+            for metadata in sample.get("metadatas", [])
+            if metadata
+        ],
+    }
