@@ -2,7 +2,7 @@ name: local-rag
 
 services:
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.18.3
     container_name: local-rag-qdrant
     restart: unless-stopped
 
@@ -23,7 +23,7 @@ services:
       - no-new-privileges:true
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.32.3
     container_name: local-rag-ollama
     restart: unless-stopped
 
