@@ -1,0 +1,43 @@
+name: local-rag
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: local-rag-qdrant
+    restart: unless-stopped
+    volumes:
+      - /srv/data/services/local-rag/qdrant:/qdrant/storage
+    networks:
+      - rag-internal
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: local-rag-ollama
+    restart: unless-stopped
+    volumes:
+      - /srv/data/services/local-rag/ollama:/root/.ollama
+    networks:
+      - rag-internal
+
+  api:
+    build:
+      context: ../../services/local-rag
+    container_name: local-rag-api
+    restart: unless-stopped
+    depends_on:
+      - qdrant
+      - ollama
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_URL: http://ollama:11434
+      EMBEDDING_MODEL: nomic-embed-text
+    ports:
+      - "127.0.0.1:8090:8080"
+    networks:
+      - rag-internal
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  rag-internal:
+    internal: true
