@@ -4,3 +4,4 @@ chromadb
 httpx
 pydantic
 python-multipart
+pytest
