@@ -201,9 +201,18 @@ def index_repository() -> dict[str, Any]:
             new_ids.append(digest)
             new_documents.append(chunk)
             new_embeddings.append(embed(chunk))
+            relative_path = Path(relative)
+
             new_metadatas.append(
                 {
                     "path": relative,
+                    "directory": (
+                        relative_path.parent.as_posix()
+                        if relative_path.parent != Path(".")
+                        else ""
+                    ),
+                    "filename": relative_path.name,
+                    "extension": relative_path.suffix.lower(),
                     "line_start": line_start,
                     "line_end": line_end,
                     "file_hash": current_file_hash,
