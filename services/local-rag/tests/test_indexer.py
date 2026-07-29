@@ -69,7 +69,11 @@ def configure_indexer(
         "PersistentClient",
         lambda path: FakeClient(collection),
     )
-    monkeypatch.setattr(indexer, "embed", lambda text: [float(len(text))])
+    monkeypatch.setattr(
+        indexer,
+        "embed",
+        lambda text: [float(len(text))],
+    )
 
 
 def test_chunk_id_is_stable() -> None:
@@ -93,27 +97,47 @@ def test_repeated_indexing_skips_existing_chunks(
 ) -> None:
     source_root = tmp_path / "repository"
     source_root.mkdir()
+
     (source_root / "README.md").write_text(
         "Aisha homelab documentation",
         encoding="utf-8",
     )
 
     collection = FakeCollection()
-    configure_indexer(monkeypatch, source_root, collection)
+    embed_calls: list[str] = []
+
+    monkeypatch.setattr(indexer, "SOURCE_ROOT", source_root)
+    monkeypatch.setattr(
+        indexer.chromadb,
+        "PersistentClient",
+        lambda path: FakeClient(collection),
+    )
+    monkeypatch.setattr(
+        indexer,
+        "embed",
+        lambda text: embed_calls.append(text) or [float(len(text))],
+    )
 
     first = indexer.index_repository()
     second = indexer.index_repository()
 
+    assert len(embed_calls) == 1
+
     assert first == {
         "files": 1,
+        "skipped_files": 0,
         "added_chunks": 1,
+        "updated_chunks": 0,
         "skipped_chunks": 0,
         "removed_chunks": 0,
         "total_chunks": 1,
     }
+
     assert second == {
         "files": 1,
+        "skipped_files": 1,
         "added_chunks": 0,
+        "updated_chunks": 0,
         "skipped_chunks": 1,
         "removed_chunks": 0,
         "total_chunks": 1,
@@ -128,7 +152,10 @@ def test_modified_file_replaces_stale_chunks(
     source_root.mkdir()
 
     document = source_root / "README.md"
-    document.write_text("Original documentation", encoding="utf-8")
+    document.write_text(
+        "Original documentation",
+        encoding="utf-8",
+    )
 
     collection = FakeCollection()
     configure_indexer(monkeypatch, source_root, collection)
@@ -136,12 +163,18 @@ def test_modified_file_replaces_stale_chunks(
     first = indexer.index_repository()
     original_ids = set(collection.records)
 
-    document.write_text("Updated documentation", encoding="utf-8")
+    document.write_text(
+        "Updated documentation",
+        encoding="utf-8",
+    )
+
     second = indexer.index_repository()
     updated_ids = set(collection.records)
 
     assert first["added_chunks"] == 1
+    assert first["updated_chunks"] == 0
     assert second["added_chunks"] == 1
+    assert second["updated_chunks"] == 0
     assert second["removed_chunks"] == 1
     assert second["total_chunks"] == 1
     assert original_ids != updated_ids
@@ -155,7 +188,10 @@ def test_deleted_file_removes_stale_chunks(
     source_root.mkdir()
 
     document = source_root / "README.md"
-    document.write_text("Temporary documentation", encoding="utf-8")
+    document.write_text(
+        "Temporary documentation",
+        encoding="utf-8",
+    )
 
     collection = FakeCollection()
     configure_indexer(monkeypatch, source_root, collection)
@@ -168,7 +204,9 @@ def test_deleted_file_removes_stale_chunks(
 
     assert result == {
         "files": 0,
+        "skipped_files": 0,
         "added_chunks": 0,
+        "updated_chunks": 0,
         "skipped_chunks": 0,
         "removed_chunks": 1,
         "total_chunks": 0,
@@ -182,7 +220,10 @@ def test_excluded_paths_are_not_indexed(
     source_root = tmp_path / "repository"
     source_root.mkdir()
 
-    (source_root / "README.md").write_text("Allowed", encoding="utf-8")
+    (source_root / "README.md").write_text(
+        "Allowed",
+        encoding="utf-8",
+    )
 
     secrets = source_root / "secrets"
     secrets.mkdir()
@@ -210,4 +251,5 @@ def test_excluded_paths_are_not_indexed(
         record["metadata"]["path"]
         for record in collection.records.values()
     }
+
     assert stored_paths == {"README.md"}
