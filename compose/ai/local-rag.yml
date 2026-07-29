@@ -42,6 +42,8 @@ services:
       EMBEDDING_MODEL: nomic-embed-text
       CHROMA_PATH: /data/chroma
       SOURCE_ROOT: /sources/homelab-bootstrap
+      GENERATION_MODEL: llama3.2:3b
+      PYTHONPATH: /app
 
     volumes:
       - /srv/data/services/local-rag/chroma:/data/chroma
