@@ -233,6 +233,8 @@ def test_search_debug_exposes_retrieval_diagnostics(monkeypatch) -> None:
     result = response.json()["results"][0]
     assert result["rank"] == 1
     assert result["matching_tokens"] == ["ollama_url"]
+    assert result["hybrid_rank"] == 1
+    assert result["reranker_used"] is False
     assert set(result) >= {
         "vector_score",
         "lexical_score",
@@ -290,5 +292,6 @@ def test_ask_debug_exposes_typed_retrieval_diagnostics(
             "combined_score": 0.9275,
             "matching_tokens": ["local-rag-api"],
             "rank": 1,
+            "reranker_used": False,
         }
     ]
