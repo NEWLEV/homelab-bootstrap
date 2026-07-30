@@ -52,6 +52,10 @@ EXCLUDED_PARTS = {
     "workspaces",
 }
 
+EXCLUDED_RELATIVE_PREFIXES = {
+    "services/local-rag/evaluation",
+}
+
 REQUIRED_METADATA_FIELDS = {
     "path",
     "directory",
@@ -67,6 +71,17 @@ OVERLAP_CHARS = 400
 
 
 def is_allowed(path: Path) -> bool:
+    try:
+        relative = path.relative_to(SOURCE_ROOT).as_posix()
+    except ValueError:
+        relative = ""
+
+    if any(
+        relative == prefix or relative.startswith(f"{prefix}/")
+        for prefix in EXCLUDED_RELATIVE_PREFIXES
+    ):
+        return False
+
     if not path.is_file():
         return False
 
