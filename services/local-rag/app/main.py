@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 
 import chromadb
@@ -29,13 +30,14 @@ from app.index_schema import (
     inspect_collection,
 )
 from app.indexer import CHUNKING_VERSION
+from app.metrics import metrics
 
 from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 from app.streaming import sse_event, stream_ollama_answer
 
 
-APP_VERSION = "0.9.2"
+APP_VERSION = "0.9.3"
 
 
 app = FastAPI(
@@ -168,25 +170,30 @@ class AskResponse(BaseModel):
 
 
 def embed_text(text: str) -> list[float]:
-    response = httpx.post(
-        f"{OLLAMA_URL}/api/embed",
-        json={
-            "model": EMBEDDING_MODEL,
-            "input": text,
-        },
-        timeout=120,
-    )
+    with metrics.time("embedding"):
+        try:
+            response = httpx.post(
+                f"{OLLAMA_URL}/api/embed",
+                json={
+                    "model": EMBEDDING_MODEL,
+                    "input": text,
+                },
+                timeout=120,
+            )
 
-    response.raise_for_status()
+            response.raise_for_status()
 
-    embeddings = response.json().get("embeddings", [])
+            embeddings = response.json().get("embeddings", [])
 
-    if not embeddings:
-        raise RuntimeError(
-            "Ollama returned no embedding.",
-        )
+            if not embeddings:
+                raise RuntimeError(
+                    "Ollama returned no embedding.",
+                )
 
-    return embeddings[0]
+            return embeddings[0]
+        except Exception:
+            metrics.dependency_failure("embedding")
+            raise
 
 
 def build_metadata_filter(
@@ -238,6 +245,27 @@ def build_metadata_filter(
 
 
 def retrieve_chunks(
+    query: str,
+    limit: int,
+    debug: bool = False,
+    path: str | None = None,
+    path_prefix: str | None = None,
+    directory: str | None = None,
+    extension: str | None = None,
+) -> list[dict[str, Any]]:
+    with metrics.time("retrieval"):
+        return _retrieve_chunks(
+            query=query,
+            limit=limit,
+            debug=debug,
+            path=path,
+            path_prefix=path_prefix,
+            directory=directory,
+            extension=extension,
+        )
+
+
+def _retrieve_chunks(
     query: str,
     limit: int,
     debug: bool = False,
@@ -408,33 +436,38 @@ Answer:
 
 
 def generate_answer(prompt: str) -> str:
-    response = httpx.post(
-        f"{OLLAMA_URL}/api/generate",
-        json={
-            "model": GENERATION_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0,
-            },
-        },
-        timeout=300,
-    )
+    with metrics.time("generation"):
+        try:
+            response = httpx.post(
+                f"{OLLAMA_URL}/api/generate",
+                json={
+                    "model": GENERATION_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0,
+                    },
+                },
+                timeout=300,
+            )
 
-    response.raise_for_status()
+            response.raise_for_status()
 
-    answer = (
-        response.json()
-        .get("response", "")
-        .strip()
-    )
+            answer = (
+                response.json()
+                .get("response", "")
+                .strip()
+            )
 
-    if not answer:
-        raise RuntimeError(
-            "Ollama returned an empty generated response.",
-        )
+            if not answer:
+                raise RuntimeError(
+                    "Ollama returned an empty generated response.",
+                )
 
-    return answer
+            return answer
+        except Exception:
+            metrics.dependency_failure("generation")
+            raise
 
 
 def is_insufficient_answer(answer: str) -> bool:
@@ -530,6 +563,11 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.get("/metrics")
+def service_metrics() -> dict[str, object]:
+    return metrics.snapshot()
+
+
 @app.post("/search")
 def search(
     request: SearchRequest,
@@ -542,6 +580,7 @@ def search(
             detail="Query must not be empty.",
         )
 
+    metrics.increment("search_requests")
     try:
         matches = retrieve_chunks(
             query=query,
@@ -587,6 +626,7 @@ def ask(request: AskRequest) -> AskResponse:
             detail="Question must not be empty.",
         )
 
+    metrics.increment("ask_requests")
     retrieval_query = rewrite_retrieval_query(question, request.history)
     try:
         matches = retrieve_chunks(
@@ -648,6 +688,7 @@ def ask(request: AskRequest) -> AskResponse:
         )
 
     if not confidence.sufficient:
+        metrics.increment("refused_answers")
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
@@ -681,6 +722,7 @@ def ask(request: AskRequest) -> AskResponse:
         ) from exc
 
     if is_insufficient_answer(answer):
+        metrics.increment("refused_answers")
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
@@ -706,6 +748,7 @@ def ask(request: AskRequest) -> AskResponse:
     )
 
     if not citation_assessment.complete or not citations:
+        metrics.increment("refused_answers")
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
@@ -719,6 +762,7 @@ def ask(request: AskRequest) -> AskResponse:
             retrieval_debug=retrieval_debug,
         )
 
+    metrics.increment("grounded_answers")
     return AskResponse(
         question=question,
         answer=answer,
@@ -748,6 +792,7 @@ async def ask_stream(
             detail="Question must not be empty.",
         )
 
+    metrics.increment("stream_requests")
     retrieval_query = rewrite_retrieval_query(question, body.history)
     try:
         matches = await run_in_threadpool(
@@ -817,6 +862,7 @@ async def ask_stream(
 
     async def events():
         if not confidence.sufficient:
+            metrics.increment("refused_answers")
             yield result_event(
                 AskResponse(
                     question=question,
@@ -837,6 +883,7 @@ async def ask_stream(
         )
         answer_parts: list[str] = []
 
+        generation_started = perf_counter()
         try:
             async for token in stream_ollama_answer(
                 ollama_url=OLLAMA_URL,
@@ -849,14 +896,20 @@ async def ask_stream(
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            metrics.dependency_failure("streaming_generation")
             yield sse_event("error", {"detail": str(exc)})
             return
+        finally:
+            metrics.observe(
+                "generation", perf_counter() - generation_started
+            )
 
         if await request.is_disconnected():
             return
 
         answer = "".join(answer_parts).strip()
         if not answer:
+            metrics.dependency_failure("streaming_generation")
             yield sse_event(
                 "error",
                 {"detail": "Ollama returned an empty generated response."},
@@ -864,6 +917,7 @@ async def ask_stream(
             return
 
         if is_insufficient_answer(answer):
+            metrics.increment("refused_answers")
             yield result_event(
                 AskResponse(
                     question=question,
@@ -888,6 +942,7 @@ async def ask_stream(
         )
 
         if not citation_assessment.complete or not citations:
+            metrics.increment("refused_answers")
             yield result_event(
                 AskResponse(
                     question=question,
@@ -906,6 +961,7 @@ async def ask_stream(
             )
             return
 
+        metrics.increment("grounded_answers")
         yield result_event(
             AskResponse(
                 question=question,
@@ -961,14 +1017,22 @@ def index_documents(rebuild: bool = False) -> dict[str, Any]:
             detail=str(exc),
         ) from exc
 
+    metrics.increment("index_requests")
+    indexing_started = perf_counter()
+
     try:
         result = index_repository(rebuild=rebuild)
     except Exception as exc:
         index_job_manager.fail(exc)
+        metrics.dependency_failure("indexing")
         raise HTTPException(
             status_code=500,
             detail="Repository indexing failed.",
         ) from exc
+    finally:
+        metrics.observe(
+            "indexing", perf_counter() - indexing_started
+        )
 
     job = index_job_manager.succeed(result)
 
