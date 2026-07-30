@@ -20,6 +20,20 @@ def tokenize(value: str) -> tuple[str, ...]:
     return tuple(TOKEN_PATTERN.findall(value.casefold()))
 
 
+def matching_tokens(
+    query: str,
+    candidate: dict[str, Any],
+) -> list[str]:
+    query_tokens = set(tokenize(query))
+    candidate_text = " ".join(
+        str(candidate.get(field, ""))
+        for field in ("snippet", "path", "filename", "directory")
+    )
+    return sorted(query_tokens & set(tokenize(candidate_text)))
+
+
+
+
 def lexical_score(query: str, candidate: dict[str, Any]) -> float:
     normalized_query = normalize_text(query)
     if not normalized_query:
@@ -116,6 +130,7 @@ def rerank_candidates(
     query: str,
     candidates: list[dict[str, Any]],
     limit: int,
+    debug: bool = False,
 ) -> list[dict[str, Any]]:
     vector_scores = normalize_vector_scores(candidates)
     ranked: list[dict[str, Any]] = []
@@ -126,11 +141,13 @@ def rerank_candidates(
         strict=True,
     ):
         lexical = lexical_score(query, candidate)
+        matches = matching_tokens(query, candidate)
         ranked.append(
             {
                 **candidate,
                 "_vector_score": vector_score,
                 "_lexical_score": lexical,
+                "_matching_tokens": matches,
                 "_combined_score": (
                     VECTOR_WEIGHT * vector_score
                     + LEXICAL_WEIGHT * lexical
@@ -159,13 +176,24 @@ def rerank_candidates(
             continue
 
         seen.add(identity)
-        unique.append(
-            {
-                key: value
-                for key, value in candidate.items()
-                if not key.startswith("_") and key != "id"
-            }
-        )
+        result = {
+            key: value
+            for key, value in candidate.items()
+            if not key.startswith("_") and key != "id"
+        }
+
+        if debug:
+            result.update(
+                {
+                    "vector_score": candidate["_vector_score"],
+                    "lexical_score": candidate["_lexical_score"],
+                    "combined_score": candidate["_combined_score"],
+                    "matching_tokens": candidate["_matching_tokens"],
+                    "rank": len(unique) + 1,
+                }
+            )
+
+        unique.append(result)
 
         if len(unique) == limit:
             break
