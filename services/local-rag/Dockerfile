@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY tests ./tests
 
+COPY evaluation ./evaluation
 RUN mkdir -p /data/chroma \
     && chown -R 65532:65532 /app /data/chroma
 
