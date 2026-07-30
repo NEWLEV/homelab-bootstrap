@@ -8,7 +8,7 @@ client = TestClient(app)
 def test_ask_returns_insufficient_context(monkeypatch):
     monkeypatch.setattr(
         "app.main.retrieve_chunks",
-        lambda query, limit: [
+        lambda query, limit, **kwargs: [
             {
                 "path": "foo.txt",
                 "line_start": 1,
@@ -34,6 +34,7 @@ def test_ask_returns_insufficient_context(monkeypatch):
         },
     )
 
+    print("DEBUG RESPONSE:", response.status_code, response.text)
     assert response.status_code == 200
 
     body = response.json()
@@ -49,7 +50,7 @@ def test_ask_returns_insufficient_context(monkeypatch):
 def test_ask_returns_grounded_answer(monkeypatch):
     monkeypatch.setattr(
         "app.main.retrieve_chunks",
-        lambda query, limit: [
+        lambda query, limit, **kwargs: [
             {
                 "path": "docs.md",
                 "line_start": 10,
@@ -75,6 +76,7 @@ def test_ask_returns_grounded_answer(monkeypatch):
         },
     )
 
+    print("DEBUG RESPONSE:", response.status_code, response.text)
     assert response.status_code == 200
 
     body = response.json()

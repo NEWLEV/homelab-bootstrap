@@ -130,6 +130,7 @@ def test_repeated_indexing_skips_existing_chunks(
         "updated_chunks": 0,
         "skipped_chunks": 0,
         "removed_chunks": 0,
+        "metadata_migrated_files": 0,
         "total_chunks": 1,
     }
 
@@ -140,6 +141,7 @@ def test_repeated_indexing_skips_existing_chunks(
         "updated_chunks": 0,
         "skipped_chunks": 1,
         "removed_chunks": 0,
+        "metadata_migrated_files": 0,
         "total_chunks": 1,
     }
 
@@ -209,6 +211,7 @@ def test_deleted_file_removes_stale_chunks(
         "updated_chunks": 0,
         "skipped_chunks": 0,
         "removed_chunks": 1,
+        "metadata_migrated_files": 0,
         "total_chunks": 0,
     }
 
