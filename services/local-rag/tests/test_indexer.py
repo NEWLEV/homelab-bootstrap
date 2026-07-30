@@ -7,6 +7,7 @@ import app.indexer as indexer
 class FakeCollection:
     def __init__(self) -> None:
         self.records: dict[str, dict[str, Any]] = {}
+        self.metadata: dict[str, str] = {}
 
     def get(self, include: list[str] | None = None) -> dict[str, Any]:
         return {
@@ -43,6 +44,9 @@ class FakeCollection:
     def count(self) -> int:
         return len(self.records)
 
+    def modify(self, metadata: dict[str, str]) -> None:
+        self.metadata = metadata
+
 
 class FakeClient:
     def __init__(self, collection: FakeCollection) -> None:
@@ -55,6 +59,8 @@ class FakeClient:
     ) -> FakeCollection:
         assert name == "homelab_bootstrap"
         assert metadata["description"] == "Aisha homelab repository"
+        if not self.collection.metadata:
+            self.collection.metadata = metadata
         return self.collection
 
 
@@ -329,3 +335,83 @@ def test_chunking_version_change_reindexes_unchanged_file(
         == indexer.CHUNKING_VERSION
         for record in collection.records.values()
     )
+
+
+def test_schema_metadata_is_stored_on_chunks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_root = tmp_path / "repository"
+    source_root.mkdir()
+    (source_root / "README.md").write_text(
+        "Documentation",
+        encoding="utf-8",
+    )
+
+    collection = FakeCollection()
+    configure_indexer(monkeypatch, source_root, collection)
+    indexer.index_repository()
+
+    metadata = next(iter(collection.records.values()))["metadata"]
+    assert metadata["schema_version"] == indexer.INDEX_SCHEMA_VERSION
+    assert metadata["embedding_model"] == indexer.EMBEDDING_MODEL
+    assert (
+        collection.metadata["schema_version"]
+        == indexer.INDEX_SCHEMA_VERSION
+    )
+
+
+def test_embedding_model_change_reindexes_unchanged_file(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_root = tmp_path / "repository"
+    source_root.mkdir()
+    (source_root / "README.md").write_text(
+        "Documentation",
+        encoding="utf-8",
+    )
+
+    collection = FakeCollection()
+    configure_indexer(monkeypatch, source_root, collection)
+    first = indexer.index_repository()
+    assert first["total_chunks"] == 1
+
+    monkeypatch.setattr(indexer, "EMBEDDING_MODEL", "replacement-model")
+    second = indexer.index_repository()
+
+    assert second["metadata_migrated_files"] == 1
+    assert second["updated_chunks"] == 1
+    assert all(
+        record["metadata"]["embedding_model"] == "replacement-model"
+        for record in collection.records.values()
+    )
+
+
+def test_explicit_rebuild_reembeds_unchanged_files(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_root = tmp_path / "repository"
+    source_root.mkdir()
+    (source_root / "README.md").write_text(
+        "Documentation",
+        encoding="utf-8",
+    )
+
+    collection = FakeCollection()
+    configure_indexer(monkeypatch, source_root, collection)
+    embed_calls: list[str] = []
+
+    def track_embed(text: str) -> list[float]:
+        embed_calls.append(text)
+        return [float(len(text))]
+
+    monkeypatch.setattr(indexer, "embed", track_embed)
+    first = indexer.index_repository()
+    second = indexer.index_repository(rebuild=True)
+
+    assert first["total_chunks"] == 1
+    assert len(embed_calls) == 2
+    assert second["updated_chunks"] == 1
+    assert second["removed_chunks"] == 0

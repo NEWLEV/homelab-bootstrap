@@ -8,6 +8,12 @@ import chromadb
 import httpx
 
 from app.chunking import chunk_document
+from app.index_schema import (
+    INDEX_SCHEMA_VERSION,
+    REQUIRED_METADATA_FIELDS,
+    collection_metadata,
+    metadata_is_current,
+)
 
 SOURCE_ROOT = Path(
     os.environ.get(
@@ -58,17 +64,6 @@ EXCLUDED_PARTS = {
 EXCLUDED_RELATIVE_PREFIXES = {
     "services/local-rag/evaluation",
     "services/local-rag/tests",
-}
-
-REQUIRED_METADATA_FIELDS = {
-    "path",
-    "directory",
-    "filename",
-    "extension",
-    "line_start",
-    "line_end",
-    "file_hash",
-    "chunking_version",
 }
 
 MAX_CHARS = 4000
@@ -225,53 +220,21 @@ def chunk_id(
 def has_required_metadata(
     metadata: dict[str, Any],
 ) -> bool:
-    if not REQUIRED_METADATA_FIELDS.issubset(
-        metadata.keys()
-    ):
-        return False
-
-    string_fields = (
-        "path",
-        "directory",
-        "filename",
-        "extension",
-        "file_hash",
-        "chunking_version",
-    )
-
-    if not all(
-        isinstance(metadata.get(field), str)
-        for field in string_fields
-    ):
-        return False
-
-    integer_fields = (
-        "line_start",
-        "line_end",
-    )
-
-    integers_are_valid = all(
-        isinstance(metadata.get(field), int)
-        for field in integer_fields
-    )
-    return (
-        integers_are_valid
-        and metadata.get("chunking_version") == CHUNKING_VERSION
+    return metadata_is_current(
+        metadata,
+        chunking_version=CHUNKING_VERSION,
+        embedding_model=EMBEDDING_MODEL,
     )
 
 
-def index_repository() -> dict[str, Any]:
+def index_repository(*, rebuild: bool = False) -> dict[str, Any]:
     client = chromadb.PersistentClient(
         path=str(CHROMA_PATH),
     )
 
     collection = client.get_or_create_collection(
         name="homelab_bootstrap",
-        metadata={
-            "description": (
-                "Aisha homelab repository"
-            ),
-        },
+        metadata=collection_metadata(EMBEDDING_MODEL),
     )
 
     existing = collection.get(
@@ -401,6 +364,7 @@ def index_repository() -> dict[str, Any]:
         if (
             content_is_unchanged
             and metadata_is_complete
+            and not rebuild
         ):
             desired_ids.update(stored_ids)
             indexed_files += 1
@@ -474,6 +438,8 @@ def index_repository() -> dict[str, Any]:
                         current_file_hash
                     ),
                     "chunking_version": CHUNKING_VERSION,
+                    "schema_version": INDEX_SCHEMA_VERSION,
+                    "embedding_model": EMBEDDING_MODEL,
                 }
             )
 
@@ -498,6 +464,10 @@ def index_repository() -> dict[str, Any]:
         collection.delete(
             ids=stale_ids,
         )
+
+    collection.modify(
+        metadata=collection_metadata(EMBEDDING_MODEL),
+    )
 
     return {
         "files": indexed_files,
