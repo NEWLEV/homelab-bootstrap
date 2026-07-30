@@ -298,3 +298,34 @@ def test_local_rag_evaluation_fixtures_are_removed(
         for record in collection.records.values()
     }
     assert stored_paths == {"README.md"}
+
+
+def test_chunking_version_change_reindexes_unchanged_file(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_root = tmp_path / "repository"
+    source_root.mkdir()
+    (source_root / "README.md").write_text(
+        "Documentation",
+        encoding="utf-8",
+    )
+
+    collection = FakeCollection()
+    configure_indexer(monkeypatch, source_root, collection)
+    first = indexer.index_repository()
+    assert first["total_chunks"] == 1
+
+    for record in collection.records.values():
+        record["metadata"]["chunking_version"] = "1"
+
+    second = indexer.index_repository()
+
+    assert second["metadata_migrated_files"] == 1
+    assert second["updated_chunks"] == 1
+    assert second["total_chunks"] == 1
+    assert all(
+        record["metadata"]["chunking_version"]
+        == indexer.CHUNKING_VERSION
+        for record in collection.records.values()
+    )
