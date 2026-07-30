@@ -256,3 +256,45 @@ def test_excluded_paths_are_not_indexed(
     }
 
     assert stored_paths == {"README.md"}
+
+
+def test_local_rag_evaluation_fixtures_are_removed(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_root = tmp_path / "repository"
+    source_root.mkdir()
+
+    (source_root / "README.md").write_text(
+        "Allowed production documentation",
+        encoding="utf-8",
+    )
+    evaluation = source_root / "services" / "local-rag" / "evaluation"
+    evaluation.mkdir(parents=True)
+    (evaluation / "cases.json").write_text(
+        '{"query": "local-rag.yml"}',
+        encoding="utf-8",
+    )
+
+    collection = FakeCollection()
+    configure_indexer(monkeypatch, source_root, collection)
+    excluded_prefixes = indexer.EXCLUDED_RELATIVE_PREFIXES
+
+    monkeypatch.setattr(indexer, "EXCLUDED_RELATIVE_PREFIXES", set())
+    first = indexer.index_repository()
+    assert first["total_chunks"] == 2
+
+    monkeypatch.setattr(
+        indexer,
+        "EXCLUDED_RELATIVE_PREFIXES",
+        excluded_prefixes,
+    )
+    second = indexer.index_repository()
+
+    assert second["removed_chunks"] == 1
+    assert second["total_chunks"] == 1
+    stored_paths = {
+        record["metadata"]["path"]
+        for record in collection.records.values()
+    }
+    assert stored_paths == {"README.md"}
