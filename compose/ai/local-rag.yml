@@ -47,7 +47,7 @@ services:
 
     volumes:
       - /srv/data/services/local-rag/chroma:/data/chroma
-      - /srv/data/git/homelab-bootstrap:/sources/homelab-bootstrap:ro
+      - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/sources/homelab-bootstrap:ro
 
     ports:
       - target: 8080
