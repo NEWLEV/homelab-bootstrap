@@ -204,6 +204,7 @@ def test_ask_passes_filters_and_preserves_citation_metadata(
     assert response.status_code == 200
     assert calls == [
         {
+            "debug": False,
             "path": "compose/ai/local-rag.yml",
             "path_prefix": "compose/ai",
             "directory": "compose/ai",
@@ -216,5 +217,78 @@ def test_ask_passes_filters_and_preserves_citation_metadata(
             "line_start": 10,
             "line_end": 20,
             "distance": 0.1,
+        }
+
+
+    ]
+
+def test_search_debug_exposes_retrieval_diagnostics(monkeypatch) -> None:
+    configure_retrieval(monkeypatch, [record("one")])
+    response = client.post(
+        "/search",
+        json={"query": "OLLAMA_URL", "debug": True},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["results"][0]
+    assert result["rank"] == 1
+    assert result["matching_tokens"] == ["ollama_url"]
+    assert set(result) >= {
+        "vector_score",
+        "lexical_score",
+        "combined_score",
+    }
+
+
+def test_ask_debug_exposes_typed_retrieval_diagnostics(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        main,
+        "retrieve_chunks",
+        lambda query, limit, **kwargs: [
+            {
+                "path": "compose/ai/local-rag.yml",
+                "line_start": 10,
+                "line_end": 20,
+                "distance": 0.1,
+                "snippet": "The service is local-rag-api.",
+                "vector_score": 0.9,
+                "lexical_score": 0.95,
+                "combined_score": 0.9275,
+                "matching_tokens": ["local-rag-api"],
+                "rank": 1,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        main,
+        "generate_answer",
+        lambda prompt: (
+            "The service is local-rag-api. "
+            "[compose/ai/local-rag.yml:10-20]"
+        ),
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "local-rag-api",
+            "debug": True,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["retrieval_debug"] == [
+        {
+            "path": "compose/ai/local-rag.yml",
+            "line_start": 10,
+            "line_end": 20,
+            "distance": 0.1,
+            "vector_score": 0.9,
+            "lexical_score": 0.95,
+            "combined_score": 0.9275,
+            "matching_tokens": ["local-rag-api"],
+            "rank": 1,
         }
     ]

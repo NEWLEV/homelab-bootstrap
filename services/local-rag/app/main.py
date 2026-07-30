@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from app.retrieval import candidate_pool_size, rerank_candidates
 
 
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 
 
 app = FastAPI(
@@ -55,6 +55,7 @@ collection = chroma_client.get_or_create_collection(
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=20)
+    debug: bool = False
     path: str | None = None
     path_prefix: str | None = None
     directory: str | None = None
@@ -65,6 +66,7 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=10)
     path: str | None = None
+    debug: bool = False
     path_prefix: str | None = None
     directory: str | None = None
     extension: str | None = None
@@ -77,11 +79,24 @@ class Citation(BaseModel):
     distance: float
 
 
+class RetrievalDiagnostic(BaseModel):
+    path: str
+    line_start: int
+    line_end: int
+    distance: float
+    vector_score: float
+    lexical_score: float
+    combined_score: float
+    matching_tokens: list[str]
+    rank: int
+
+
 class AskResponse(BaseModel):
     question: str
     answer: str
     grounded: bool
     citations: list[Citation]
+    retrieval_debug: list[RetrievalDiagnostic] | None = None
 
 
 def embed_text(text: str) -> list[float]:
@@ -157,6 +172,7 @@ def build_metadata_filter(
 def retrieve_chunks(
     query: str,
     limit: int,
+    debug: bool = False,
     path: str | None = None,
     path_prefix: str | None = None,
     directory: str | None = None,
@@ -249,6 +265,7 @@ def retrieve_chunks(
         query,
         matches,
         limit,
+        debug=debug,
     )
 
 
@@ -432,6 +449,7 @@ def search(
         matches = retrieve_chunks(
             query=query,
             limit=request.limit,
+            debug=request.debug,
             path=request.path,
             path_prefix=request.path_prefix,
             directory=request.directory,
@@ -461,6 +479,7 @@ def search(
 @app.post(
     "/ask",
     response_model=AskResponse,
+    response_model_exclude_none=True,
 )
 def ask(request: AskRequest) -> AskResponse:
     question = request.question.strip()
@@ -475,6 +494,7 @@ def ask(request: AskRequest) -> AskResponse:
         matches = retrieve_chunks(
             query=question,
             limit=request.limit,
+            debug=request.debug,
             path=request.path,
             path_prefix=request.path_prefix,
             directory=request.directory,
@@ -494,12 +514,31 @@ def ask(request: AskRequest) -> AskResponse:
             detail=str(exc),
         ) from exc
 
+    retrieval_debug = (
+        [
+            RetrievalDiagnostic(
+                path=match["path"],
+                line_start=match["line_start"],
+                line_end=match["line_end"],
+                distance=match["distance"],
+                vector_score=match["vector_score"],
+                lexical_score=match["lexical_score"],
+                combined_score=match["combined_score"],
+                matching_tokens=match["matching_tokens"],
+                rank=match["rank"],
+            )
+            for match in matches
+        ]
+        if request.debug
+        else None
+    )
     if not matches:
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            retrieval_debug=retrieval_debug,
         )
 
     prompt = build_grounded_prompt(
@@ -529,6 +568,7 @@ def ask(request: AskRequest) -> AskResponse:
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            retrieval_debug=retrieval_debug,
         )
 
     citations = extract_used_citations(
@@ -542,6 +582,7 @@ def ask(request: AskRequest) -> AskResponse:
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            retrieval_debug=retrieval_debug,
         )
 
     return AskResponse(
@@ -549,6 +590,7 @@ def ask(request: AskRequest) -> AskResponse:
         answer=answer,
         grounded=True,
         citations=citations,
+        retrieval_debug=retrieval_debug,
     )
 
 

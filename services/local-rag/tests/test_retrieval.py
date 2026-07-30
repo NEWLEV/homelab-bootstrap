@@ -111,3 +111,50 @@ def test_candidate_pool_is_bounded() -> None:
     assert candidate_pool_size(1, 100) == 20
     assert candidate_pool_size(20, 100) == 80
     assert candidate_pool_size(20, 7) == 7
+
+
+
+def test_debug_output_contains_scores_tokens_and_rank() -> None:
+    results = rerank_candidates(
+        "OLLAMA_URL",
+        [
+            candidate(
+                "exact",
+                snippet="OLLAMA_URL=http://ollama",
+                distance=0.4,
+            ),
+            candidate("other", snippet="model endpoint", distance=0.2),
+        ],
+        2,
+        debug=True,
+    )
+
+    assert [result["rank"] for result in results] == [1, 2]
+    assert results[0]["matching_tokens"] == ["ollama_url"]
+    assert set(results[0]) >= {
+        "vector_score",
+        "lexical_score",
+        "combined_score",
+        "matching_tokens",
+        "rank",
+    }
+
+
+def test_default_output_omits_diagnostics() -> None:
+    result = rerank_candidates(
+        "OLLAMA_URL",
+        [
+            candidate(
+                "exact",
+                snippet="OLLAMA_URL=http://ollama",
+                distance=0.4,
+            )
+        ],
+        1,
+    )[0]
+
+    assert "vector_score" not in result
+    assert "lexical_score" not in result
+    assert "combined_score" not in result
+    assert "matching_tokens" not in result
+    assert "rank" not in result
