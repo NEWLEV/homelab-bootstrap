@@ -109,3 +109,5 @@ def test_grounded_prompt_requires_complete_verbatim_citations() -> None:
         "never shorten [path:line_start-line_end]"
         in prompt
     )
+    assert "each citation in its own brackets" in prompt
+    assert "never combine sources in one bracket" in prompt
