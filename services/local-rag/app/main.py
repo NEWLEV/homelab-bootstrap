@@ -8,10 +8,15 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.retrieval import candidate_pool_size, rerank_candidates
+
+
+APP_VERSION = "0.5.0"
+
 
 app = FastAPI(
     title="Aisha Local RAG",
-    version="0.4.0",
+    version=APP_VERSION,
 )
 
 
@@ -119,14 +124,6 @@ def build_metadata_filter(
             }
         )
 
-    if path_prefix:
-        conditions.append(
-            {
-                "path": {
-                    "$contains": path_prefix,
-                },
-            }
-        )
 
     if directory:
         conditions.append(
@@ -165,6 +162,14 @@ def retrieve_chunks(
     directory: str | None = None,
     extension: str | None = None,
 ) -> list[dict[str, Any]]:
+    pool_size = candidate_pool_size(
+        limit,
+        collection.count(),
+    )
+
+    if pool_size == 0:
+        return []
+
     query_embedding = embed_text(query)
 
     where = build_metadata_filter(
@@ -176,7 +181,7 @@ def retrieve_chunks(
 
     query_arguments: dict[str, Any] = {
         "query_embeddings": [query_embedding],
-        "n_results": limit,
+        "n_results": pool_size,
         "include": [
             "documents",
             "metadatas",
@@ -196,8 +201,10 @@ def retrieve_chunks(
     distances = results.get("distances", [[]])[0]
 
     matches: list[dict[str, Any]] = []
+    ids = results.get("ids", [[]])[0]
 
-    for document, metadata, distance in zip(
+    for record_id, document, metadata, distance in zip(
+        ids,
         documents,
         metadatas,
         distances,
@@ -207,6 +214,7 @@ def retrieve_chunks(
 
         matches.append(
             {
+                "id": record_id,
                 "path": str(
                     metadata.get("path", "unknown")
                 ),
@@ -230,7 +238,18 @@ def retrieve_chunks(
             }
         )
 
-    return matches
+    if path_prefix:
+        matches = [
+            match
+            for match in matches
+            if match["path"].startswith(path_prefix)
+        ]
+
+    return rerank_candidates(
+        query,
+        matches,
+        limit,
+    )
 
 
 def build_grounded_prompt(
@@ -389,6 +408,7 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "vector_store": "chromadb",
+        "version": APP_VERSION,
         "collection": collection.name,
         "chunks": collection.count(),
         "embedding_model": EMBEDDING_MODEL,

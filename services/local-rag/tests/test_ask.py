@@ -34,7 +34,6 @@ def test_ask_returns_insufficient_context(monkeypatch):
         },
     )
 
-    print("DEBUG RESPONSE:", response.status_code, response.text)
     assert response.status_code == 200
 
     body = response.json()
@@ -76,7 +75,6 @@ def test_ask_returns_grounded_answer(monkeypatch):
         },
     )
 
-    print("DEBUG RESPONSE:", response.status_code, response.text)
     assert response.status_code == 200
 
     body = response.json()
