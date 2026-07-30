@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Aisha Local RAG",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 
@@ -25,6 +25,7 @@ GENERATION_MODEL = os.environ.get(
     "GENERATION_MODEL",
     "llama3.2:3b",
 )
+
 
 INSUFFICIENT_CONTEXT_MESSAGE = (
     "The indexed repository does not contain enough information "
@@ -49,12 +50,19 @@ collection = chroma_client.get_or_create_collection(
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=20)
+    path: str | None = None
     path_prefix: str | None = None
+    directory: str | None = None
+    extension: str | None = None
 
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1)
     limit: int = Field(default=5, ge=1, le=10)
+    path: str | None = None
+    path_prefix: str | None = None
+    directory: str | None = None
+    extension: str | None = None
 
 
 class Citation(BaseModel):
@@ -93,31 +101,94 @@ def embed_text(text: str) -> list[float]:
     return embeddings[0]
 
 
+def build_metadata_filter(
+    *,
+    path: str | None = None,
+    path_prefix: str | None = None,
+    directory: str | None = None,
+    extension: str | None = None,
+) -> dict[str, Any] | None:
+    conditions: list[dict[str, Any]] = []
+
+    if path:
+        conditions.append(
+            {
+                "path": {
+                    "$eq": path,
+                },
+            }
+        )
+
+    if path_prefix:
+        conditions.append(
+            {
+                "path": {
+                    "$contains": path_prefix,
+                },
+            }
+        )
+
+    if directory:
+        conditions.append(
+            {
+                "directory": {
+                    "$eq": directory,
+                },
+            }
+        )
+
+    if extension:
+        conditions.append(
+            {
+                "extension": {
+                    "$eq": extension,
+                },
+            }
+        )
+
+    if not conditions:
+        return None
+
+    if len(conditions) == 1:
+        return conditions[0]
+
+    return {
+        "$and": conditions,
+    }
+
+
 def retrieve_chunks(
     query: str,
     limit: int,
+    path: str | None = None,
     path_prefix: str | None = None,
+    directory: str | None = None,
+    extension: str | None = None,
 ) -> list[dict[str, Any]]:
     query_embedding = embed_text(query)
 
-    where = None
+    where = build_metadata_filter(
+        path=path,
+        path_prefix=path_prefix,
+        directory=directory,
+        extension=extension,
+    )
 
-    if path_prefix:
-        where = {
-            "path": {
-                "$contains": path_prefix,
-            }
-        }
-
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=limit,
-        where=where,
-        include=[
+    query_arguments: dict[str, Any] = {
+        "query_embeddings": [query_embedding],
+        "n_results": limit,
+        "include": [
             "documents",
             "metadatas",
             "distances",
         ],
+    }
+
+    if where is not None:
+        query_arguments["where"] = where
+
+    results = collection.query(
+        **query_arguments,
     )
 
     documents = results.get("documents", [[]])[0]
@@ -138,6 +209,15 @@ def retrieve_chunks(
             {
                 "path": str(
                     metadata.get("path", "unknown")
+                ),
+                "directory": str(
+                    metadata.get("directory", "")
+                ),
+                "filename": str(
+                    metadata.get("filename", "")
+                ),
+                "extension": str(
+                    metadata.get("extension", "")
                 ),
                 "line_start": int(
                     metadata.get("line_start", 0)
@@ -332,7 +412,10 @@ def search(
         matches = retrieve_chunks(
             query=query,
             limit=request.limit,
+            path=request.path,
             path_prefix=request.path_prefix,
+            directory=request.directory,
+            extension=request.extension,
         )
     except httpx.HTTPError as exc:
         raise HTTPException(
@@ -372,6 +455,10 @@ def ask(request: AskRequest) -> AskResponse:
         matches = retrieve_chunks(
             query=question,
             limit=request.limit,
+            path=request.path,
+            path_prefix=request.path_prefix,
+            directory=request.directory,
+            extension=request.extension,
         )
     except httpx.HTTPError as exc:
         raise HTTPException(
