@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 from pathlib import Path
@@ -5,8 +6,10 @@ from typing import Any
 
 import chromadb
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 from app.confidence import (
     assess_citation_completeness,
     assess_retrieval_confidence,
@@ -14,9 +17,10 @@ from app.confidence import (
 
 from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
+from app.streaming import sse_event, stream_ollama_answer
 
 
-APP_VERSION = "0.7.3"
+APP_VERSION = "0.8.0"
 
 
 app = FastAPI(
@@ -348,6 +352,8 @@ For a supported answer:
 - copy each citation verbatim from a SOURCE bracket above
 - include the complete path and full line range in every citation
 - never shorten [path:line_start-line_end] to [path:line_start]
+- put each citation in its own brackets: [first] [second]
+- never combine sources in one bracket: [first, second]
 
 Repository context:
 
@@ -674,6 +680,201 @@ def ask(request: AskRequest) -> AskResponse:
         citation_completeness=citation_assessment.completeness,
         confidence_reasons=debug_reasons(),
         retrieval_debug=retrieval_debug,
+    )
+
+
+@app.post("/ask/stream")
+async def ask_stream(
+    request: Request,
+    body: AskRequest,
+) -> StreamingResponse:
+    """Stream provisional tokens followed by an authoritative result.
+
+    Consumers must not treat token events as grounded until the final result.
+    """
+    question = body.question.strip()
+
+    if not question:
+        raise HTTPException(
+            status_code=422,
+            detail="Question must not be empty.",
+        )
+
+    try:
+        matches = await run_in_threadpool(
+            retrieve_chunks,
+            question,
+            body.limit,
+            debug=True,
+            path=body.path,
+            path_prefix=body.path_prefix,
+            directory=body.directory,
+            extension=body.extension,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Ollama embedding request failed: "
+                f"{exc}"
+            ),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        ) from exc
+
+    retrieval_debug = (
+        [
+            RetrievalDiagnostic(
+                path=match["path"],
+                line_start=match["line_start"],
+                line_end=match["line_end"],
+                distance=match["distance"],
+                vector_score=match["vector_score"],
+                lexical_score=match["lexical_score"],
+                combined_score=match["combined_score"],
+                matching_tokens=match["matching_tokens"],
+                rank=match["rank"],
+                hybrid_rank=match.get("hybrid_rank"),
+                reranker_score=match.get("reranker_score"),
+                reranker_used=match.get("reranker_used", False),
+                reranker_error=match.get("reranker_error"),
+            )
+            for match in matches
+        ]
+        if body.debug
+        else None
+    )
+    confidence = assess_retrieval_confidence(
+        question,
+        matches,
+        minimum=CONFIDENCE_MIN_SCORE,
+    )
+
+    def debug_reasons(*extra: str) -> list[str] | None:
+        if not body.debug:
+            return None
+        return list(
+            dict.fromkeys((*confidence.reasons, *extra))
+        )
+
+    def result_event(response: AskResponse) -> str:
+        return sse_event(
+            "result",
+            response.model_dump(exclude_none=True),
+        )
+
+    async def events():
+        if not confidence.sufficient:
+            yield result_event(
+                AskResponse(
+                    question=question,
+                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
+                    grounded=False,
+                    citations=[],
+                    confidence=confidence.score,
+                    confidence_reasons=debug_reasons(),
+                    retrieval_debug=retrieval_debug,
+                )
+            )
+            return
+
+        prompt = build_grounded_prompt(question, matches)
+        answer_parts: list[str] = []
+
+        try:
+            async for token in stream_ollama_answer(
+                ollama_url=OLLAMA_URL,
+                model=GENERATION_MODEL,
+                prompt=prompt,
+                is_disconnected=request.is_disconnected,
+            ):
+                answer_parts.append(token)
+                yield sse_event("token", {"text": token})
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            yield sse_event("error", {"detail": str(exc)})
+            return
+
+        if await request.is_disconnected():
+            return
+
+        answer = "".join(answer_parts).strip()
+        if not answer:
+            yield sse_event(
+                "error",
+                {"detail": "Ollama returned an empty generated response."},
+            )
+            return
+
+        if is_insufficient_answer(answer):
+            yield result_event(
+                AskResponse(
+                    question=question,
+                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
+                    grounded=False,
+                    citations=[],
+                    confidence=confidence.score,
+                    confidence_reasons=debug_reasons("model_refusal"),
+                    retrieval_debug=retrieval_debug,
+                )
+            )
+            return
+
+        citations = extract_used_citations(answer, matches)
+        citation_assessment = assess_citation_completeness(
+            answer,
+            matches,
+        )
+        final_confidence = round(
+            confidence.score * citation_assessment.completeness,
+            6,
+        )
+
+        if not citation_assessment.complete or not citations:
+            yield result_event(
+                AskResponse(
+                    question=question,
+                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
+                    grounded=False,
+                    citations=[],
+                    confidence=final_confidence,
+                    citation_completeness=(
+                        citation_assessment.completeness
+                    ),
+                    confidence_reasons=debug_reasons(
+                        *citation_assessment.reasons
+                    ),
+                    retrieval_debug=retrieval_debug,
+                )
+            )
+            return
+
+        yield result_event(
+            AskResponse(
+                question=question,
+                answer=answer,
+                grounded=True,
+                citations=citations,
+                confidence=final_confidence,
+                citation_completeness=(
+                    citation_assessment.completeness
+                ),
+                confidence_reasons=debug_reasons(),
+                retrieval_debug=retrieval_debug,
+            )
+        )
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
