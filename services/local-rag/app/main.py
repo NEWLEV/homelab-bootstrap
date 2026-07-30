@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import chromadb
 import httpx
@@ -14,13 +14,18 @@ from app.confidence import (
     assess_citation_completeness,
     assess_retrieval_confidence,
 )
+from app.conversation import (
+    MAX_HISTORY_MESSAGES,
+    format_conversation_history,
+    rewrite_retrieval_query,
+)
 
 from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 from app.streaming import sse_event, stream_ollama_answer
 
 
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.9.0"
 
 
 app = FastAPI(
@@ -94,8 +99,17 @@ class SearchRequest(BaseModel):
     extension: str | None = None
 
 
+class ConversationMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=1)
+    history: list[ConversationMessage] = Field(
+        default_factory=list,
+        max_length=MAX_HISTORY_MESSAGES,
+    )
     limit: int = Field(default=5, ge=1, le=10)
     path: str | None = None
     debug: bool = False
@@ -314,8 +328,17 @@ def retrieve_chunks(
 def build_grounded_prompt(
     question: str,
     matches: list[dict[str, Any]],
+    history: list[ConversationMessage] | None = None,
 ) -> str:
     context_sections: list[str] = []
+    formatted_history = format_conversation_history(history or [])
+    conversation_section = (
+        "Conversation history (continuity only; not repository evidence):\n"
+        f"<conversation_history>\n{formatted_history}\n"
+        "</conversation_history>\n\n"
+        if formatted_history
+        else ""
+    )
 
     for match in matches:
         source_label = (
@@ -338,6 +361,8 @@ def build_grounded_prompt(
 Use only the supplied repository context.
 
 A supported answer must be directly stated in the context.
+Conversation history can resolve references but is never factual evidence.
+Never repeat a factual claim from history unless repository context supports it.
 Do not infer configuration from file names, service names, paths, or conventions.
 Do not speculate about files or settings that are not present.
 Do not say that something "might", "may", "could", "suggests", or "probably" exists.
@@ -355,6 +380,7 @@ For a supported answer:
 - put each citation in its own brackets: [first] [second]
 - never combine sources in one bracket: [first, second]
 
+{conversation_section}
 Repository context:
 
 {context}
@@ -541,9 +567,10 @@ def ask(request: AskRequest) -> AskResponse:
             detail="Question must not be empty.",
         )
 
+    retrieval_query = rewrite_retrieval_query(question, request.history)
     try:
         matches = retrieve_chunks(
-            query=question,
+            query=retrieval_query,
             limit=request.limit,
             debug=True,
             path=request.path,
@@ -614,6 +641,7 @@ def ask(request: AskRequest) -> AskResponse:
     prompt = build_grounded_prompt(
         question,
         matches,
+        request.history,
     )
 
     try:
@@ -700,10 +728,11 @@ async def ask_stream(
             detail="Question must not be empty.",
         )
 
+    retrieval_query = rewrite_retrieval_query(question, body.history)
     try:
         matches = await run_in_threadpool(
             retrieve_chunks,
-            question,
+            retrieval_query,
             body.limit,
             debug=True,
             path=body.path,
@@ -781,7 +810,11 @@ async def ask_stream(
             )
             return
 
-        prompt = build_grounded_prompt(question, matches)
+        prompt = build_grounded_prompt(
+            question,
+            matches,
+            body.history,
+        )
         answer_parts: list[str] = []
 
         try:

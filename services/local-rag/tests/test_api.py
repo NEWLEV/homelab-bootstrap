@@ -14,7 +14,7 @@ def test_health() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["version"] == "0.8.0"
+    assert body["version"] == "0.9.0"
     assert body["vector_store"] == "chromadb"
     assert body["collection"] == "homelab_bootstrap"
     assert isinstance(body["chunks"], int)
