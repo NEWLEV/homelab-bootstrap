@@ -12,7 +12,7 @@ from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 
 
-APP_VERSION = "0.7.1"
+APP_VERSION = "0.7.2"
 
 
 app = FastAPI(

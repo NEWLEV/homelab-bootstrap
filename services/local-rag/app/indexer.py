@@ -7,6 +7,8 @@ from typing import Any
 import chromadb
 import httpx
 
+from app.chunking import chunk_document
+
 SOURCE_ROOT = Path(
     os.environ.get(
         "SOURCE_ROOT",
@@ -34,6 +36,7 @@ ALLOWED_SUFFIXES = {
     ".yml",
     ".yaml",
     ".json",
+    ".py",
     ".sh",
     ".service",
     ".timer",
@@ -54,6 +57,7 @@ EXCLUDED_PARTS = {
 
 EXCLUDED_RELATIVE_PREFIXES = {
     "services/local-rag/evaluation",
+    "services/local-rag/tests",
 }
 
 REQUIRED_METADATA_FIELDS = {
@@ -64,10 +68,12 @@ REQUIRED_METADATA_FIELDS = {
     "line_start",
     "line_end",
     "file_hash",
+    "chunking_version",
 }
 
 MAX_CHARS = 4000
 OVERLAP_CHARS = 400
+CHUNKING_VERSION = "2"
 
 
 def is_allowed(path: Path) -> bool:
@@ -230,6 +236,7 @@ def has_required_metadata(
         "filename",
         "extension",
         "file_hash",
+        "chunking_version",
     )
 
     if not all(
@@ -243,9 +250,13 @@ def has_required_metadata(
         "line_end",
     )
 
-    return all(
+    integers_are_valid = all(
         isinstance(metadata.get(field), int)
         for field in integer_fields
+    )
+    return (
+        integers_are_valid
+        and metadata.get("chunking_version") == CHUNKING_VERSION
     )
 
 
@@ -437,7 +448,7 @@ def index_repository() -> dict[str, Any]:
             line_start,
             line_end,
             chunk,
-        ) in chunk_text(text):
+        ) in chunk_document(relative_path, text):
             digest = chunk_id(
                 relative,
                 line_start,
@@ -462,6 +473,7 @@ def index_repository() -> dict[str, Any]:
                     "file_hash": (
                         current_file_hash
                     ),
+                    "chunking_version": CHUNKING_VERSION,
                 }
             )
 
