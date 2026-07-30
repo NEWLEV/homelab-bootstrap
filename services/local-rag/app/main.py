@@ -8,10 +8,11 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 
 
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.7.0"
 
 
 app = FastAPI(
@@ -29,6 +30,26 @@ EMBEDDING_MODEL = os.environ.get(
 GENERATION_MODEL = os.environ.get(
     "GENERATION_MODEL",
     "llama3.2:3b",
+)
+
+RERANKER_ENABLED = os.environ.get(
+    "RERANKER_ENABLED",
+    "false",
+).strip().lower() in {"1", "true", "yes"}
+RERANKER_MODEL = os.environ.get(
+    "RERANKER_MODEL",
+    "Xenova/ms-marco-MiniLM-L-6-v2",
+)
+RERANKER_CACHE_DIR = os.environ.get(
+    "RERANKER_CACHE_DIR",
+    "/models/fastembed",
+)
+RERANKER_THREADS = max(1, int(os.environ.get("RERANKER_THREADS", "2")))
+reranker = LocalReranker(
+    enabled=RERANKER_ENABLED,
+    model_name=RERANKER_MODEL,
+    cache_dir=RERANKER_CACHE_DIR,
+    threads=RERANKER_THREADS,
 )
 
 
@@ -89,6 +110,10 @@ class RetrievalDiagnostic(BaseModel):
     combined_score: float
     matching_tokens: list[str]
     rank: int
+    hybrid_rank: int | None = None
+    reranker_score: float | None = None
+    reranker_used: bool = False
+    reranker_error: str | None = None
 
 
 class AskResponse(BaseModel):
@@ -261,11 +286,14 @@ def retrieve_chunks(
             if match["path"].startswith(path_prefix)
         ]
 
-    return rerank_candidates(
+    hybrid_candidates = rerank_candidates(
         query,
         matches,
-        limit,
-        debug=debug,
+        len(matches),
+        debug=True,
+    )
+    return reranker.rerank(
+        query, hybrid_candidates, limit, debug=debug
     )
 
 
@@ -430,6 +458,9 @@ def health() -> dict[str, Any]:
         "chunks": collection.count(),
         "embedding_model": EMBEDDING_MODEL,
         "generation_model": GENERATION_MODEL,
+        "reranker_enabled": reranker.enabled,
+        "reranker_model": reranker.model_name,
+        "reranker_threads": reranker.threads,
     }
 
 
@@ -526,6 +557,10 @@ def ask(request: AskRequest) -> AskResponse:
                 combined_score=match["combined_score"],
                 matching_tokens=match["matching_tokens"],
                 rank=match["rank"],
+                hybrid_rank=match.get("hybrid_rank"),
+                reranker_score=match.get("reranker_score"),
+                reranker_used=match.get("reranker_used", False),
+                reranker_error=match.get("reranker_error"),
             )
             for match in matches
         ]

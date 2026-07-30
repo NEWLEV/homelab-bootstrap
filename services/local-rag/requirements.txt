@@ -5,3 +5,4 @@ httpx
 pydantic
 python-multipart
 pytest
+fastembed==0.8.0
