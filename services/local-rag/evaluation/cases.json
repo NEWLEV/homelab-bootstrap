@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Local RAG environment variable",
+    "query": "OLLAMA_URL",
+    "expected_paths": ["compose/ai/local-rag.yml"]
+  },
+  {
+    "name": "Local RAG Compose filename",
+    "query": "local-rag.yml",
+    "expected_paths": ["compose/ai/local-rag.yml"]
+  },
+  {
+    "name": "Local RAG API container",
+    "query": "local-rag-api",
+    "expected_paths": ["compose/ai/local-rag.yml"]
+  },
+  {
+    "name": "Backup timer unit",
+    "query": "aisha-backup.timer",
+    "expected_paths": ["configs/systemd/aisha-backup.timer"]
+  },
+  {
+    "name": "Off-site backup timer",
+    "query": "RandomizedDelaySec 30m",
+    "expected_paths": ["configs/systemd/aisha-backup-offsite.timer"]
+  }
+]
