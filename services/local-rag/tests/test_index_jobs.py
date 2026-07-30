@@ -101,7 +101,7 @@ def configure_api_manager(
     return manager
 
 
-def index_result() -> dict[str, Any]:
+def index_result(**kwargs: Any) -> dict[str, Any]:
     return {
         "files": 1,
         "skipped_files": 0,
@@ -132,6 +132,25 @@ def test_index_endpoint_records_success(
     assert status_response.json() == response.json()["job"]
 
 
+def test_index_endpoint_passes_rebuild_flag(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    configure_api_manager(monkeypatch, tmp_path)
+    captured: dict[str, Any] = {}
+
+    def capture_index(**kwargs: Any) -> dict[str, Any]:
+        captured.update(kwargs)
+        return index_result()
+
+    monkeypatch.setattr(indexer, "index_repository", capture_index)
+
+    response = client.post("/index?rebuild=true")
+
+    assert response.status_code == 200
+    assert captured == {"rebuild": True}
+
+
 def test_index_endpoint_rejects_active_job(
     monkeypatch,
     tmp_path: Path,
@@ -153,7 +172,7 @@ def test_index_endpoint_records_failure(
 ) -> None:
     configure_api_manager(monkeypatch, tmp_path)
 
-    def fail_indexing() -> dict[str, Any]:
+    def fail_indexing(**kwargs: Any) -> dict[str, Any]:
         raise RuntimeError("embedding unavailable")
 
     monkeypatch.setattr(indexer, "index_repository", fail_indexing)
