@@ -44,6 +44,7 @@ services:
       SOURCE_ROOT: /sources/homelab-bootstrap
       GENERATION_MODEL: llama3.2:3b
       PYTHONPATH: /app
+      CONFIDENCE_MIN_SCORE: "0.45"
       RERANKER_ENABLED: "true"
       RERANKER_MODEL: Xenova/ms-marco-MiniLM-L-6-v2
       RERANKER_CACHE_DIR: /models/fastembed

@@ -14,13 +14,14 @@ def test_health() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["version"] == "0.7.2"
+    assert body["version"] == "0.7.3"
     assert body["vector_store"] == "chromadb"
     assert body["collection"] == "homelab_bootstrap"
     assert isinstance(body["chunks"], int)
     assert body["reranker_enabled"] is False
     assert body["reranker_model"] == "Xenova/ms-marco-MiniLM-L-6-v2"
     assert body["reranker_threads"] == 2
+    assert body["confidence_min_score"] == 0.45
 
 
 def test_stats() -> None:

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, build_grounded_prompt
 
 client = TestClient(app)
 
@@ -56,6 +56,9 @@ def test_ask_returns_grounded_answer(monkeypatch):
                 "line_end": 20,
                 "distance": 0.1,
                 "snippet": "Backups run nightly.",
+                "combined_score": 0.9,
+                "matching_tokens": ["backups", "run"],
+                "reranker_used": False,
             }
         ],
     )
@@ -82,3 +85,27 @@ def test_ask_returns_grounded_answer(monkeypatch):
     assert body["grounded"] is True
     assert len(body["citations"]) == 1
     assert body["citations"][0]["path"] == "docs.md"
+    assert body["confidence"] == 0.92
+    assert body["citation_completeness"] == 1.0
+
+
+def test_grounded_prompt_requires_complete_verbatim_citations() -> None:
+    prompt = build_grounded_prompt(
+        "When do backups run?",
+        [
+            {
+                "path": "docs.md",
+                "line_start": 10,
+                "line_end": 20,
+                "snippet": "Backups run nightly.",
+            }
+        ],
+    )
+
+    assert "SOURCE [docs.md:10-20]" in prompt
+    assert "copy each citation verbatim" in prompt
+    assert "complete path and full line range" in prompt
+    assert (
+        "never shorten [path:line_start-line_end]"
+        in prompt
+    )

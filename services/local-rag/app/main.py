@@ -7,12 +7,16 @@ import chromadb
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from app.confidence import (
+    assess_citation_completeness,
+    assess_retrieval_confidence,
+)
 
 from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 
 
-APP_VERSION = "0.7.2"
+APP_VERSION = "0.7.3"
 
 
 app = FastAPI(
@@ -30,6 +34,9 @@ EMBEDDING_MODEL = os.environ.get(
 GENERATION_MODEL = os.environ.get(
     "GENERATION_MODEL",
     "llama3.2:3b",
+)
+CONFIDENCE_MIN_SCORE = float(
+    os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
 )
 
 RERANKER_ENABLED = os.environ.get(
@@ -121,6 +128,9 @@ class AskResponse(BaseModel):
     answer: str
     grounded: bool
     citations: list[Citation]
+    confidence: float
+    citation_completeness: float | None = None
+    confidence_reasons: list[str] | None = None
     retrieval_debug: list[RetrievalDiagnostic] | None = None
 
 
@@ -332,9 +342,12 @@ If the context does not directly answer the question, reply with exactly:
 INSUFFICIENT_CONTEXT
 
 For a supported answer:
-- answer the question directly
-- cite every factual claim inline
-- use citations exactly like [path:line_start-line_end]
+- return only a concise answer to the question
+- do not reproduce source text or put a citation on its own line
+- end every sentence with one or more citations
+- copy each citation verbatim from a SOURCE bracket above
+- include the complete path and full line range in every citation
+- never shorten [path:line_start-line_end] to [path:line_start]
 
 Repository context:
 
@@ -461,6 +474,7 @@ def health() -> dict[str, Any]:
         "reranker_enabled": reranker.enabled,
         "reranker_model": reranker.model_name,
         "reranker_threads": reranker.threads,
+        "confidence_min_score": CONFIDENCE_MIN_SCORE,
     }
 
 
@@ -525,7 +539,7 @@ def ask(request: AskRequest) -> AskResponse:
         matches = retrieve_chunks(
             query=question,
             limit=request.limit,
-            debug=request.debug,
+            debug=True,
             path=request.path,
             path_prefix=request.path_prefix,
             directory=request.directory,
@@ -567,12 +581,27 @@ def ask(request: AskRequest) -> AskResponse:
         if request.debug
         else None
     )
-    if not matches:
+    confidence = assess_retrieval_confidence(
+        question,
+        matches,
+        minimum=CONFIDENCE_MIN_SCORE,
+    )
+
+    def debug_reasons(*extra: str) -> list[str] | None:
+        if not request.debug:
+            return None
+        return list(
+            dict.fromkeys((*confidence.reasons, *extra))
+        )
+
+    if not confidence.sufficient:
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            confidence=confidence.score,
+            confidence_reasons=debug_reasons(),
             retrieval_debug=retrieval_debug,
         )
 
@@ -603,6 +632,8 @@ def ask(request: AskRequest) -> AskResponse:
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            confidence=confidence.score,
+            confidence_reasons=debug_reasons("model_refusal"),
             retrieval_debug=retrieval_debug,
         )
 
@@ -611,12 +642,26 @@ def ask(request: AskRequest) -> AskResponse:
         matches,
     )
 
-    if not citations:
+    citation_assessment = assess_citation_completeness(
+        answer,
+        matches,
+    )
+    final_confidence = round(
+        confidence.score * citation_assessment.completeness,
+        6,
+    )
+
+    if not citation_assessment.complete or not citations:
         return AskResponse(
             question=question,
             answer=INSUFFICIENT_CONTEXT_MESSAGE,
             grounded=False,
             citations=[],
+            confidence=final_confidence,
+            citation_completeness=citation_assessment.completeness,
+            confidence_reasons=debug_reasons(
+                *citation_assessment.reasons
+            ),
             retrieval_debug=retrieval_debug,
         )
 
@@ -625,6 +670,9 @@ def ask(request: AskRequest) -> AskResponse:
         answer=answer,
         grounded=True,
         citations=citations,
+        confidence=final_confidence,
+        citation_completeness=citation_assessment.completeness,
+        confidence_reasons=debug_reasons(),
         retrieval_debug=retrieval_debug,
     )
 
