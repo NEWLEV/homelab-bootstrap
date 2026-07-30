@@ -19,13 +19,17 @@ from app.conversation import (
     format_conversation_history,
     rewrite_retrieval_query,
 )
+from app.index_jobs import (
+    IndexJobAlreadyRunning,
+    IndexJobManager,
+)
 
 from app.reranker import LocalReranker
 from app.retrieval import candidate_pool_size, rerank_candidates
 from app.streaming import sse_event, stream_ollama_answer
 
 
-APP_VERSION = "0.9.0"
+APP_VERSION = "0.9.1"
 
 
 app = FastAPI(
@@ -35,6 +39,12 @@ app = FastAPI(
 
 
 CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", "/data/chroma"))
+INDEX_STATUS_PATH = Path(
+    os.environ.get(
+        "INDEX_STATUS_PATH",
+        str(CHROMA_PATH / "index-status.json"),
+    )
+)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434")
 EMBEDDING_MODEL = os.environ.get(
     "EMBEDDING_MODEL",
@@ -76,6 +86,7 @@ INSUFFICIENT_CONTEXT_MESSAGE = (
 
 
 CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+index_job_manager = IndexJobManager(INDEX_STATUS_PATH)
 
 chroma_client = chromadb.PersistentClient(
     path=str(CHROMA_PATH),
@@ -495,6 +506,8 @@ def extract_used_citations(
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    index_job = index_job_manager.snapshot()
+
     return {
         "status": "ok",
         "vector_store": "chromadb",
@@ -507,6 +520,8 @@ def health() -> dict[str, Any]:
         "reranker_model": reranker.model_name,
         "reranker_threads": reranker.threads,
         "confidence_min_score": CONFIDENCE_MIN_SCORE,
+        "index_status": index_job["status"],
+        "last_index_success_at": index_job["last_success_at"],
     }
 
 
@@ -911,15 +926,38 @@ async def ask_stream(
     )
 
 
+@app.get("/index/status")
+def index_status() -> dict[str, Any]:
+    return index_job_manager.snapshot()
+
+
 @app.post("/index")
 def index_documents() -> dict[str, Any]:
     from app.indexer import index_repository
 
-    result = index_repository()
+    try:
+        index_job_manager.begin()
+    except IndexJobAlreadyRunning as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    try:
+        result = index_repository()
+    except Exception as exc:
+        index_job_manager.fail(exc)
+        raise HTTPException(
+            status_code=500,
+            detail="Repository indexing failed.",
+        ) from exc
+
+    job = index_job_manager.succeed(result)
 
     return {
         "status": "indexed",
         **result,
+        "job": job,
     }
 
 
