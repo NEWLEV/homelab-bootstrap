@@ -13,6 +13,9 @@ COUNTER_NAMES = (
     "grounded_answers",
     "refused_answers",
     "dependency_failures",
+    "rate_limited_requests",
+    "capacity_rejected_requests",
+    "oversized_requests",
 )
 LATENCY_NAMES = (
     "embedding",

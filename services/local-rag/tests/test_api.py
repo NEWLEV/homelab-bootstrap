@@ -14,7 +14,7 @@ def test_health() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["version"] == "0.10.0"
+    assert body["version"] == "0.11.0"
     assert body["vector_store"] == "chromadb"
     assert body["collection"] == "homelab_bootstrap"
     assert isinstance(body["chunks"], int)
@@ -26,6 +26,11 @@ def test_health() -> None:
     assert "last_index_success_at" in body
     assert body["index_schema_version"] == "1"
     assert body["authentication_enabled"] is False
+    assert body["rate_limiting_enabled"] is False
+    assert body["rate_limit_requests_per_minute"] == 0
+    assert body["rate_limit_burst"] == 10
+    assert body["max_concurrent_requests"] == 0
+    assert body["max_request_body_bytes"] == 0
 
 
 def test_index_integrity() -> None:
