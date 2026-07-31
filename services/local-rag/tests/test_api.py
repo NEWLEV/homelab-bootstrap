@@ -14,7 +14,7 @@ def test_health() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["version"] == "0.9.2"
+    assert body["version"] == "0.9.3"
     assert body["vector_store"] == "chromadb"
     assert body["collection"] == "homelab_bootstrap"
     assert isinstance(body["chunks"], int)
@@ -39,6 +39,22 @@ def test_index_integrity() -> None:
     assert body["schema_version"] == "1"
     assert body["collection_schema_version"] == "1"
     assert body["embedding_model"] == "nomic-embed-text"
+
+
+def test_metrics() -> None:
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["uptime_seconds"] >= 0
+    assert isinstance(body["counters"]["grounded_answers"], int)
+    assert isinstance(body["counters"]["refused_answers"], int)
+    assert isinstance(body["dependency_failures"]["embedding"], int)
+    assert body["latencies_ms"]["retrieval"]["count"] >= 0
+    assert body["latencies_ms"]["embedding"]["average_ms"] >= 0
+    assert body["latencies_ms"]["generation"]["max_ms"] >= 0
+    assert body["latencies_ms"]["indexing"]["last_ms"] >= 0
 
 
 def test_stats() -> None:
