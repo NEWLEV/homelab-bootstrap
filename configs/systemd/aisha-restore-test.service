@@ -5,6 +5,6 @@ After=aisha-backup.service
 
 [Service]
 Type=oneshot
-User=nlc
+User=root
 ExecStart=/srv/data/git/homelab-bootstrap/scripts/restore-test
 TimeoutStartSec=1h
