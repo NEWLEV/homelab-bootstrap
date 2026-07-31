@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+token_file="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
+token_directory="$(dirname -- "$token_file")"
+temporary_file=""
+
+cleanup() {
+    if [[ -n "$temporary_file" && -e "$temporary_file" ]]; then
+        rm -f -- "$temporary_file"
+    fi
+}
+trap cleanup EXIT
+if [[ -L "$token_directory" ]]; then
+    printf 'Refusing symlinked token directory: %s\n' "$token_directory" >&2
+    exit 1
+fi
+
+
+if [[ -e "$token_file" ]]; then
+    if [[ -L "$token_file" || ! -f "$token_file" || ! -s "$token_file" ]]; then
+        printf 'Refusing invalid token target: %s\n' "$token_file" >&2
+        exit 1
+    fi
+
+    chmod 700 -- "$token_directory"
+    chmod 604 -- "$token_file"
+    printf 'Local RAG API token already exists: %s\n' "$token_file"
+    exit 0
+fi
+
+if ! command -v openssl >/dev/null 2>&1; then
+    printf 'openssl is required to create the API token.\n' >&2
+    exit 1
+fi
+
+install -d -m 700 -- "$token_directory"
+temporary_file="$(mktemp "$token_directory/.api-token.XXXXXX")"
+chmod 600 -- "$temporary_file"
+openssl rand -hex 32 >"$temporary_file"
+
+if [[ ! -s "$temporary_file" ]]; then
+    printf 'Token generation produced an empty file.\n' >&2
+    exit 1
+fi
+
+# Compose bind-mounts file-backed secrets without remapping ownership.
+# The 0700 parent directory blocks other host users; 0604 lets the
+# unprivileged container UID read only the mounted token file.
+chmod 604 -- "$temporary_file"
+mv -n -- "$temporary_file" "$token_file"
+
+if [[ -e "$temporary_file" ]]; then
+    printf 'Token target was created concurrently; existing file preserved.\n' >&2
+    exit 1
+fi
+
+temporary_file=""
+printf 'Created Local RAG API token: %s\n' "$token_file"

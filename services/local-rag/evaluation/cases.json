@@ -12,7 +12,10 @@
   {
     "name": "Local RAG API container",
     "query": "local-rag-api",
-    "expected_paths": ["compose/ai/local-rag.yml"]
+    "expected_paths": [
+      "compose/ai/local-rag.yml",
+      "services/local-rag/AUTHENTICATION.md"
+    ]
   },
   {
     "name": "Backup timer unit",

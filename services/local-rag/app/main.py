@@ -8,9 +8,10 @@ from typing import Any, Literal
 import chromadb
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
+from app.auth import BearerTokenAuth, is_public_path
 from app.confidence import (
     assess_citation_completeness,
     assess_retrieval_confidence,
@@ -37,13 +38,31 @@ from app.retrieval import candidate_pool_size, rerank_candidates
 from app.streaming import sse_event, stream_ollama_answer
 
 
-APP_VERSION = "0.9.3"
+APP_VERSION = "0.10.0"
+api_auth = BearerTokenAuth.from_environment()
 
 
 app = FastAPI(
     title="Aisha Local RAG",
     version=APP_VERSION,
 )
+
+
+@app.middleware("http")
+async def require_api_authentication(
+    request: Request,
+    call_next,
+):
+    if is_public_path(request.url.path) or api_auth.authorize(
+        request.headers.get("Authorization")
+    ):
+        return await call_next(request)
+
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Authentication required."},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", "/data/chroma"))
@@ -560,6 +579,7 @@ def health() -> dict[str, Any]:
         "index_status": index_job["status"],
         "last_index_success_at": index_job["last_success_at"],
         "index_schema_version": INDEX_SCHEMA_VERSION,
+        "authentication_enabled": api_auth.enabled,
     }
 
 
