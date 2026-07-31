@@ -6,6 +6,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from app.auth import BearerTokenAuth
 from app.evaluation import calculate_metrics
 
 
@@ -16,6 +17,7 @@ def post_search(
     api_url: str,
     query: str,
     limit: int,
+    authorization_header: str | None = None,
 ) -> list[str]:
     payload = json.dumps(
         {
@@ -23,10 +25,14 @@ def post_search(
             "limit": limit,
         }
     ).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+    if authorization_header:
+        headers["Authorization"] = authorization_header
+
     request = urllib.request.Request(
         f"{api_url.rstrip('/')}/search",
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=180) as response:
@@ -59,6 +65,7 @@ def main() -> int:
 
     cases = load_cases(args.cases)
     evaluations: list[dict[str, Any]] = []
+    auth = BearerTokenAuth.from_environment()
 
     try:
         for case in cases:
@@ -66,6 +73,7 @@ def main() -> int:
                 args.api_url,
                 case["query"],
                 args.top_k,
+                auth.authorization_header,
             )
             evaluations.append(
                 {

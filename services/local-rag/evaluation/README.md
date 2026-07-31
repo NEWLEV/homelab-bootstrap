@@ -11,6 +11,10 @@ docker compose -f compose/ai/local-rag.yml run --rm api \
   --top-k 5
 ```
 
+When API authentication is configured, the runner automatically reads the
+same `API_AUTH_TOKEN` or `API_AUTH_TOKEN_FILE` supplied to the container and
+adds the Bearer header without printing the token.
+
 The report includes:
 
 - top-1 accuracy

@@ -14,7 +14,7 @@ def test_health() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["version"] == "0.9.3"
+    assert body["version"] == "0.10.0"
     assert body["vector_store"] == "chromadb"
     assert body["collection"] == "homelab_bootstrap"
     assert isinstance(body["chunks"], int)
@@ -25,6 +25,7 @@ def test_health() -> None:
     assert body["index_status"] in {"idle", "failed"}
     assert "last_index_success_at" in body
     assert body["index_schema_version"] == "1"
+    assert body["authentication_enabled"] is False
 
 
 def test_index_integrity() -> None:

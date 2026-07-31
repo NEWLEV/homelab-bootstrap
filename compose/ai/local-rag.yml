@@ -52,11 +52,15 @@ services:
       HOME: /models
       HF_HOME: /models/huggingface
       HF_HUB_DISABLE_XET: "1"
+      API_AUTH_TOKEN_FILE: /run/secrets/local_rag_api_token
 
     volumes:
       - /srv/data/services/local-rag/chroma:/data/chroma
       - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/sources/homelab-bootstrap:ro
       - /srv/data/services/local-rag/models:/models
+
+    secrets:
+      - local_rag_api_token
 
     ports:
       - target: 8080
@@ -84,3 +88,7 @@ services:
 networks:
   rag-private:
     driver: bridge
+
+secrets:
+  local_rag_api_token:
+    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}
