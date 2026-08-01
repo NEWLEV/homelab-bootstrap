@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "services": [
+    {
+      "name": "local-rag-ollama",
+      "compose_file": "compose/ai/local-rag.yml",
+      "compose_service": "ollama",
+      "container": "local-rag-ollama",
+      "required": true,
+      "validation": "docker-health",
+      "backup_paths": [
+        "/srv/data/services/local-rag/ollama"
+      ]
+    },
+    {
+      "name": "local-rag-api",
+      "compose_file": "compose/ai/local-rag.yml",
+      "compose_service": "api",
+      "container": "local-rag-api",
+      "required": true,
+      "validation": "http",
+      "url": "http://127.0.0.1:8090/health",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/local-rag/chroma",
+        "/srv/data/services/local-rag/models",
+        "/srv/data/services/local-rag/secrets"
+      ]
+    },
+    {
+      "name": "homepage",
+      "compose_file": "compose/core/homepage.yml",
+      "compose_service": "homepage",
+      "container": "homepage",
+      "required": true,
+      "validation": "docker-health",
+      "backup_paths": [
+        "/srv/data/services/homepage/config"
+      ]
+    },
+    {
+      "name": "filebrowser",
+      "compose_file": "compose/core/filebrowser.yml",
+      "compose_service": "filebrowser",
+      "container": "filebrowser",
+      "required": true,
+      "validation": "http",
+      "url": "http://127.0.0.1:8080",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/filebrowser/database"
+      ]
+    },
+    {
+      "name": "portainer",
+      "compose_file": "compose/core/portainer.yml",
+      "compose_service": "portainer",
+      "container": "portainer",
+      "required": true,
+      "validation": "http",
+      "url": "https://127.0.0.1:9443",
+      "expected_status": [200],
+      "insecure_tls": true,
+      "backup_paths": [
+        "/srv/data/services/portainer/data"
+      ]
+    },
+    {
+      "name": "netdata",
+      "compose_file": "compose/monitoring/netdata.yml",
+      "compose_service": "netdata",
+      "container": "netdata",
+      "required": true,
+      "validation": "http",
+      "url": "http://127.0.0.1:19999/api/v1/info",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/netdata/config",
+        "/srv/data/services/netdata/lib"
+      ]
+    },
+    {
+      "name": "uptime-kuma",
+      "compose_file": "compose/monitoring/uptime-kuma.yml",
+      "compose_service": "uptime-kuma",
+      "container": "uptime-kuma",
+      "required": true,
+      "validation": "http",
+      "url": "http://127.0.0.1:3001",
+      "expected_status": [200, 302],
+      "backup_paths": [
+        "/srv/data/services/uptime-kuma/data"
+      ]
+    },
+    {
+      "name": "socket-proxy",
+      "compose_file": "compose/networking/traefik.yml",
+      "compose_service": "socket-proxy",
+      "container": "socket-proxy",
+      "required": true,
+      "validation": "running",
+      "backup_paths": []
+    },
+    {
+      "name": "traefik",
+      "compose_file": "compose/networking/traefik.yml",
+      "compose_service": "traefik",
+      "container": "traefik",
+      "required": false,
+      "validation": "running",
+      "backup_paths": [
+        "/srv/data/services/traefik/dynamic",
+        "/srv/data/services/traefik/certs"
+      ]
+    },
+    {
+      "name": "openclaw",
+      "compose_file": "compose/ai/openclaw.yml",
+      "required": false,
+      "deferred": true,
+      "validation": "none",
+      "backup_paths": []
+    }
+  ],
+  "systemd_units": [
+    {
+      "name": "docker.service",
+      "required": true,
+      "state": "active"
+    },
+    {
+      "name": "containerd.service",
+      "required": true,
+      "state": "active"
+    },
+    {
+      "name": "unattended-upgrades.service",
+      "required": true,
+      "state": "active"
+    },
+    {
+      "name": "smartmontools.service",
+      "required": true,
+      "state": "active"
+    },
+    {
+      "name": "systemd-timesyncd.service",
+      "required": true,
+      "state": "active"
+    }
+  ],
+  "systemd_timers": [
+    {
+      "name": "aisha-backup.timer",
+      "required": true
+    },
+    {
+      "name": "aisha-backup-offsite.timer",
+      "required": true
+    },
+    {
+      "name": "aisha-restore-test.timer",
+      "required": true
+    },
+    {
+      "name": "aisha-cert-renew.timer",
+      "required": true
+    }
+  ]
+}
