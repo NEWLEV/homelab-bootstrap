@@ -5,7 +5,7 @@ SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_NAME
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT
-readonly BOOTSTRAP_DIR="${REPO_ROOT}/bootstrap"
+readonly BOOTSTRAP_DIR="${REPO_ROOT}/scripts/bootstrap.d"
 readonly BOOTSTRAP_MANIFEST="${REPO_ROOT}/configs/bootstrap.json"
 readonly LOG_DIR="/srv/data/logs/bootstrap"
 
