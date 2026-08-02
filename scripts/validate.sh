@@ -257,11 +257,11 @@ validate_service() {
     state="$(container_state "$container")"
 
     if [[ "$state" != "running" ]]; then
-        record_result \
-            "$required" \
-            "${name}: container is running" \
-            "${name}: container state is ${state:-missing}" \
-            "false"
+        if [[ "$required" == "true" ]]; then
+            fail "${name}: container state is ${state:-missing}"
+        else
+            skip "${name}: optional container state is ${state:-missing}"
+        fi
         return
     fi
 
