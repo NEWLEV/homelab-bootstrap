@@ -6,6 +6,7 @@ readonly SCRIPT_NAME
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT
 readonly BOOTSTRAP_DIR="${REPO_ROOT}/bootstrap"
+readonly BOOTSTRAP_MANIFEST="${REPO_ROOT}/configs/bootstrap.json"
 readonly LOG_DIR="/srv/data/logs/bootstrap"
 
 DRY_RUN=true
@@ -156,14 +157,16 @@ preflight() {
     esac
 
     require_command bash
-    require_command find
     require_command git
+    require_command jq
     require_command mountpoint
-    require_command sort
     require_command sudo
 
     [[ -d "$BOOTSTRAP_DIR" ]] ||
         die "Bootstrap directory does not exist: ${BOOTSTRAP_DIR}"
+
+    [[ -r "$BOOTSTRAP_MANIFEST" ]] ||
+        die "Bootstrap manifest is not readable: ${BOOTSTRAP_MANIFEST}"
 
     mountpoint -q /srv/data ||
         die "/srv/data is not mounted. Refusing to continue."
@@ -188,49 +191,68 @@ discover_phases() {
     CURRENT_PHASE="phase discovery"
     PHASES=()
 
-    while IFS= read -r script; do
-        PHASES+=("$script")
+    jq empty "$BOOTSTRAP_MANIFEST" >/dev/null 2>&1 ||
+        die "Bootstrap manifest contains invalid JSON."
+
+    local schema_version
+    schema_version="$(
+        jq -r '.schema_version // empty' "$BOOTSTRAP_MANIFEST"
+    )"
+
+    [[ "$schema_version" == "1" ]] ||
+        die "Unsupported bootstrap manifest schema: ${schema_version:-missing}"
+
+    local step_count
+    step_count="$(
+        jq \
+            '[.steps[]? | select(.enabled // true)] | length' \
+            "$BOOTSTRAP_MANIFEST"
+    )"
+
+    ((step_count > 0)) ||
+        die "Bootstrap manifest contains no enabled steps."
+
+    local step
+    local step_id
+    local script_path
+    local absolute_script
+
+    while IFS= read -r step; do
+        step_id="$(jq -r '.id // empty' <<<"$step")"
+        script_path="$(jq -r '.script // empty' <<<"$step")"
+
+        [[ -n "$step_id" ]] ||
+            die "Bootstrap manifest contains a step without an id."
+
+        [[ -n "$script_path" ]] ||
+            die "Bootstrap step ${step_id} has no script path."
+
+        [[ "$script_path" != /* ]] ||
+            die "Bootstrap step ${step_id} must use a repository-relative script path."
+
+        absolute_script="${REPO_ROOT}/${script_path}"
+
+        [[ -f "$absolute_script" ]] ||
+            die "Bootstrap step ${step_id} script does not exist: ${script_path}"
+
+        [[ -s "$absolute_script" ]] ||
+            die "Bootstrap step ${step_id} script is empty: ${script_path}"
+
+        [[ -r "$absolute_script" ]] ||
+            die "Bootstrap step ${step_id} script is not readable: ${script_path}"
+
+        bash -n "$absolute_script" ||
+            die "Bootstrap step ${step_id} failed syntax validation: ${script_path}"
+
+        PHASES+=("$absolute_script")
     done < <(
-        find "$BOOTSTRAP_DIR" \
-            -maxdepth 1 \
-            -type f \
-            -name '[0-9][0-9]-*.sh' \
-            -size +0c \
-            -print |
-            sort
+        jq -c \
+            '.steps[] | select(.enabled // true)' \
+            "$BOOTSTRAP_MANIFEST"
     )
 
-    # Temporary compatibility for the existing Docker bootstrap script.
-    # Remove this block after docker.sh is renamed to a numbered phase.
-    local legacy_docker="${BOOTSTRAP_DIR}/docker.sh"
-
-    if [[ -s "$legacy_docker" ]]; then
-        local already_present=false
-        local phase
-
-        for phase in "${PHASES[@]}"; do
-            if [[ "$phase" == "$legacy_docker" ]]; then
-                already_present=true
-                break
-            fi
-        done
-
-        if [[ "$already_present" == false ]]; then
-            PHASES+=("$legacy_docker")
-        fi
-    fi
-
-    ((${#PHASES[@]} > 0)) ||
-        die "No non-empty bootstrap phases were discovered."
-
-    local phase
-    for phase in "${PHASES[@]}"; do
-        [[ -r "$phase" ]] ||
-            die "Bootstrap phase is not readable: ${phase}"
-
-        bash -n "$phase" ||
-            die "Bootstrap phase failed syntax validation: ${phase}"
-    done
+    ((${#PHASES[@]} == step_count)) ||
+        die "Bootstrap manifest step count did not match discovered phases."
 }
 
 print_phases() {
