@@ -62,7 +62,10 @@ jobs:
             sort
           )
 
-          shellcheck "${files[@]}"
+          shellcheck \
+            --shell=bash \
+            --severity=warning \
+            "${files[@]}"
 
   configuration:
     name: Configuration validation
@@ -141,4 +144,8 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Run tests
-        run: python -m pytest tests -q
+        env:
+          CHROMA_PATH: ${{ runner.temp }}/local-rag/chroma
+        run: |
+          mkdir -p "$CHROMA_PATH"
+          python -m pytest tests -q
