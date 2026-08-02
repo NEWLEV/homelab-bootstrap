@@ -3,19 +3,19 @@
   "steps": [
     {
       "id": "system",
-      "script": "bootstrap/01-system.sh",
+      "script": "scripts/bootstrap.d/01-system.sh",
       "enabled": true,
       "description": "Base operating system configuration"
     },
     {
       "id": "storage",
-      "script": "bootstrap/02-storage.sh",
+      "script": "scripts/bootstrap.d/02-storage.sh",
       "enabled": true,
       "description": "Storage configuration"
     },
     {
       "id": "docker",
-      "script": "bootstrap/05-docker.sh",
+      "script": "scripts/bootstrap.d/05-docker.sh",
       "enabled": true,
       "description": "Docker and container runtime"
     }
