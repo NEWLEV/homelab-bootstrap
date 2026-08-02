@@ -12,6 +12,7 @@ DRY_RUN=true
 ASSUME_YES=false
 LIST_ONLY=false
 VERBOSE=false
+RESTORE_SECRETS=false
 CURRENT_PHASE="preflight"
 
 declare -a PHASES=()
@@ -32,6 +33,8 @@ Options:
   --yes        Skip the final confirmation prompt when used with --apply.
   --list       List discovered bootstrap phases and exit.
   --verbose    Enable Bash command tracing.
+  --restore-secrets
+               Restore runtime secrets from the encrypted SOPS bundle.
   -h, --help   Show this help message.
 
 Examples:
@@ -104,6 +107,10 @@ parse_arguments() {
                 ;;
             --verbose)
                 VERBOSE=true
+                ;;
+            --restore-secrets)
+                RESTORE_SECRETS=true
+                DRY_RUN=false
                 ;;
             -h|--help)
                 usage
@@ -275,6 +282,22 @@ prepare_logging() {
     info "Installer log: ${INSTALL_LOG_FILE}"
 }
 
+restore_secrets() {
+    CURRENT_PHASE="secret restoration"
+
+    log "Restoring encrypted runtime secrets"
+
+    [[ -x "${REPO_ROOT}/scripts/secrets-restore" ]] ||
+        die "scripts/secrets-restore is missing or not executable."
+
+    [[ -n "${SOPS_AGE_KEY_FILE:-}" ]] ||
+        die "SOPS_AGE_KEY_FILE is not set."
+
+    "${REPO_ROOT}/scripts/secrets-restore" --apply
+
+    success "Runtime secrets restored"
+}
+
 run_phase() {
     local phase="$1"
     local relative_phase="${phase#"$REPO_ROOT"/}"
@@ -355,6 +378,12 @@ main() {
     print_phases
 
     if [[ "$LIST_ONLY" == true ]]; then
+        exit 0
+    fi
+
+    if [[ "$RESTORE_SECRETS" == true ]]; then
+        prepare_logging
+        restore_secrets
         exit 0
     fi
 

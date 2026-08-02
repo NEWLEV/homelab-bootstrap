@@ -8,10 +8,33 @@
 # OpenClaw workspace runtime state
 workspaces/*/openclaw-workspace-state.json
 
-
 # Python generated files
 __pycache__/
 *.py[cod]
-
-# Python
 .pytest_cache/
+
+# Appliance secrets: ignore everything except documentation
+# and SOPS-encrypted bundles.
+/secrets/*
+!/secrets/README.md
+!/secrets/*.enc.yaml
+
+# SOPS and age private material
+*.agekey
+age-key.txt
+keys.txt
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!*.env.example
+
+# Decrypted secret exports
+*.decrypted.yaml
+*.plaintext.yaml
+/secrets/*.dec
+
+# Runtime service secrets
+config/**/.env
+configs/**/.env
