@@ -9,6 +9,8 @@ readonly BOOTSTRAP_DIR="${REPO_ROOT}/scripts/bootstrap.d"
 readonly BOOTSTRAP_MANIFEST="${REPO_ROOT}/configs/bootstrap.json"
 readonly LOG_DIR="/srv/data/logs/bootstrap"
 
+INSTALLER_TEST_MODE="${AISHA_INSTALLER_TEST_MODE:-false}"
+
 DRY_RUN=true
 ASSUME_YES=false
 LIST_ONLY=false
@@ -147,14 +149,18 @@ preflight() {
     local architecture
     architecture="$(uname -m)"
 
-    case "$architecture" in
-        aarch64|arm64)
-            success "Architecture: ${architecture}"
-            ;;
-        *)
-            die "Expected ARM64 architecture; detected ${architecture}."
-            ;;
-    esac
+    if [[ "$INSTALLER_TEST_MODE" == true ]]; then
+        info "Test mode: skipping ARM64 architecture requirement"
+    else
+        case "$architecture" in
+            aarch64|arm64)
+                success "Architecture: ${architecture}"
+                ;;
+            *)
+                die "Expected ARM64 architecture; detected ${architecture}."
+                ;;
+        esac
+    fi
 
     require_command bash
     require_command git
@@ -168,14 +174,24 @@ preflight() {
     [[ -r "$BOOTSTRAP_MANIFEST" ]] ||
         die "Bootstrap manifest is not readable: ${BOOTSTRAP_MANIFEST}"
 
-    mountpoint -q /srv/data ||
-        die "/srv/data is not mounted. Refusing to continue."
+    if [[ "$INSTALLER_TEST_MODE" == true ]]; then
+        info "Test mode: skipping /srv/data mount requirement"
+    else
+        mountpoint -q /srv/data ||
+            die "/srv/data is not mounted. Refusing to continue."
+    fi
 
     [[ -w "$REPO_ROOT" ]] ||
         die "Repository is not writable by the current user."
 
     success "Repository root: ${REPO_ROOT}"
-    success "/srv/data is mounted"
+
+    if [[ "$INSTALLER_TEST_MODE" == true ]]; then
+        info "Test mode: /srv/data mount was not required"
+    else
+        success "/srv/data is mounted"
+    fi
+
     success "Running as user: ${USER:-$(id -un)}"
 
     if git -C "$REPO_ROOT" diff --quiet &&
@@ -205,7 +221,7 @@ discover_phases() {
     local step_count
     step_count="$(
         jq \
-            '[.steps[]? | select(.enabled // true)] | length' \
+            '[.steps[]? | select(.enabled != false)] | length' \
             "$BOOTSTRAP_MANIFEST"
     )"
 
@@ -247,7 +263,7 @@ discover_phases() {
         PHASES+=("$absolute_script")
     done < <(
         jq -c \
-            '.steps[] | select(.enabled // true)' \
+            '.steps[] | select(.enabled != false)' \
             "$BOOTSTRAP_MANIFEST"
     )
 

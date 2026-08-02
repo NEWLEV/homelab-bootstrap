@@ -67,6 +67,9 @@ jobs:
             --severity=warning \
             "${files[@]}"
 
+      - name: Test bootstrap manifest validation
+        run: ./tests/bootstrap-manifest.sh
+
   configuration:
     name: Configuration validation
     runs-on: ubuntu-latest
