@@ -276,8 +276,13 @@ run_failure_case \
 
 run_failure_case \
     "absolute script path" \
-    '{"schema_version":1,"steps":[{"id":"absolute","script":"/tmp/test.sh","enabled":true}]}' \
+    '{"schema_version":1,"steps":[{"id":"absolute","script":"/tmp/test.sh","enabled":true,"description":"Absolute path test"}]}' \
     "Bootstrap step absolute must use a repository-relative script path."
+
+run_failure_case \
+    "missing description" \
+    '{"schema_version":1,"steps":[{"id":"test","script":"scripts/bootstrap.d/test.sh","enabled":true}]}' \
+    "Bootstrap step test has no description."
 
 test_missing_script_file
 test_empty_script

@@ -19,6 +19,8 @@ RESTORE_SECRETS=false
 CURRENT_PHASE="preflight"
 
 declare -a PHASES=()
+declare -a PHASE_IDS=()
+declare -a PHASE_DESCRIPTIONS=()
 declare -a COMPLETED_PHASES=()
 declare -a SKIPPED_PHASES=()
 
@@ -206,6 +208,8 @@ preflight() {
 discover_phases() {
     CURRENT_PHASE="phase discovery"
     PHASES=()
+    PHASE_IDS=()
+    PHASE_DESCRIPTIONS=()
 
     jq empty "$BOOTSTRAP_MANIFEST" >/dev/null 2>&1 ||
         die "Bootstrap manifest contains invalid JSON."
@@ -231,17 +235,22 @@ discover_phases() {
     local step
     local step_id
     local script_path
+    local description
     local absolute_script
 
     while IFS= read -r step; do
         step_id="$(jq -r '.id // empty' <<<"$step")"
         script_path="$(jq -r '.script // empty' <<<"$step")"
+        description="$(jq -r '.description // empty' <<<"$step")"
 
         [[ -n "$step_id" ]] ||
             die "Bootstrap manifest contains a step without an id."
 
         [[ -n "$script_path" ]] ||
             die "Bootstrap step ${step_id} has no script path."
+
+        [[ -n "$description" ]] ||
+            die "Bootstrap step ${step_id} has no description."
 
         [[ "$script_path" != /* ]] ||
             die "Bootstrap step ${step_id} must use a repository-relative script path."
@@ -261,6 +270,8 @@ discover_phases() {
             die "Bootstrap step ${step_id} failed syntax validation: ${script_path}"
 
         PHASES+=("$absolute_script")
+        PHASE_IDS+=("$step_id")
+        PHASE_DESCRIPTIONS+=("$description")
     done < <(
         jq -c \
             '.steps[] | select(.enabled != false)' \
@@ -269,17 +280,27 @@ discover_phases() {
 
     ((${#PHASES[@]} == step_count)) ||
         die "Bootstrap manifest step count did not match discovered phases."
+
+    ((${#PHASE_IDS[@]} == step_count)) ||
+        die "Bootstrap manifest ID count did not match discovered phases."
+
+    ((${#PHASE_DESCRIPTIONS[@]} == step_count)) ||
+        die "Bootstrap manifest description count did not match discovered phases."
 }
 
 print_phases() {
     printf '\nDiscovered bootstrap phases:\n\n'
 
-    local index=1
-    local phase
+    local index
 
-    for phase in "${PHASES[@]}"; do
-        printf '  %d. %s\n' "$index" "${phase#"$REPO_ROOT"/}"
-        ((index += 1))
+    for index in "${!PHASES[@]}"; do
+        printf '  %d. %s — %s\n' \
+            "$((index + 1))" \
+            "${PHASE_IDS[$index]}" \
+            "${PHASE_DESCRIPTIONS[$index]}"
+
+        printf '     %s\n' \
+            "${PHASES[$index]#"$REPO_ROOT"/}"
     done
 
     printf '\n'
@@ -338,22 +359,24 @@ restore_secrets() {
 
 run_phase() {
     local phase="$1"
+    local step_id="$2"
+    local description="$3"
     local relative_phase="${phase#"$REPO_ROOT"/}"
 
     CURRENT_PHASE="$relative_phase"
 
-    log "Starting phase: ${relative_phase}"
+    log "Starting phase: ${step_id} — ${description}"
 
     if [[ "$DRY_RUN" == true ]]; then
-        info "DRY RUN: would execute ${phase}"
-        SKIPPED_PHASES+=("$relative_phase")
+        info "DRY RUN: would execute ${relative_phase}"
+        SKIPPED_PHASES+=("${step_id} — ${description}")
         return
     fi
 
     bash "$phase"
 
-    COMPLETED_PHASES+=("$relative_phase")
-    success "Completed phase: ${relative_phase}"
+    COMPLETED_PHASES+=("${step_id} — ${description}")
+    success "Completed phase: ${step_id}"
 }
 
 print_summary() {
@@ -431,9 +454,13 @@ main() {
         prepare_logging
     fi
 
-    local phase
-    for phase in "${PHASES[@]}"; do
-        run_phase "$phase"
+    local index
+
+    for index in "${!PHASES[@]}"; do
+        run_phase \
+            "${PHASES[$index]}" \
+            "${PHASE_IDS[$index]}" \
+            "${PHASE_DESCRIPTIONS[$index]}"
     done
 
     CURRENT_PHASE="summary"
