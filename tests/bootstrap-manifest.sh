@@ -175,6 +175,154 @@ JSON
     fi
 }
 
+
+test_unknown_dependency() {
+    local fixture
+    local output
+    local status
+
+    fixture="$(mktemp -d)"
+    create_fixture "$fixture"
+    create_script "$fixture" "scripts/bootstrap.d/test.sh"
+
+    cat >"$fixture/configs/bootstrap.json" <<'JSON'
+{
+  "schema_version": 1,
+  "steps": [
+    {
+      "id": "test",
+      "script": "scripts/bootstrap.d/test.sh",
+      "description": "Test step",
+      "depends_on": [
+        "missing"
+      ]
+    }
+  ]
+}
+JSON
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true \
+                ./install.sh --list 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if ((status != 0)) &&
+        grep -Fq \
+            "Bootstrap step test depends on unknown step missing." \
+            <<<"$output"; then
+        pass "unknown dependency"
+    else
+        fail "unknown dependency"
+        printf '%s\n' "$output" >&2
+    fi
+}
+
+test_self_dependency() {
+    local fixture
+    local output
+    local status
+
+    fixture="$(mktemp -d)"
+    create_fixture "$fixture"
+    create_script "$fixture" "scripts/bootstrap.d/test.sh"
+
+    cat >"$fixture/configs/bootstrap.json" <<'JSON'
+{
+  "schema_version": 1,
+  "steps": [
+    {
+      "id": "test",
+      "script": "scripts/bootstrap.d/test.sh",
+      "description": "Test step",
+      "depends_on": [
+        "test"
+      ]
+    }
+  ]
+}
+JSON
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true \
+                ./install.sh --list 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if ((status != 0)) &&
+        grep -Fq \
+            "Bootstrap step test cannot depend on itself." \
+            <<<"$output"; then
+        pass "self dependency"
+    else
+        fail "self dependency"
+        printf '%s\n' "$output" >&2
+    fi
+}
+
+test_dependency_appears_later() {
+    local fixture
+    local output
+    local status
+
+    fixture="$(mktemp -d)"
+    create_fixture "$fixture"
+    create_script "$fixture" "scripts/bootstrap.d/first.sh"
+    create_script "$fixture" "scripts/bootstrap.d/second.sh"
+
+    cat >"$fixture/configs/bootstrap.json" <<'JSON'
+{
+  "schema_version": 1,
+  "steps": [
+    {
+      "id": "first",
+      "script": "scripts/bootstrap.d/first.sh",
+      "description": "First step",
+      "depends_on": [
+        "second"
+      ]
+    },
+    {
+      "id": "second",
+      "script": "scripts/bootstrap.d/second.sh",
+      "description": "Second step"
+    }
+  ]
+}
+JSON
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true \
+                ./install.sh --list 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if ((status != 0)) &&
+        grep -Fq \
+            "Bootstrap step first dependency second must appear earlier in the manifest." \
+            <<<"$output"; then
+        pass "dependency appears later"
+    else
+        fail "dependency appears later"
+        printf '%s\n' "$output" >&2
+    fi
+}
+
 test_valid_order() {
     local fixture
     fixture="$(mktemp -d)"
@@ -284,6 +432,10 @@ run_failure_case \
     '{"schema_version":1,"steps":[{"id":"test","script":"scripts/bootstrap.d/test.sh","enabled":true}]}' \
     "Bootstrap step test has no description."
 
+
+test_unknown_dependency
+test_self_dependency
+test_dependency_appears_later
 test_missing_script_file
 test_empty_script
 test_valid_order

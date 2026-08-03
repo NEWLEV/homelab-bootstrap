@@ -205,6 +205,48 @@ preflight() {
     fi
 }
 
+validate_dependencies() {
+    local index
+    local dependency
+    local dependency_index
+    local step_id
+    local candidate_index
+
+    for index in "${!PHASE_IDS[@]}"; do
+        step_id="${PHASE_IDS[$index]}"
+
+        while IFS= read -r dependency; do
+            [[ -n "$dependency" ]] || continue
+
+            if [[ "$dependency" == "$step_id" ]]; then
+                die "Bootstrap step ${step_id} cannot depend on itself."
+            fi
+
+            dependency_index=-1
+
+            for candidate_index in "${!PHASE_IDS[@]}"; do
+                if [[ "${PHASE_IDS[$candidate_index]}" == "$dependency" ]]; then
+                    dependency_index="$candidate_index"
+                    break
+                fi
+            done
+
+            ((dependency_index >= 0)) ||
+                die "Bootstrap step ${step_id} depends on unknown step ${dependency}."
+
+            ((dependency_index < index)) ||
+                die "Bootstrap step ${step_id} dependency ${dependency} must appear earlier in the manifest."
+        done < <(
+            jq -r \
+                --arg id "$step_id" \
+                '.steps[] |
+                 select(.enabled != false and .id == $id) |
+                 (.depends_on // [])[]' \
+                "$BOOTSTRAP_MANIFEST"
+        )
+    done
+}
+
 discover_phases() {
     CURRENT_PHASE="phase discovery"
     PHASES=()
@@ -286,6 +328,8 @@ discover_phases() {
 
     ((${#PHASE_DESCRIPTIONS[@]} == step_count)) ||
         die "Bootstrap manifest description count did not match discovered phases."
+
+    validate_dependencies
 }
 
 print_phases() {
