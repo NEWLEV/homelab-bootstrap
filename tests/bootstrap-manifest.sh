@@ -323,6 +323,62 @@ JSON
     fi
 }
 
+test_duplicate_step_id() {
+    local fixture
+    local output
+    local status
+
+    fixture="$(mktemp -d)"
+    create_fixture "$fixture"
+
+    create_script \
+        "$fixture" \
+        "scripts/bootstrap.d/first.sh"
+
+    create_script \
+        "$fixture" \
+        "scripts/bootstrap.d/second.sh"
+
+    cat >"$fixture/configs/bootstrap.json" <<'JSON'
+{
+  "schema_version": 1,
+  "steps": [
+    {
+      "id": "duplicate",
+      "script": "scripts/bootstrap.d/first.sh",
+      "description": "First duplicate step"
+    },
+    {
+      "id": "duplicate",
+      "script": "scripts/bootstrap.d/second.sh",
+      "description": "Second duplicate step"
+    }
+  ]
+}
+JSON
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true \
+                ./install.sh --list 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if ((status != 0)) &&
+        grep -Fq \
+            "Bootstrap manifest contains duplicate step ID: duplicate." \
+            <<<"$output"; then
+        pass "duplicate step ID"
+    else
+        fail "duplicate step ID"
+        printf '%s\n' "$output" >&2
+    fi
+}
+
 test_valid_order() {
     local fixture
     fixture="$(mktemp -d)"
@@ -439,6 +495,7 @@ test_dependency_appears_later
 test_missing_script_file
 test_empty_script
 test_valid_order
+test_duplicate_step_id
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
 printf 'Failed: %d\n' "$FAIL_COUNT"
