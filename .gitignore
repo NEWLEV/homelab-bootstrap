@@ -38,3 +38,5 @@ keys.txt
 # Runtime service secrets
 config/**/.env
 configs/**/.env
+
+.venv/
