@@ -12,13 +12,19 @@
       "id": "storage",
       "script": "scripts/bootstrap.d/02-storage.sh",
       "enabled": true,
-      "description": "Storage configuration"
+      "description": "Storage configuration",
+      "depends_on": [
+        "system"
+      ]
     },
     {
       "id": "docker",
       "script": "scripts/bootstrap.d/05-docker.sh",
       "enabled": true,
-      "description": "Docker and container runtime"
+      "description": "Docker and container runtime",
+      "depends_on": [
+        "storage"
+      ]
     }
   ]
 }
