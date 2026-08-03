@@ -1,4 +1,5 @@
 {
+  "$schema": "./bootstrap.schema.json",
   "schema_version": 1,
   "steps": [
     {

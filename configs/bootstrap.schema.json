@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/NEWLEV/homelab-bootstrap/configs/bootstrap.schema.json",
+  "title": "Aisha Bootstrap Manifest",
+  "description": "Schema for the ordered bootstrap phases executed by install.sh.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "steps"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./bootstrap.schema.json"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "script",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "script": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^scripts/bootstrap\\.d/[^/]+\\.sh$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

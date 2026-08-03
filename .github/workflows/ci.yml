@@ -78,6 +78,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install JSON Schema validator
+        run: python -m pip install check-jsonschema
+
+      - name: Validate bootstrap manifest schema
+        run: |
+          check-jsonschema \
+            --schemafile configs/bootstrap.schema.json \
+            configs/bootstrap.json
+
       - name: Install jq
         run: |
           sudo apt-get update
