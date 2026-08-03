@@ -169,6 +169,9 @@ preflight() {
     require_command jq
     require_command mountpoint
     require_command sudo
+    require_command head
+    require_command sort
+    require_command uniq
 
     [[ -d "$BOOTSTRAP_DIR" ]] ||
         die "Bootstrap directory does not exist: ${BOOTSTRAP_DIR}"
@@ -328,6 +331,17 @@ discover_phases() {
 
     ((${#PHASE_DESCRIPTIONS[@]} == step_count)) ||
         die "Bootstrap manifest description count did not match discovered phases."
+
+    local duplicate_step_id
+    duplicate_step_id="$(
+        printf '%s\n' "${PHASE_IDS[@]}" |
+            sort |
+            uniq -d |
+            head -n 1
+    )"
+
+    [[ -z "$duplicate_step_id" ]] ||
+        die "Bootstrap manifest contains duplicate step ID: ${duplicate_step_id}."
 
     validate_dependencies
 }
