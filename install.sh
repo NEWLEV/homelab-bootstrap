@@ -343,6 +343,17 @@ discover_phases() {
     [[ -z "$duplicate_step_id" ]] ||
         die "Bootstrap manifest contains duplicate step ID: ${duplicate_step_id}."
 
+    local duplicate_script_path
+    duplicate_script_path="$(
+        printf '%s\n' "${PHASES[@]#"$REPO_ROOT"/}" |
+            sort |
+            uniq -d |
+            head -n 1
+    )"
+
+    [[ -z "$duplicate_script_path" ]] ||
+        die "Bootstrap manifest contains duplicate script path: ${duplicate_script_path}."
+
     validate_dependencies
 }
 
