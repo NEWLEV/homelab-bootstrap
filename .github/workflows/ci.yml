@@ -70,6 +70,9 @@ jobs:
       - name: Test bootstrap manifest validation
         run: ./tests/bootstrap-manifest.sh
 
+      - name: Test bootstrap phase selection
+        run: ./tests/bootstrap-phase-selection.sh
+
   configuration:
     name: Configuration validation
     runs-on: ubuntu-latest
