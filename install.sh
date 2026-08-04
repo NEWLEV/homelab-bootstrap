@@ -18,6 +18,7 @@ VERBOSE=false
 RESTORE_SECRETS=false
 CURRENT_PHASE="preflight"
 SELECTED_PHASE_ID=""
+WITH_DEPENDENCIES=false
 
 declare -a PHASES=()
 declare -a PHASE_IDS=()
@@ -28,21 +29,22 @@ declare -a SKIPPED_PHASES=()
 usage() {
     cat <<EOF
 Aisha Homelab Bootstrap Installer
-  --phase <id>        Run only the selected bootstrap phase
 
 Usage:
   ./${SCRIPT_NAME} [options]
 
 Options:
-  --dry-run    Show which bootstrap phases would run without changing the host.
-               This is the default behavior.
-  --apply      Execute the discovered bootstrap phases.
-  --yes        Skip the final confirmation prompt when used with --apply.
-  --list       List discovered bootstrap phases and exit.
-  --verbose    Enable Bash command tracing.
-  --restore-secrets
-               Restore runtime secrets from the encrypted SOPS bundle.
-  -h, --help   Show this help message.
+  --dry-run            Show which bootstrap phases would run without changing the host.
+                       This is the default behavior.
+  --apply              Execute the discovered bootstrap phases.
+  --yes                Skip the final confirmation prompt when used with --apply.
+  --list               List discovered bootstrap phases and exit.
+  --phase <id>         Run only the selected bootstrap phase.
+  --with-dependencies  Include dependencies of the selected phase.
+                       Requires --phase.
+  --verbose            Enable Bash command tracing.
+  --restore-secrets    Restore runtime secrets from the encrypted SOPS bundle.
+  -h, --help           Show this help message.
 
 Examples:
   ./${SCRIPT_NAME}
@@ -125,7 +127,13 @@ parse_arguments() {
                 (($# > 0)) ||
                     die "--phase requires a bootstrap step ID."
 
+                [[ -n "$1" ]] ||
+                    die "--phase requires a non-empty bootstrap step ID."
+
                 SELECTED_PHASE_ID="$1"
+                ;;
+            --with-dependencies)
+                WITH_DEPENDENCIES=true
                 ;;
             -h|--help)
                 usage
@@ -138,6 +146,11 @@ parse_arguments() {
 
         shift
     done
+
+    if [[ "$WITH_DEPENDENCIES" == true &&
+        -z "$SELECTED_PHASE_ID" ]]; then
+        die "--with-dependencies requires --phase <id>."
+    fi
 }
 
 require_command() {
@@ -182,6 +195,7 @@ preflight() {
     require_command head
     require_command sort
     require_command uniq
+    require_command awk
 
     [[ -d "$BOOTSTRAP_DIR" ]] ||
         die "Bootstrap directory does not exist: ${BOOTSTRAP_DIR}"
@@ -367,14 +381,32 @@ discover_phases() {
     validate_dependencies
 }
 
+collect_phase_dependencies() {
+    local step_id="$1"
+    local dependency
+
+    while IFS= read -r dependency; do
+        [[ -n "$dependency" ]] || continue
+
+        collect_phase_dependencies "$dependency"
+        printf '%s\n' "$dependency"
+    done < <(
+        jq -r \
+            --arg id "$step_id" \
+            '.steps[] |
+             select(.enabled != false and .id == $id) |
+             (.depends_on // [])[]' \
+            "$BOOTSTRAP_MANIFEST"
+    )
+}
+
 select_phase() {
     if [[ -z "$SELECTED_PHASE_ID" ]]; then
         return 0
     fi
 
-    local index
     local selected_index=-1
-    local dependency_count
+    local index
 
     for index in "${!PHASE_IDS[@]}"; do
         if [[ "${PHASE_IDS[$index]}" == "$SELECTED_PHASE_ID" ]]; then
@@ -386,18 +418,54 @@ select_phase() {
     ((selected_index >= 0)) ||
         die "Bootstrap phase not found or disabled: ${SELECTED_PHASE_ID}."
 
-    dependency_count="$(
-        jq \
-            --arg id "$SELECTED_PHASE_ID" \
-            '[.steps[] |
-              select(.enabled != false and .id == $id) |
-              (.depends_on // [])[]] |
-             length' \
-            "$BOOTSTRAP_MANIFEST"
-    )"
+    local -a dependency_ids=()
+    local dependency
 
-    ((dependency_count == 0)) ||
-        die "Bootstrap phase ${SELECTED_PHASE_ID} has dependencies; targeted execution is not supported yet."
+    while IFS= read -r dependency; do
+        [[ -n "$dependency" ]] || continue
+        dependency_ids+=("$dependency")
+    done < <(
+        collect_phase_dependencies "$SELECTED_PHASE_ID" |
+            awk '!seen[$0]++'
+    )
+
+    if [[ "$WITH_DEPENDENCIES" != true &&
+        ${#dependency_ids[@]} -gt 0 ]]; then
+        die "Bootstrap phase ${SELECTED_PHASE_ID} has dependencies; use --with-dependencies."
+    fi
+
+    if [[ "$WITH_DEPENDENCIES" == true ]]; then
+        local -a selected_phases=()
+        local -a selected_ids=()
+        local -a selected_descriptions=()
+        local include
+
+        for index in "${!PHASE_IDS[@]}"; do
+            include=false
+
+            if [[ "${PHASE_IDS[$index]}" == "$SELECTED_PHASE_ID" ]]; then
+                include=true
+            else
+                for dependency in "${dependency_ids[@]}"; do
+                    if [[ "${PHASE_IDS[$index]}" == "$dependency" ]]; then
+                        include=true
+                        break
+                    fi
+                done
+            fi
+
+            if [[ "$include" == true ]]; then
+                selected_phases+=("${PHASES[$index]}")
+                selected_ids+=("${PHASE_IDS[$index]}")
+                selected_descriptions+=("${PHASE_DESCRIPTIONS[$index]}")
+            fi
+        done
+
+        PHASES=("${selected_phases[@]}")
+        PHASE_IDS=("${selected_ids[@]}")
+        PHASE_DESCRIPTIONS=("${selected_descriptions[@]}")
+        return 0
+    fi
 
     PHASES=("${PHASES[$selected_index]}")
     PHASE_IDS=("${PHASE_IDS[$selected_index]}")
