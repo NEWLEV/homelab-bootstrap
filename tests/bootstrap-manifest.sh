@@ -379,6 +379,58 @@ JSON
     fi
 }
 
+test_duplicate_script_path() {
+    local fixture
+    local output
+    local status
+
+    fixture="$(mktemp -d)"
+    create_fixture "$fixture"
+
+    create_script \
+        "$fixture" \
+        "scripts/bootstrap.d/shared.sh"
+
+    cat >"$fixture/configs/bootstrap.json" <<'JSON'
+{
+  "schema_version": 1,
+  "steps": [
+    {
+      "id": "first",
+      "script": "scripts/bootstrap.d/shared.sh",
+      "description": "First shared-script step"
+    },
+    {
+      "id": "second",
+      "script": "scripts/bootstrap.d/shared.sh",
+      "description": "Second shared-script step"
+    }
+  ]
+}
+JSON
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true \
+                ./install.sh --list 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if ((status != 0)) &&
+        grep -Fq \
+            "Bootstrap manifest contains duplicate script path: scripts/bootstrap.d/shared.sh." \
+            <<<"$output"; then
+        pass "duplicate script path"
+    else
+        fail "duplicate script path"
+        printf '%s\n' "$output" >&2
+    fi
+}
+
 test_valid_order() {
     local fixture
     fixture="$(mktemp -d)"
@@ -496,6 +548,7 @@ test_missing_script_file
 test_empty_script
 test_valid_order
 test_duplicate_step_id
+test_duplicate_script_path
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
 printf 'Failed: %d\n' "$FAIL_COUNT"
