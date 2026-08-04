@@ -17,6 +17,7 @@ LIST_ONLY=false
 VERBOSE=false
 RESTORE_SECRETS=false
 CURRENT_PHASE="preflight"
+SELECTED_PHASE_ID=""
 
 declare -a PHASES=()
 declare -a PHASE_IDS=()
@@ -27,6 +28,7 @@ declare -a SKIPPED_PHASES=()
 usage() {
     cat <<EOF
 Aisha Homelab Bootstrap Installer
+  --phase <id>        Run only the selected bootstrap phase
 
 Usage:
   ./${SCRIPT_NAME} [options]
@@ -116,6 +118,14 @@ parse_arguments() {
             --restore-secrets)
                 RESTORE_SECRETS=true
                 DRY_RUN=false
+                ;;
+            --phase)
+                shift
+
+                (($# > 0)) ||
+                    die "--phase requires a bootstrap step ID."
+
+                SELECTED_PHASE_ID="$1"
                 ;;
             -h|--help)
                 usage
@@ -357,6 +367,43 @@ discover_phases() {
     validate_dependencies
 }
 
+select_phase() {
+    if [[ -z "$SELECTED_PHASE_ID" ]]; then
+        return 0
+    fi
+
+    local index
+    local selected_index=-1
+    local dependency_count
+
+    for index in "${!PHASE_IDS[@]}"; do
+        if [[ "${PHASE_IDS[$index]}" == "$SELECTED_PHASE_ID" ]]; then
+            selected_index="$index"
+            break
+        fi
+    done
+
+    ((selected_index >= 0)) ||
+        die "Bootstrap phase not found or disabled: ${SELECTED_PHASE_ID}."
+
+    dependency_count="$(
+        jq \
+            --arg id "$SELECTED_PHASE_ID" \
+            '[.steps[] |
+              select(.enabled != false and .id == $id) |
+              (.depends_on // [])[]] |
+             length' \
+            "$BOOTSTRAP_MANIFEST"
+    )"
+
+    ((dependency_count == 0)) ||
+        die "Bootstrap phase ${SELECTED_PHASE_ID} has dependencies; targeted execution is not supported yet."
+
+    PHASES=("${PHASES[$selected_index]}")
+    PHASE_IDS=("${PHASE_IDS[$selected_index]}")
+    PHASE_DESCRIPTIONS=("${PHASE_DESCRIPTIONS[$selected_index]}")
+}
+
 print_phases() {
     printf '\nDiscovered bootstrap phases:\n\n'
 
@@ -505,6 +552,7 @@ main() {
 
     preflight
     discover_phases
+    select_phase
     print_phases
 
     if [[ "$LIST_ONLY" == true ]]; then
