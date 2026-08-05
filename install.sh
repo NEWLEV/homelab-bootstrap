@@ -14,6 +14,7 @@ INSTALLER_TEST_MODE="${AISHA_INSTALLER_TEST_MODE:-false}"
 DRY_RUN=true
 ASSUME_YES=false
 LIST_ONLY=false
+VALIDATE_MANIFEST=false
 VERBOSE=false
 RESTORE_SECRETS=false
 CURRENT_PHASE="preflight"
@@ -39,6 +40,8 @@ Options:
   --apply              Execute the discovered bootstrap phases.
   --yes                Skip the final confirmation prompt when used with --apply.
   --list               List discovered bootstrap phases and exit.
+  --validate-manifest  Validate the bootstrap manifest and scripts without
+                       requiring /srv/data or executing phases.
   --phase <id>         Run only the selected bootstrap phase.
   --with-dependencies  Include dependencies of the selected phase.
                        Requires --phase.
@@ -114,6 +117,9 @@ parse_arguments() {
             --list)
                 LIST_ONLY=true
                 ;;
+            --validate-manifest)
+                VALIDATE_MANIFEST=true
+                ;;
             --verbose)
                 VERBOSE=true
                 ;;
@@ -150,6 +156,20 @@ parse_arguments() {
     if [[ "$WITH_DEPENDENCIES" == true &&
         -z "$SELECTED_PHASE_ID" ]]; then
         die "--with-dependencies requires --phase <id>."
+    fi
+
+    if [[ "$VALIDATE_MANIFEST" == true ]]; then
+        if [[ -n "$SELECTED_PHASE_ID" ]]; then
+            die "--validate-manifest cannot be combined with --phase."
+        fi
+
+        if [[ "$WITH_DEPENDENCIES" == true ]]; then
+            die "--validate-manifest cannot be combined with --with-dependencies."
+        fi
+
+        if [[ "$LIST_ONLY" == true ]]; then
+            die "--validate-manifest cannot be combined with --list."
+        fi
     fi
 }
 
@@ -616,6 +636,12 @@ main() {
 
     if [[ "$VERBOSE" == true ]]; then
         set -x
+    fi
+
+    if [[ "$VALIDATE_MANIFEST" == true ]]; then
+        discover_phases
+        printf '\nManifest validation completed successfully.\n'
+        exit 0
     fi
 
     preflight
