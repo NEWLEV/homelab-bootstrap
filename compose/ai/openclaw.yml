@@ -5,7 +5,7 @@ services:
     build:
       context: ../../services/openclaw
 
-    image: openclaw:scaffold
+    image: openclaw:runtime
     container_name: openclaw
     restart: unless-stopped
 
