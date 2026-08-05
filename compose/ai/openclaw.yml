@@ -1,0 +1,65 @@
+name: openclaw
+
+services:
+  openclaw:
+    image: node:22-slim
+    container_name: openclaw
+    restart: unless-stopped
+
+    working_dir: /work
+    command:
+      - bash
+      - -lc
+      - |
+        echo 'OpenClaw scaffold; runtime not yet implemented.'
+        tail -f /dev/null
+
+    environment:
+      OPENCLAW_CONFIG_DIR: /config
+      OPENCLAW_STATE_DIR: /state
+      OPENCLAW_SECRETS_FILE: /run/secrets/openclaw_env
+      OPENCLAW_LOCAL_RAG_URL: http://local-rag-api:8080
+      OPENCLAW_GATEWAY_BIND: 127.0.0.1
+      OPENCLAW_GATEWAY_PORT: "18789"
+      NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache
+      OPENCLAW_NO_RESPAWN: "1"
+
+    volumes:
+      - /srv/data/services/openclaw:/state
+      - /srv/data/services/openclaw/config:/config
+      - /srv/data/services/openclaw/workspace:/work
+
+    secrets:
+      - openclaw_env
+
+    networks:
+      - openclaw-private
+      - rag-private
+
+    security_opt:
+      - no-new-privileges=true
+
+    read_only: true
+
+    tmpfs:
+      - /tmp
+      - /var/tmp
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -n "$$OPENCLAW_SECRETS_FILE"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+secrets:
+  openclaw_env:
+    file: ${OPENCLAW_ENV_FILE:-/srv/data/services/openclaw/secrets.env}
+
+networks:
+  openclaw-private:
+    driver: bridge
+  rag-private:
+    external: true
