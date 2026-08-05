@@ -76,6 +76,9 @@ jobs:
       - name: Test bootstrap phase timing
         run: ./tests/bootstrap-phase-timing.sh
 
+      - name: Test OpenClaw scaffold
+        run: ./tests/openclaw.sh
+
   configuration:
     name: Configuration validation
     runs-on: ubuntu-latest

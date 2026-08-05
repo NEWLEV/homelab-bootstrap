@@ -90,11 +90,19 @@ restic snapshots
 
 Purpose
 
-Local assistant integration.
+Gateway for the local assistant runtime.
+
+Current scaffold
+
+```
+compose/ai/openclaw.yml
+services/openclaw/
+```
 
 Configuration
 
 ```
+/srv/data/services/openclaw/
 ~/.config/openclaw/
 ```
 
@@ -107,7 +115,8 @@ Secrets
 Verify
 
 ```bash
-systemctl status openclaw
+./install.sh --validate-manifest
+./tests/openclaw.sh
 ```
 
 ---
