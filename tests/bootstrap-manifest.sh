@@ -50,11 +50,15 @@ run_failure_case() {
     local name="$1"
     local manifest="$2"
     local expected_message="$3"
+    local script_path="${4:-}"
 
     local fixture
     fixture="$(mktemp -d)"
 
     create_fixture "$fixture"
+    if [[ -n "$script_path" ]]; then
+        create_script "$fixture" "$script_path"
+    fi
     printf '%s\n' "$manifest" >"$fixture/configs/bootstrap.json"
 
     local output
@@ -82,6 +86,50 @@ run_failure_case() {
         fail "${name}: expected message not found"
         printf '%s\n' "$output" >&2
     fi
+}
+
+run_validate_case() {
+    local name="$1"
+    local manifest="$2"
+    local expected_message="$3"
+    local script_path="${4:-}"
+
+    local fixture
+    fixture="$(mktemp -d)"
+
+    create_fixture "$fixture"
+    if [[ -n "$script_path" ]]; then
+        create_script "$fixture" "$script_path"
+    fi
+    printf '%s
+' "$manifest" >"$fixture/configs/bootstrap.json"
+
+    local output
+    local status
+
+    set +e
+    output="$(
+        cd "$fixture" &&
+            AISHA_INSTALLER_TEST_MODE=true                 ./install.sh --validate-manifest 2>&1
+    )"
+    status=$?
+    set -e
+
+    rm -rf "$fixture"
+
+    if grep -Fq "$expected_message" <<<"$output"; then
+        pass "$name"
+        return
+    fi
+
+    if ((status == 0)); then
+        fail "${name}: unexpectedly succeeded"
+    else
+        fail "$name: expected message not found"
+    fi
+
+    printf '%s
+' "$output" >&2
 }
 
 test_missing_script_file() {
@@ -175,6 +223,17 @@ JSON
     fi
 }
 
+
+run_validate_case \
+    "validate manifest succeeds" \
+    '{"schema_version":1,"steps":[{"id":"system","script":"scripts/bootstrap.d/01-system.sh","enabled":true,"description":"Base operating system configuration"}]}' \
+    "Manifest validation completed successfully." \
+    "scripts/bootstrap.d/01-system.sh"
+
+run_validate_case \
+    "validate manifest invalid JSON" \
+    '{invalid' \
+    "Bootstrap manifest contains invalid JSON."
 
 test_unknown_dependency() {
     local fixture
