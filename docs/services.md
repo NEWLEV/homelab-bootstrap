@@ -99,6 +99,13 @@ compose/ai/openclaw.yml
 services/openclaw/
 ```
 
+Runtime contract
+
+```
+services/openclaw/start.sh
+services/openclaw/Dockerfile
+```
+
 Configuration
 
 ```

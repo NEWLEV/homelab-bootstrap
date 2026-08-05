@@ -14,4 +14,9 @@ Planned runtime pieces:
 - explicit environment file sourced from the secret restore workflow
 - health check and startup wiring
 
+Current runtime contract:
+- `start.sh` validates the secrets file exists and prints the resolved runtime paths
+- `Dockerfile` builds a small image around that entrypoint
+- Compose mounts durable state under `/srv/data/services/openclaw`
+
 This directory intentionally starts as a scaffold, not the final implementation.
