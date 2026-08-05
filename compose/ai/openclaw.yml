@@ -2,17 +2,12 @@ name: openclaw
 
 services:
   openclaw:
-    image: node:22-slim
+    build:
+      context: ../../services/openclaw
+
+    image: openclaw:scaffold
     container_name: openclaw
     restart: unless-stopped
-
-    working_dir: /work
-    command:
-      - bash
-      - -lc
-      - |
-        echo 'OpenClaw scaffold; runtime not yet implemented.'
-        tail -f /dev/null
 
     environment:
       OPENCLAW_CONFIG_DIR: /config
@@ -48,7 +43,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - test -n "$$OPENCLAW_SECRETS_FILE"
+        - test -x /usr/local/bin/openclaw-start && test -n "$$OPENCLAW_SECRETS_FILE"
       interval: 30s
       timeout: 5s
       retries: 3
