@@ -16,7 +16,8 @@ Planned runtime pieces:
 
 Current runtime contract:
 - `start.sh` validates the secrets file exists and prints the resolved runtime paths
-- `Dockerfile` builds a small image around that entrypoint
+- `healthcheck.sh` validates the mounted secret boundary and the runtime gateway contract
+- `Dockerfile` builds a small image around those scripts
 - Compose mounts durable state under `/srv/data/services/openclaw`
 
 This directory intentionally starts as a scaffold, not the final implementation.
