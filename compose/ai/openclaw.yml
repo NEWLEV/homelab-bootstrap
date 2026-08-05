@@ -4,6 +4,7 @@ services:
   openclaw:
     labels:
       com.newlev.service: openclaw
+      com.newlev.layer: deployment
     build:
       context: ../../services/openclaw
 
