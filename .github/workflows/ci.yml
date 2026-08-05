@@ -73,6 +73,9 @@ jobs:
       - name: Test bootstrap phase selection
         run: ./tests/bootstrap-phase-selection.sh
 
+      - name: Test bootstrap phase timing
+        run: ./tests/bootstrap-phase-timing.sh
+
   configuration:
     name: Configuration validation
     runs-on: ubuntu-latest

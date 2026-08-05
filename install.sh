@@ -25,6 +25,9 @@ declare -a PHASE_IDS=()
 declare -a PHASE_DESCRIPTIONS=()
 declare -a COMPLETED_PHASES=()
 declare -a SKIPPED_PHASES=()
+declare -a PHASE_DURATIONS=()
+INSTALL_STARTED_AT=0
+INSTALL_FINISHED_AT=0
 
 usage() {
     cat <<EOF
@@ -276,9 +279,11 @@ validate_dependencies() {
 
 discover_phases() {
     CURRENT_PHASE="phase discovery"
+
     PHASES=()
     PHASE_IDS=()
     PHASE_DESCRIPTIONS=()
+    PHASE_DURATIONS=()
 
     jq empty "$BOOTSTRAP_MANIFEST" >/dev/null 2>&1 ||
         die "Bootstrap manifest contains invalid JSON."
@@ -541,11 +546,38 @@ restore_secrets() {
     success "Runtime secrets restored"
 }
 
+format_duration() {
+    local total_seconds="$1"
+    local hours
+    local minutes
+    local seconds
+
+    hours=$((total_seconds / 3600))
+    minutes=$(((total_seconds % 3600) / 60))
+    seconds=$((total_seconds % 60))
+
+    if ((hours > 0)); then
+        printf '%dh %dm %ds' \
+            "$hours" \
+            "$minutes" \
+            "$seconds"
+    elif ((minutes > 0)); then
+        printf '%dm %ds' \
+            "$minutes" \
+            "$seconds"
+    else
+        printf '%ds' "$seconds"
+    fi
+}
+
 run_phase() {
     local phase="$1"
     local step_id="$2"
     local description="$3"
     local relative_phase="${phase#"$REPO_ROOT"/}"
+    local started_at
+    local finished_at
+    local elapsed
 
     CURRENT_PHASE="$relative_phase"
 
@@ -554,13 +586,22 @@ run_phase() {
     if [[ "$DRY_RUN" == true ]]; then
         info "DRY RUN: would execute ${relative_phase}"
         SKIPPED_PHASES+=("${step_id} — ${description}")
+        PHASE_DURATIONS+=("0")
         return
     fi
 
+    started_at="$(date +%s)"
+
     bash "$phase"
 
+    finished_at="$(date +%s)"
+    elapsed=$((finished_at - started_at))
+
+    PHASE_DURATIONS+=("$elapsed")
     COMPLETED_PHASES+=("${step_id} — ${description}")
-    success "Completed phase: ${step_id}"
+
+    success \
+        "Completed phase: ${step_id} ($(format_duration "$elapsed"))"
 }
 
 print_summary() {
@@ -581,9 +622,12 @@ print_summary() {
     if ((${#COMPLETED_PHASES[@]} > 0)); then
         printf '\nCompleted:\n'
 
-        local phase
-        for phase in "${COMPLETED_PHASES[@]}"; do
-            printf '  ✔ %s\n' "$phase"
+        local index
+
+        for index in "${!COMPLETED_PHASES[@]}"; do
+            printf '  ✔ %s — %s\n' \
+                "${COMPLETED_PHASES[$index]}" \
+                "$(format_duration "${PHASE_DURATIONS[$index]}")"
         done
     fi
 
@@ -598,6 +642,16 @@ print_summary() {
 
     if [[ -n "${INSTALL_LOG_FILE:-}" ]]; then
         printf '\nLog: %s\n' "$INSTALL_LOG_FILE"
+    fi
+
+    if [[ "$DRY_RUN" == false ]] &&
+        ((INSTALL_STARTED_AT > 0)) &&
+        ((INSTALL_FINISHED_AT >= INSTALL_STARTED_AT)); then
+        printf '\nTotal elapsed: %s\n' \
+            "$(
+                format_duration \
+                    "$((INSTALL_FINISHED_AT - INSTALL_STARTED_AT))"
+            )"
     fi
 
     printf '============================================================\n'
@@ -639,6 +693,8 @@ main() {
         prepare_logging
     fi
 
+    INSTALL_STARTED_AT="$(date +%s)"
+
     local index
 
     for index in "${!PHASES[@]}"; do
@@ -648,8 +704,12 @@ main() {
             "${PHASE_DESCRIPTIONS[$index]}"
     done
 
+    INSTALL_FINISHED_AT="$(date +%s)"
+
     CURRENT_PHASE="summary"
     print_summary
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
