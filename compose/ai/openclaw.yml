@@ -1,5 +1,6 @@
 name: openclaw
 
+# Deployment boundary for the OpenClaw runtime service
 services:
   openclaw:
     labels:
@@ -44,6 +45,7 @@ services:
       - /tmp
       - /var/tmp
 
+    # Keep health checks tied to the runtime boundary only
     healthcheck:
       test:
         - CMD
