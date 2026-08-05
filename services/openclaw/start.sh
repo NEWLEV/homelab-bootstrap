@@ -10,10 +10,7 @@ set -Eeuo pipefail
 : "${NODE_COMPILE_CACHE:=/var/tmp/openclaw-compile-cache}"
 : "${OPENCLAW_NO_RESPAWN:=1}"
 
-mkdir -p \
-    "$OPENCLAW_CONFIG_DIR" \
-    "$OPENCLAW_STATE_DIR" \
-    "$NODE_COMPILE_CACHE"
+mkdir -p     "$OPENCLAW_CONFIG_DIR"     "$OPENCLAW_STATE_DIR"     "$NODE_COMPILE_CACHE"
 
 if [[ ! -r "$OPENCLAW_SECRETS_FILE" ]]; then
     printf 'OpenClaw secrets file is missing: %s\n' "$OPENCLAW_SECRETS_FILE" >&2
@@ -27,4 +24,4 @@ printf 'Secrets: %s\n' "$OPENCLAW_SECRETS_FILE"
 printf 'Local RAG: %s\n' "$OPENCLAW_LOCAL_RAG_URL"
 printf 'Gateway: %s:%s\n' "$OPENCLAW_GATEWAY_BIND" "$OPENCLAW_GATEWAY_PORT"
 
-exec tail -f /dev/null
+exec node /usr/local/bin/openclaw-server.js
