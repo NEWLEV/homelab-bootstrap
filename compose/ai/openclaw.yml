@@ -2,6 +2,8 @@ name: openclaw
 
 services:
   openclaw:
+    labels:
+      com.newlev.service: openclaw
     build:
       context: ../../services/openclaw
 
