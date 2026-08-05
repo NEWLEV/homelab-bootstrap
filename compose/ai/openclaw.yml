@@ -5,6 +5,7 @@ services:
     labels:
       com.newlev.service: openclaw
       com.newlev.layer: deployment
+      com.newlev.boundary: runtime
     build:
       context: ../../services/openclaw
 
