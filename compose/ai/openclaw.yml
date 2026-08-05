@@ -42,8 +42,8 @@ services:
 
     healthcheck:
       test:
-        - CMD-SHELL
-        - test -x /usr/local/bin/openclaw-start && test -n "$$OPENCLAW_SECRETS_FILE"
+        - CMD
+        - /usr/local/bin/openclaw-healthcheck
       interval: 30s
       timeout: 5s
       retries: 3

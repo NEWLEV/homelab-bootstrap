@@ -15,8 +15,9 @@ Planned runtime pieces:
 - health check and startup wiring
 
 Current runtime contract:
-- `start.sh` validates the secrets file exists and prints the resolved runtime paths
-- `healthcheck.sh` validates the mounted secret boundary and the runtime gateway contract
+- `start.sh` validates the secrets file exists, prepares writable directories, and launches the local HTTP service
+- `server.js` exposes a minimal `/health` endpoint for the runtime boundary
+- `healthcheck.sh` verifies the service is alive and the secret boundary is present
 - `Dockerfile` builds a small image around those scripts
 - Compose mounts durable state under `/srv/data/services/openclaw`
 

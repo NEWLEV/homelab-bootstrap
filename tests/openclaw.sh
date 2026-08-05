@@ -59,6 +59,7 @@ test_openclaw_compose_contract() {
 test_openclaw_dockerfile_contract() {
     local output
     output="$(cat "$REPO_ROOT/services/openclaw/Dockerfile")"
+    assert_contains "openclaw dockerfile copies server" "COPY server.js /usr/local/bin/openclaw-server.js" "$output"
     assert_contains "openclaw dockerfile copies start script" "COPY start.sh /usr/local/bin/openclaw-start" "$output"
     assert_contains "openclaw dockerfile copies healthcheck" "COPY healthcheck.sh /usr/local/bin/openclaw-healthcheck" "$output"
     assert_contains "openclaw dockerfile sets entrypoint" 'ENTRYPOINT ["/usr/local/bin/openclaw-start"]' "$output"
@@ -68,6 +69,7 @@ test_openclaw_healthcheck_contract() {
     local output
     output="$(cat "$REPO_ROOT/services/openclaw/healthcheck.sh")"
     assert_contains "openclaw healthcheck validates secrets file" 'OpenClaw healthcheck missing secrets file' "$output"
+    assert_contains "openclaw healthcheck checks health endpoint" '/health' "$output"
     assert_contains "openclaw healthcheck reports gateway" 'OpenClaw healthcheck ok:' "$output"
 }
 
@@ -82,6 +84,7 @@ test_openclaw_runtime_contract() {
     local output
     output="$(cat "$REPO_ROOT/services/openclaw/start.sh")"
     assert_contains "openclaw runtime validates secrets file" 'OPENCLAW_SECRETS_FILE' "$output"
+    assert_contains "openclaw runtime launches server" 'exec node /usr/local/bin/openclaw-server.js' "$output"
     assert_contains "openclaw runtime reports gateway bind" 'OPENCLAW_GATEWAY_BIND' "$output"
     assert_contains "openclaw runtime reports gateway port" 'OPENCLAW_GATEWAY_PORT' "$output"
 }
