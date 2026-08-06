@@ -31,5 +31,5 @@ if payload.get('status') != 'ok':
     print('OpenClaw healthcheck reported a non-ok status', file=sys.stderr)
     raise SystemExit(1)
 
-print(f'OpenClaw healthcheck ok: {url}')
+print(f'OpenClaw runtime healthcheck ok: {url}')
 PY
