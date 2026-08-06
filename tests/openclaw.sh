@@ -70,8 +70,10 @@ test_openclaw_healthcheck_contract() {
     output="$(cat "$REPO_ROOT/services/openclaw/healthcheck.sh")"
     assert_contains "openclaw healthcheck validates secrets file" 'OpenClaw healthcheck missing secrets file' "$output"
     assert_contains "openclaw healthcheck checks health endpoint" '/health' "$output"
-    assert_contains "openclaw healthcheck reports gateway" 'OpenClaw healthcheck ok:' "$output"
-}
+    assert_contains "openclaw healthcheck reports gateway" \
+    'OpenClaw runtime healthcheck ok:' \
+    "$output"
+ }
 
 test_openclaw_secret_restore_contract() {
     local output
