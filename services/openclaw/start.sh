@@ -17,7 +17,7 @@ if [[ ! -r "$OPENCLAW_SECRETS_FILE" ]]; then
     exit 1
 fi
 
-printf 'OpenClaw runtime ready.\n'
+printf 'OpenClaw deployment runtime ready.\n'
 printf 'Config: %s\n' "$OPENCLAW_CONFIG_DIR"
 printf 'State: %s\n' "$OPENCLAW_STATE_DIR"
 printf 'Secrets: %s\n' "$OPENCLAW_SECRETS_FILE"
