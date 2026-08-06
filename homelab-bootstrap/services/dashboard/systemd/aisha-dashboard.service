@@ -1,0 +1,14 @@
+﻿[Unit]
+Description=Aisha Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/data/git/homelab-bootstrap/workspaces/development/repo
+ExecStart=%h/.venvs/aisha/bin/python -m app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
