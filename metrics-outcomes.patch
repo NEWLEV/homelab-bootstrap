@@ -1,0 +1,25 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -690,0 +691 @@
++        metrics.increment("refused_answers")
+@@ -723,0 +725 @@
++        metrics.increment("refused_answers")
+@@ -748,0 +751 @@
++        metrics.increment("refused_answers")
+@@ -761,0 +765 @@
++    metrics.increment("grounded_answers")
+@@ -790,0 +795 @@
++    metrics.increment("stream_requests")
+@@ -859,0 +865 @@
++            metrics.increment("refused_answers")
+@@ -891,0 +898 @@
++            metrics.dependency_failure("streaming_generation")
+@@ -899,0 +907 @@
++            metrics.dependency_failure("streaming_generation")
+@@ -906,0 +915 @@
++            metrics.increment("refused_answers")
+@@ -930,0 +940 @@
++            metrics.increment("refused_answers")
+@@ -948,0 +959 @@
++        metrics.increment("grounded_answers")

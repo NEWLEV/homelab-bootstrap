@@ -1,0 +1,22 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -22,11 +22,17 @@
+ from app.index_jobs import (
+     IndexJobAlreadyRunning,
+     IndexJobManager,
+ )
++from app.index_schema import (
++    INDEX_SCHEMA_VERSION,
++    collection_metadata,
++    inspect_collection,
++)
++from app.indexer import CHUNKING_VERSION
+ 
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+-APP_VERSION = "0.9.1"
++APP_VERSION = "0.9.2"

@@ -1,0 +1,35 @@
+diff --git a/services/local-rag/tests/test_resource_controls.py b/services/local-rag/tests/test_resource_controls.py
+--- a/services/local-rag/tests/test_resource_controls.py
++++ b/services/local-rag/tests/test_resource_controls.py
+@@ -1,6 +1,7 @@
+ from fastapi import FastAPI, Request
+ from fastapi.testclient import TestClient
+ 
++import app.main as main
+ from app.resource_controls import (
+     ConcurrencyLimiter,
+     ResourceControlMiddleware,
+@@ -189,3 +190,22 @@
+         assert "integer" in str(exc)
+     else:
+         raise AssertionError("non-integer values must fail")
++
++
++def test_public_request_models_bound_user_controlled_text() -> None:
++    client = TestClient(main.app)
++
++    assert client.post(
++        "/search",
++        json={"query": "q" * 2001},
++    ).status_code == 422
++    assert client.post(
++        "/ask",
++        json={"question": "q" * 2001},
++    ).status_code == 422
++    assert client.post(
++        "/search",
++        json={
++            "query": "valid",
++            "path": "p" * 1025,
++        },
++    ).status_code == 422

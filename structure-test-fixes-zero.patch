@@ -1,0 +1,17 @@
+diff --git a/services/local-rag/tests/test_chunking.py b/services/local-rag/tests/test_chunking.py
+--- a/services/local-rag/tests/test_chunking.py
++++ b/services/local-rag/tests/test_chunking.py
+@@ -19 +19 @@
+-            ["services:", "  api:"],
++            ["services:", "api:"],
+@@ -34 +34 @@
+-            ["{", "\"tools\":"],
++            ["{", "\"tools\": {"],
+@@ -64 +64,6 @@
+-    chunks = chunk_document(Path("README.md"), text, max_chars=100)
++    chunks = chunk_document(
++        Path("README.md"),
++        text,
++        max_chars=100,
++        overlap_chars=10,
++    )

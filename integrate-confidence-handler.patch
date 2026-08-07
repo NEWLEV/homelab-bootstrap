@@ -1,0 +1,88 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -548,7 +548,7 @@ def ask(request: AskRequest) -> AskResponse:
+         matches = retrieve_chunks(
+             query=question,
+             limit=request.limit,
+-            debug=request.debug,
++            debug=True,
+             path=request.path,
+             path_prefix=request.path_prefix,
+             directory=request.directory,
+@@ -589,13 +589,30 @@ def ask(request: AskRequest) -> AskResponse:
+         if request.debug
+         else None
+     )
+-    if not matches:
++    confidence = assess_retrieval_confidence(
++        question,
++        matches,
++        minimum=CONFIDENCE_MIN_SCORE,
++    )
++
++    def debug_reasons(*extra: str) -> list[str] | None:
++        if not request.debug:
++            return None
++        return list(
++            dict.fromkeys((*confidence.reasons, *extra))
++        )
++
++    if not confidence.sufficient:
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons(),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+@@ -622,6 +639,8 @@ def ask(request: AskRequest) -> AskResponse:
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons("model_refusal"),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+@@ -630,21 +649,32 @@ def ask(request: AskRequest) -> AskResponse:
+         matches,
+     )
+ 
+-    if not citations:
++    citation_assessment = assess_citation_completeness(
++        answer,
++        matches,
++    )
++    final_confidence = round(
++        confidence.score * citation_assessment.completeness,
++        6,
++    )
++
++    if not citation_assessment.complete or not citations:
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=final_confidence,
++            citation_completeness=citation_assessment.completeness,
++            confidence_reasons=debug_reasons(
++                *citation_assessment.reasons
++            ),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+     return AskResponse(
+         question=question,
+         answer=answer,
+         grounded=True,
+         citations=citations,
++        confidence=final_confidence,
++        citation_completeness=citation_assessment.completeness,
++        confidence_reasons=debug_reasons(),
+         retrieval_debug=retrieval_debug,
+     )

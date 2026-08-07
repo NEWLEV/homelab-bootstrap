@@ -1,0 +1,11 @@
+diff --git a/services/local-rag/app/confidence.py b/services/local-rag/app/confidence.py
+--- a/services/local-rag/app/confidence.py
++++ b/services/local-rag/app/confidence.py
+@@ -131,7 +131,7 @@ def claim_segments(answer: str) -> list[str]:
+     normalized = TRAILING_CITATIONS.sub(r"\2\1", normalized)
+     return [
+-        segment.strip()
++        " ".join(segment.split())
+         for segment in CLAIM_SEPARATOR.split(normalized)
+         if re.search(r"[A-Za-z0-9]", segment.replace("CITATION", ""))
+     ]

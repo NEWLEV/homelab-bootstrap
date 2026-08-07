@@ -1,0 +1,11 @@
+diff --git a/services/local-rag/app/metrics.py b/services/local-rag/app/metrics.py
+--- a/services/local-rag/app/metrics.py
++++ b/services/local-rag/app/metrics.py
+@@ -12,6 +12,9 @@
+     "grounded_answers",
+     "refused_answers",
+     "dependency_failures",
++    "rate_limited_requests",
++    "capacity_rejected_requests",
++    "oversized_requests",
+ )

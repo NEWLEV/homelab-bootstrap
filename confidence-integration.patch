@@ -1,0 +1,212 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -8,10 +8,15 @@ from fastapi import FastAPI, HTTPException
+ from pydantic import BaseModel, Field
+ 
++from app.confidence import (
++    assess_citation_completeness,
++    assess_retrieval_confidence,
++)
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ 
+ 
+-APP_VERSION = "0.7.2"
++APP_VERSION = "0.7.3"
+@@ -31,6 +36,10 @@ GENERATION_MODEL = os.environ.get(
+     "llama3.2:3b",
+ )
++CONFIDENCE_MIN_SCORE = float(
++    os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
++)
+ 
+ RERANKER_ENABLED = os.environ.get(
+@@ -121,6 +130,9 @@ class AskResponse(BaseModel):
+     answer: str
+     grounded: bool
+     citations: list[Citation]
++    confidence: float
++    citation_completeness: float | None = None
++    confidence_reasons: list[str] | None = None
+     retrieval_debug: list[RetrievalDiagnostic] | None = None
+@@ -461,6 +473,7 @@ def health() -> dict[str, Any]:
+         "reranker_enabled": reranker.enabled,
+         "reranker_model": reranker.model_name,
+         "reranker_threads": reranker.threads,
++        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+     }
+@@ -510,120 +523,143 @@
+ @app.post(
+     "/ask",
+     response_model=AskResponse,
+     response_model_exclude_none=True,
+ )
+ def ask(request: AskRequest) -> AskResponse:
+     question = request.question.strip()
+ 
+     if not question:
+         raise HTTPException(
+             status_code=422,
+             detail="Question must not be empty.",
+         )
+ 
+     try:
+         matches = retrieve_chunks(
+             query=question,
+             limit=request.limit,
+-            debug=request.debug,
++            debug=True,
+             path=request.path,
+             path_prefix=request.path_prefix,
+             directory=request.directory,
+             extension=request.extension,
+         )
+     except httpx.HTTPError as exc:
+         raise HTTPException(
+             status_code=502,
+             detail=(
+                 "Ollama embedding request failed: "
+                 f"{exc}"
+             ),
+         ) from exc
+     except Exception as exc:
+         raise HTTPException(
+             status_code=500,
+             detail=str(exc),
+         ) from exc
+ 
+     retrieval_debug = (
+         [
+             RetrievalDiagnostic(
+                 path=match["path"],
+                 line_start=match["line_start"],
+                 line_end=match["line_end"],
+                 distance=match["distance"],
+                 vector_score=match["vector_score"],
+                 lexical_score=match["lexical_score"],
+                 combined_score=match["combined_score"],
+                 matching_tokens=match["matching_tokens"],
+                 rank=match["rank"],
+                 hybrid_rank=match.get("hybrid_rank"),
+                 reranker_score=match.get("reranker_score"),
+                 reranker_used=match.get("reranker_used", False),
+                 reranker_error=match.get("reranker_error"),
+             )
+             for match in matches
+         ]
+         if request.debug
+         else None
+     )
+-    if not matches:
++    confidence = assess_retrieval_confidence(
++        question,
++        matches,
++        minimum=CONFIDENCE_MIN_SCORE,
++    )
++
++    def debug_reasons(*extra: str) -> list[str] | None:
++        if not request.debug:
++            return None
++        return list(dict.fromkeys((*confidence.reasons, *extra)))
++
++    if not confidence.sufficient:
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons(),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+     prompt = build_grounded_prompt(
+         question,
+         matches,
+     )
+ 
+     try:
+         answer = generate_answer(prompt)
+     except httpx.HTTPError as exc:
+         raise HTTPException(
+             status_code=502,
+             detail=(
+                 "Ollama generation request failed: "
+                 f"{exc}"
+             ),
+         ) from exc
+     except Exception as exc:
+         raise HTTPException(
+             status_code=500,
+             detail=str(exc),
+         ) from exc
+ 
+     if is_insufficient_answer(answer):
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons("model_refusal"),
+             retrieval_debug=retrieval_debug,
+         )
+ 
++    citation_assessment = assess_citation_completeness(answer, matches)
+     citations = extract_used_citations(
+         answer,
+         matches,
+     )
++    final_confidence = round(
++        confidence.score * citation_assessment.completeness,
++        6,
++    )
+ 
+-    if not citations:
++    if not citation_assessment.complete or not citations:
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=final_confidence,
++            citation_completeness=citation_assessment.completeness,
++            confidence_reasons=debug_reasons(
++                *citation_assessment.reasons
++            ),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+     return AskResponse(
+         question=question,
+         answer=answer,
+         grounded=True,
+         citations=citations,
++        confidence=final_confidence,
++        citation_completeness=citation_assessment.completeness,
++        confidence_reasons=debug_reasons(),
+         retrieval_debug=retrieval_debug,
+     )
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -44,6 +44,7 @@ services:
+       SOURCE_ROOT: /sources/homelab-bootstrap
+       GENERATION_MODEL: llama3.2:3b
+       PYTHONPATH: /app
++      CONFIDENCE_MIN_SCORE: "0.45"
+       RERANKER_ENABLED: "true"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -14,7 +14,7 @@ def test_health() -> None:
+     body = response.json()
+ 
+     assert body["status"] == "ok"
+-    assert body["version"] == "0.7.2"
++    assert body["version"] == "0.7.3"
+@@ -23,6 +23,7 @@ def test_health() -> None:
+     assert body["reranker_model"] == "Xenova/ms-marco-MiniLM-L-6-v2"
+     assert body["reranker_threads"] == 2
++    assert body["confidence_min_score"] == 0.45

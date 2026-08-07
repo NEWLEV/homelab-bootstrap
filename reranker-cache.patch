@@ -1,0 +1,13 @@
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -49,6 +49,9 @@ services:
+       RERANKER_MODEL: Xenova/ms-marco-MiniLM-L-6-v2
+       RERANKER_CACHE_DIR: /models/fastembed
+       RERANKER_THREADS: "2"
++      HOME: /models
++      HF_HOME: /models/huggingface
++      HF_HUB_DISABLE_XET: "1"
+ 
+     volumes:
+       - /srv/data/services/local-rag/chroma:/data/chroma

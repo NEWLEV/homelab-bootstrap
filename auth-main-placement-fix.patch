@@ -1,0 +1,9 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -45 +44,0 @@
+-
+@@ -48,0 +48,1 @@
++)
+@@ -66 +66,0 @@
+-)

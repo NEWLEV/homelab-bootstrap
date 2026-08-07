@@ -1,0 +1,142 @@
+diff --git a/services/local-rag/tests/test_search.py b/services/local-rag/tests/test_search.py
+--- a/services/local-rag/tests/test_search.py
++++ b/services/local-rag/tests/test_search.py
+@@ -178,6 +178,9 @@ def test_ask_passes_filters_and_preserves_citation_metadata(
+                 "line_end": 20,
+                 "distance": 0.1,
+                 "snippet": "The service is local-rag-api.",
++                "combined_score": 0.8,
++                "matching_tokens": ["service", "name"],
++                "reranker_used": False,
+             }
+         ]
+@@ -204,7 +207,7 @@ def test_ask_passes_filters_and_preserves_citation_metadata(
+     assert response.status_code == 200
+     assert calls == [
+         {
+-            "debug": False,
++            "debug": True,
+             "path": "compose/ai/local-rag.yml",
+             "path_prefix": "compose/ai",
+             "directory": "compose/ai",
+@@ -295,3 +298,112 @@ def test_ask_debug_exposes_typed_retrieval_diagnostics(
+             "reranker_used": False,
+         }
+     ]
++    assert response.json()["confidence"] == 0.942
++    assert response.json()["citation_completeness"] == 1.0
++
++
++def confident_match() -> dict[str, Any]:
++    return {
++        "path": "compose/ai/local-rag.yml",
++        "line_start": 10,
++        "line_end": 20,
++        "distance": 0.1,
++        "snippet": "Backups run nightly.",
++        "vector_score": 0.9,
++        "lexical_score": 0.9,
++        "combined_score": 0.9,
++        "matching_tokens": ["backups", "run"],
++        "rank": 1,
++        "reranker_used": False,
++    }
++
++
++def test_ask_low_confidence_skips_generation(monkeypatch) -> None:
++    match = confident_match()
++    match.update(
++        combined_score=0.05,
++        matching_tokens=[],
++    )
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [match],
++    )
++
++    def fail_generation(prompt: str) -> str:
++        raise AssertionError("generation must be skipped")
++
++    monkeypatch.setattr(main, "generate_answer", fail_generation)
++
++    response = client.post(
++        "/ask",
++        json={
++            "question": "What color is the moon base cafeteria?",
++            "debug": True,
++        },
++    )
++
++    assert response.status_code == 200
++    body = response.json()
++    assert body["grounded"] is False
++    assert body["confidence"] < 0.45
++    assert "below_confidence_threshold" in body["confidence_reasons"]
++
++
++@pytest.mark.parametrize(
++    ("answer", "reason"),
++    [
++        ("Backups run nightly.", "missing_citations"),
++        (
++            "Backups run nightly. [unknown.md:1-2]",
++            "invalid_citation",
++        ),
++        (
++            "Backups run nightly. A report is emailed. "
++            "[compose/ai/local-rag.yml:10-20]",
++            "incomplete_citations",
++        ),
++    ],
++)
++def test_ask_refuses_incomplete_or_invalid_citations(
++    monkeypatch,
++    answer: str,
++    reason: str,
++) -> None:
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [confident_match()],
++    )
++    monkeypatch.setattr(main, "generate_answer", lambda prompt: answer)
++
++    response = client.post(
++        "/ask",
++        json={"question": "When do backups run?", "debug": True},
++    )
++
++    assert response.status_code == 200
++    body = response.json()
++    assert body["grounded"] is False
++    assert reason in body["confidence_reasons"]
++    assert body["citations"] == []
++
++
++def test_ask_grounded_response_reports_confidence(monkeypatch) -> None:
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [confident_match()],
++    )
++    monkeypatch.setattr(
++        main,
++        "generate_answer",
++        lambda prompt: (
++            "Backups run nightly. "
++            "[compose/ai/local-rag.yml:10-20]"
++        ),
++    )
++
++    response = client.post(
++        "/ask",
++        json={"question": "When do backups run?"},
++    )
++
++    assert response.status_code == 200
++    body = response.json()
++    assert body["grounded"] is True
++    assert body["confidence"] == 0.92
++    assert body["citation_completeness"] == 1.0
++    assert "confidence_reasons" not in body

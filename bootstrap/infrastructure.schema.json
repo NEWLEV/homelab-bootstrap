@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisha.local/schemas/infrastructure-manifest.json",
+  "title": "Aisha Infrastructure Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "services", "volumes", "networks"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "volumes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "networks": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "image": { "type": "string", "minLength": 1 },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "volumes": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "networks": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "ports": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "environment": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "build": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "properties": {
+              "context": { "type": "string", "minLength": 1 },
+              "dockerfile": { "type": "string", "minLength": 1 }
+            }
+          },
+          "command": {
+            "type": ["string", "null"],
+            "minLength": 1
+          },
+          "entrypoint": {
+            "type": ["string", "null"],
+            "minLength": 1
+          },
+          "healthcheck": {
+            "type": ["string", "null"],
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

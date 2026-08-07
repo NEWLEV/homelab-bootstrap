@@ -1,0 +1,103 @@
+diff --git a/services/local-rag/tests/test_index_schema.py b/services/local-rag/tests/test_index_schema.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/tests/test_index_schema.py
+@@ -0,0 +1,86 @@
++from typing import Any
++
++from app.index_schema import (
++    INDEX_SCHEMA_VERSION,
++    collection_metadata,
++    inspect_collection,
++)
++
++
++CHUNKING_VERSION = "2"
++EMBEDDING_MODEL = "nomic-embed-text"
++
++
++def valid_metadata() -> dict[str, str | int]:
++    return {
++        "path": "README.md",
++        "directory": ".",
++        "filename": "README.md",
++        "extension": ".md",
++        "line_start": 1,
++        "line_end": 2,
++        "file_hash": "abc123",
++        "chunking_version": CHUNKING_VERSION,
++        "schema_version": INDEX_SCHEMA_VERSION,
++        "embedding_model": EMBEDDING_MODEL,
++    }
++
++
++class FakeCollection:
++    def __init__(
++        self,
++        metadatas: list[dict[str, Any] | None],
++        metadata: dict[str, str],
++    ) -> None:
++        self.metadatas = metadatas
++        self.metadata = metadata
++
++    def get(self, include: list[str]) -> dict[str, Any]:
++        assert include == ["metadatas"]
++        return {
++            "ids": [str(index) for index in range(len(self.metadatas))],
++            "metadatas": self.metadatas,
++        }
++
++
++def inspect(collection: FakeCollection) -> dict[str, Any]:
++    return inspect_collection(
++        collection,
++        chunking_version=CHUNKING_VERSION,
++        embedding_model=EMBEDDING_MODEL,
++    )
++
++
++def test_current_collection_is_valid() -> None:
++    collection = FakeCollection(
++        [valid_metadata()],
++        collection_metadata(EMBEDDING_MODEL),
++    )
++
++    result = inspect(collection)
++
++    assert result["valid"] is True
++    assert result["reindex_required"] is False
++    assert result["records"] == 1
++    assert result["invalid_records"] == 0
++
++
++def test_missing_schema_fields_require_reindex() -> None:
++    metadata = valid_metadata()
++    del metadata["schema_version"]
++    del metadata["embedding_model"]
++    collection = FakeCollection(
++        [metadata],
++        collection_metadata(EMBEDDING_MODEL),
++    )
++
++    result = inspect(collection)
++
++    assert result["valid"] is False
++    assert result["reindex_required"] is True
++    assert result["invalid_records"] == 1
++    assert result["missing_field_records"] == 1
++    assert result["schema_mismatch_records"] == 1
++    assert result["embedding_model_mismatch_records"] == 1
++
++
++def test_collection_marker_mismatch_requires_reindex() -> None:
++    collection = FakeCollection(
++        [valid_metadata()],
++        collection_metadata("old-model"),
++    )
++
++    result = inspect(collection)
++
++    assert result["valid"] is False
++    assert result["reindex_required"] is True
++    assert result["invalid_records"] == 0
++    assert result["collection_embedding_model"] == "old-model"

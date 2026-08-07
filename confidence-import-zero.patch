@@ -1,0 +1,8 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -9,0 +10,4 @@
++from app.confidence import (
++    assess_citation_completeness,
++    assess_retrieval_confidence,
++)

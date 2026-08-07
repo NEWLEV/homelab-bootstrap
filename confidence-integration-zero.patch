@@ -1,0 +1,81 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -9,0 +10,4 @@
++from app.confidence import (
++    assess_citation_completeness,
++    assess_retrieval_confidence,
++)
+@@ -15 +19 @@
+-APP_VERSION = "0.7.2"
++APP_VERSION = "0.7.3"
+@@ -33,0 +38,3 @@
++CONFIDENCE_MIN_SCORE = float(
++    os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
++)
+@@ -123,0 +132,3 @@
++    confidence: float
++    citation_completeness: float | None = None
++    confidence_reasons: list[str] | None = None
+@@ -463,0 +476 @@
++        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+@@ -528 +541 @@
+-            debug=request.debug,
++            debug=True,
+@@ -569,0 +583,15 @@
++    confidence = assess_retrieval_confidence(
++        question,
++        matches,
++        minimum=CONFIDENCE_MIN_SCORE,
++    )
++
++    def debug_reasons(*extra: str) -> list[str] | None:
++        if not request.debug:
++            return None
++        return list(
++            dict.fromkeys(
++                (*confidence.reasons, *extra)
++            )
++        )
+@@ -570 +599 @@
+-    if not matches:
++    if not confidence.sufficient:
+@@ -575,0 +605,2 @@
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons(),
+@@ -605,0 +637,2 @@
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons("model_refusal"),
+@@ -608,0 +643 @@
++    citation_assessment = assess_citation_completeness(answer, matches)
+@@ -612,0 +648,4 @@
++    final_confidence = round(
++        confidence.score * citation_assessment.completeness,
++        6,
++    )
+@@ -614 +654 @@
+-    if not citations:
++    if not citation_assessment.complete or not citations:
+@@ -619,0 +660,5 @@
++            confidence=final_confidence,
++            citation_completeness=citation_assessment.completeness,
++            confidence_reasons=debug_reasons(
++                *citation_assessment.reasons
++            ),
+@@ -627,0 +674,3 @@
++        confidence=final_confidence,
++        citation_completeness=citation_assessment.completeness,
++        confidence_reasons=debug_reasons(),
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -46,0 +47 @@
++      CONFIDENCE_MIN_SCORE: "0.45"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17 +17 @@
+-    assert body["version"] == "0.7.2"
++    assert body["version"] == "0.7.3"
+@@ -23,0 +24 @@
++    assert body["confidence_min_score"] == 0.45

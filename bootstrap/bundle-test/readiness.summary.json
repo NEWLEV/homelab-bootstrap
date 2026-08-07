@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "bundle_dir": "bootstrap/bundle-test",
+    "compose": "bootstrap/bundle-test/compose.generated.yaml",
+    "report": "bootstrap/bundle-test/bootstrap.report.json"
+  },
+  "checks": {
+    "backup": true,
+    "backup_hooks": true,
+    "bundle": true,
+    "compose": true,
+    "exposure": true,
+    "monitoring": true,
+    "monitoring_hooks": true,
+    "networking": true,
+    "report": true,
+    "storage": true
+  },
+  "manifest": "infrastructure",
+  "notes": [
+    "Phase 2 core services are described in repository-managed config.",
+    "Storage, networking, monitoring, exposure, and backup plans are explicit.",
+    "Operational hooks for monitoring and backup verification are wired in."
+  ],
+  "ready": true
+}

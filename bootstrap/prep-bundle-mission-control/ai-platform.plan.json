@@ -1,0 +1,210 @@
+{
+  "deployment_notes": "deploy each service separately, then wire RAG, tools, n8n workflows, MCP gateways, and Skills on top of the shared infrastructure layer",
+  "ingestion": {
+    "boundary_notes": "keep ingestion local, write only to repository-backed storage and the private vector store, and avoid external publication during indexing",
+    "inputs": [
+      "documents",
+      "markdown",
+      "pdfs",
+      "notes",
+      "internal files"
+    ],
+    "outputs": [
+      "chunks",
+      "embeddings",
+      "vector records",
+      "ingestion status"
+    ],
+    "retry_notes": "retry parse and embedding steps for transient failures; fail fast on invalid source documents",
+    "service": "ingestion and indexing",
+    "steps": [
+      {
+        "depends_on": [],
+        "name": "discover",
+        "purpose": "find eligible local source files and documents"
+      },
+      {
+        "depends_on": [
+          "discover"
+        ],
+        "name": "parse",
+        "purpose": "extract text and structure from source files"
+      },
+      {
+        "depends_on": [
+          "parse"
+        ],
+        "name": "chunk",
+        "purpose": "split content into manageable retrieval chunks"
+      },
+      {
+        "depends_on": [
+          "chunk",
+          "embedding service"
+        ],
+        "name": "embed",
+        "purpose": "send chunks to the embedding service"
+      },
+      {
+        "depends_on": [
+          "embed",
+          "vector database"
+        ],
+        "name": "index",
+        "purpose": "persist vectors and metadata to the vector database"
+      },
+      {
+        "depends_on": [
+          "index"
+        ],
+        "name": "verify",
+        "purpose": "check the indexed documents and record ingestion status"
+      }
+    ]
+  },
+  "integration_layers": [
+    "n8n for durable orchestration",
+    "MCP for structured tool access",
+    "Skills for reusable local workflows"
+  ],
+  "model_layer": {
+    "deployment_notes": "deploy model services alongside the shared infrastructure layer with explicit persistent storage and local-only access by default",
+    "routing_notes": "route generation to the local LLM service and embedding jobs to the embedding service before crossing any external boundary",
+    "services": [
+      {
+        "inference_notes": "serve locally to keep prompts and outputs private",
+        "name": "local LLM service",
+        "role": "generation and reasoning",
+        "storage": "model weights stored on local persistent disk"
+      },
+      {
+        "inference_notes": "batch or stream embeddings for ingestion and incremental updates",
+        "name": "embedding service",
+        "role": "vector generation",
+        "storage": "embedding model weights stored on local persistent disk"
+      }
+    ]
+  },
+  "model_services": [
+    "local LLM service",
+    "embedding service"
+  ],
+  "rag_api": {
+    "boundary_notes": "keep retrieval and generation on the internal network; expose only the RAG API surface if external access is explicitly approved",
+    "inputs": [
+      "user question",
+      "indexed vectors",
+      "document metadata"
+    ],
+    "outputs": [
+      "grounded answer",
+      "citations",
+      "confidence notes"
+    ],
+    "service": "RAG API",
+    "steps": [
+      {
+        "depends_on": [
+          "vector database"
+        ],
+        "name": "retrieve",
+        "purpose": "fetch relevant context from the vector database"
+      },
+      {
+        "depends_on": [
+          "retrieve"
+        ],
+        "name": "rerank",
+        "purpose": "rank retrieved chunks for answer quality"
+      },
+      {
+        "depends_on": [
+          "rerank",
+          "local LLM service"
+        ],
+        "name": "generate",
+        "purpose": "ask the local LLM service to produce a grounded answer"
+      },
+      {
+        "depends_on": [
+          "generate"
+        ],
+        "name": "cite",
+        "purpose": "attach source citations to the final response"
+      }
+    ]
+  },
+  "service_layer": {
+    "boundary_notes": "deploy AI services behind the shared infrastructure layer, keep model and vector storage private, and expose only the RAG API if needed",
+    "deployment_order": [
+      "local LLM service",
+      "embedding service",
+      "vector database",
+      "RAG API"
+    ],
+    "services": [
+      {
+        "access": "local network only",
+        "depends_on": [],
+        "name": "local LLM service",
+        "persistence": "model weights on local persistent storage",
+        "role": "generation and reasoning"
+      },
+      {
+        "access": "local network only",
+        "depends_on": [],
+        "name": "embedding service",
+        "persistence": "embedding model weights on local persistent storage",
+        "role": "vector generation"
+      },
+      {
+        "access": "private internal network",
+        "depends_on": [
+          "embedding service"
+        ],
+        "name": "vector database",
+        "persistence": "indexed vectors and metadata on durable disk",
+        "role": "persistent vector storage"
+      },
+      {
+        "access": "private internal network with optional reverse-proxy exposure",
+        "depends_on": [
+          "local LLM service",
+          "embedding service",
+          "vector database"
+        ],
+        "name": "RAG API",
+        "persistence": "stateless service using the other layers",
+        "role": "retrieval and grounded response orchestration"
+      }
+    ]
+  },
+  "services": [
+    "OpenClaw runtime",
+    "local LLM service",
+    "embedding service",
+    "vector database",
+    "RAG API",
+    "tool execution framework",
+    "n8n workflow orchestrator",
+    "MCP tool gateway",
+    "Skills registry"
+  ],
+  "storage_services": [
+    "vector database"
+  ],
+  "workflow_steps": [
+    "ingest documents",
+    "chunk content",
+    "embed chunks",
+    "index vectors",
+    "retrieve context",
+    "generate grounded answers",
+    "execute approved tools",
+    "route durable automations through n8n",
+    "invoke structured tools through MCP",
+    "run reusable local procedures through Skills",
+    "retrieve, rerank, generate, and cite through the RAG API",
+    "discover, parse, chunk, embed, index, and verify source documents"
+  ]
+}

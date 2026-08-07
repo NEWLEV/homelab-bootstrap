@@ -1,0 +1,50 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -629,6 +629,8 @@ def ask(request: AskRequest) -> AskResponse:
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=confidence.score,
++            confidence_reasons=debug_reasons("model_refusal"),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+@@ -638,21 +640,32 @@ def ask(request: AskRequest) -> AskResponse:
+         matches,
+     )
+ 
+-    if not citations:
++    citation_assessment = assess_citation_completeness(
++        answer,
++        matches,
++    )
++    final_confidence = round(
++        confidence.score * citation_assessment.completeness,
++        6,
++    )
++
++    if not citation_assessment.complete or not citations:
+         return AskResponse(
+             question=question,
+             answer=INSUFFICIENT_CONTEXT_MESSAGE,
+             grounded=False,
+             citations=[],
++            confidence=final_confidence,
++            citation_completeness=citation_assessment.completeness,
++            confidence_reasons=debug_reasons(
++                *citation_assessment.reasons
++            ),
+             retrieval_debug=retrieval_debug,
+         )
+ 
+     return AskResponse(
+         question=question,
+         answer=answer,
+         grounded=True,
+         citations=citations,
++        confidence=final_confidence,
++        citation_completeness=citation_assessment.completeness,
++        confidence_reasons=debug_reasons(),
+         retrieval_debug=retrieval_debug,
+     )

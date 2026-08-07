@@ -1,0 +1,15 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -471,11 +471,11 @@ def index_repository() -> dict[str, Any]:
+                     "line_start": line_start,
+                     "line_end": line_end,
+                     "file_hash": (
+                         current_file_hash
+                     ),
++                    "chunking_version": CHUNKING_VERSION,
+                 }
+-                    "chunking_version": CHUNKING_VERSION,
+             )
+ 
+             if digest in existing_id_set:

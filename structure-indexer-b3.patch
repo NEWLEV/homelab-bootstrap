@@ -1,0 +1,61 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -68,7 +68,9 @@
+     "line_start",
+     "line_end",
+     "file_hash",
++    "chunking_version",
+ }
+ 
+ MAX_CHARS = 4000
+ OVERLAP_CHARS = 400
++CHUNKING_VERSION = "2"
+@@ -231,7 +233,8 @@
+     string_fields = (
+         "path",
+         "directory",
+         "filename",
+         "extension",
+         "file_hash",
++        "chunking_version",
+     )
+@@ -245,9 +248,13 @@
+     integer_fields = (
+         "line_start",
+         "line_end",
+     )
+ 
+-    return all(
++    integers_are_valid = all(
+         isinstance(metadata.get(field), int)
+         for field in integer_fields
+     )
++    return (
++        integers_are_valid
++        and metadata.get("chunking_version") == CHUNKING_VERSION
++    )
+@@ -440,7 +447,7 @@
+         for (
+             line_start,
+             line_end,
+             chunk,
+-        ) in chunk_text(text):
++        ) in chunk_document(relative_path, text):
+             digest = chunk_id(
+                 relative,
+@@ -458,13 +465,14 @@
+             new_metadatas.append(
+                 {
+                     "path": relative,
+                     "directory": directory,
+                     "filename": filename,
+                     "extension": extension,
+                     "line_start": line_start,
+                     "line_end": line_end,
+                     "file_hash": (
+                         current_file_hash
+                     ),
++                    "chunking_version": CHUNKING_VERSION,
+                 }
+             )

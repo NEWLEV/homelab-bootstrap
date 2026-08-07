@@ -1,0 +1,177 @@
+diff --git a/services/local-rag/app/auth.py b/services/local-rag/app/auth.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/app/auth.py
+@@ -0,0 +1,84 @@
++import os
++from dataclasses import dataclass
++from hmac import compare_digest
++from pathlib import Path
++
++
++PUBLIC_PATHS = frozenset({"/health"})
++
++
++@dataclass(frozen=True)
++class BearerTokenAuth:
++    token: str | None = None
++
++    @property
++    def enabled(self) -> bool:
++        return self.token is not None
++
++    def authorize(self, authorization: str | None) -> bool:
++        if not self.enabled:
++            return True
++        if not authorization:
++            return False
++
++        scheme, separator, credentials = authorization.partition(" ")
++        if separator != " " or scheme.lower() != "bearer":
++            return False
++        if not credentials or credentials != credentials.strip():
++            return False
++
++        return compare_digest(credentials, self.token or "")
++
++    @classmethod
++    def from_environment(cls) -> "BearerTokenAuth":
++        direct_token = os.environ.get("API_AUTH_TOKEN")
++        token_file = os.environ.get("API_AUTH_TOKEN_FILE")
++
++        if direct_token is not None and token_file:
++            raise RuntimeError(
++                "Configure only one of API_AUTH_TOKEN or "
++                "API_AUTH_TOKEN_FILE."
++            )
++
++        if direct_token is not None:
++            return cls(_validate_token(direct_token, "API_AUTH_TOKEN"))
++
++        if token_file:
++            path = Path(token_file)
++            try:
++                value = path.read_text(encoding="utf-8")
++            except OSError as exc:
++                raise RuntimeError(
++                    f"Unable to read API authentication token file: {path}"
++                ) from exc
++            return cls(_validate_token(value, "API_AUTH_TOKEN_FILE"))
++
++        return cls()
++
++
++def _validate_token(value: str, source: str) -> str:
++    token = value.strip()
++    if not token:
++        raise RuntimeError(f"{source} must not be empty.")
++    if any(character.isspace() for character in token):
++        raise RuntimeError(f"{source} must not contain whitespace.")
++    if len(token) < 32:
++        raise RuntimeError(
++            f"{source} must contain at least 32 characters."
++        )
++    return token
++
++
++def is_public_path(path: str) -> bool:
++    return path in PUBLIC_PATHS
+diff --git a/services/local-rag/tests/test_auth.py b/services/local-rag/tests/test_auth.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/tests/test_auth.py
+@@ -0,0 +1,108 @@
++from pathlib import Path
++
++import pytest
++
++from app.auth import BearerTokenAuth, is_public_path
++
++
++TOKEN = "a" * 64
++
++
++def test_disabled_auth_allows_requests(monkeypatch) -> None:
++    monkeypatch.delenv("API_AUTH_TOKEN", raising=False)
++    monkeypatch.delenv("API_AUTH_TOKEN_FILE", raising=False)
++
++    auth = BearerTokenAuth.from_environment()
++
++    assert auth.enabled is False
++    assert auth.authorize(None) is True
++
++
++def test_direct_token_accepts_only_matching_bearer(monkeypatch) -> None:
++    monkeypatch.setenv("API_AUTH_TOKEN", TOKEN)
++    monkeypatch.delenv("API_AUTH_TOKEN_FILE", raising=False)
++
++    auth = BearerTokenAuth.from_environment()
++
++    assert auth.enabled is True
++    assert auth.authorize(f"Bearer {TOKEN}") is True
++    assert auth.authorize(f"bearer {TOKEN}") is True
++    assert auth.authorize(None) is False
++    assert auth.authorize("Basic credentials") is False
++    assert auth.authorize("Bearer wrong") is False
++    assert auth.authorize(f"Bearer {TOKEN} ") is False
++
++
++def test_token_file_is_loaded(monkeypatch, tmp_path: Path) -> None:
++    token_file = tmp_path / "api-token"
++    token_file.write_text(f"{TOKEN}\n", encoding="utf-8")
++    monkeypatch.delenv("API_AUTH_TOKEN", raising=False)
++    monkeypatch.setenv("API_AUTH_TOKEN_FILE", str(token_file))
++
++    auth = BearerTokenAuth.from_environment()
++
++    assert auth.authorize(f"Bearer {TOKEN}") is True
++
++
++def test_missing_token_file_fails_closed(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    missing = tmp_path / "missing-token"
++    monkeypatch.delenv("API_AUTH_TOKEN", raising=False)
++    monkeypatch.setenv("API_AUTH_TOKEN_FILE", str(missing))
++
++    with pytest.raises(RuntimeError, match="Unable to read"):
++        BearerTokenAuth.from_environment()
++
++
++@pytest.mark.parametrize(
++    "token",
++    [
++        "",
++        "short-token",
++        "a" * 31,
++        f"{'a' * 32} contains-space",
++    ],
++)
++def test_invalid_token_is_rejected(monkeypatch, token: str) -> None:
++    monkeypatch.setenv("API_AUTH_TOKEN", token)
++    monkeypatch.delenv("API_AUTH_TOKEN_FILE", raising=False)
++
++    with pytest.raises(RuntimeError):
++        BearerTokenAuth.from_environment()
++
++
++def test_conflicting_token_sources_are_rejected(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    token_file = tmp_path / "api-token"
++    token_file.write_text(TOKEN, encoding="utf-8")
++    monkeypatch.setenv("API_AUTH_TOKEN", TOKEN)
++    monkeypatch.setenv("API_AUTH_TOKEN_FILE", str(token_file))
++
++    with pytest.raises(RuntimeError, match="only one"):
++        BearerTokenAuth.from_environment()
++
++
++def test_only_health_is_public() -> None:
++    assert is_public_path("/health") is True
++    assert is_public_path("/metrics") is False
++    assert is_public_path("/docs") is False
++    assert is_public_path("/openapi.json") is False
++    assert is_public_path("/search") is False

@@ -1,0 +1,60 @@
+name: infrastructure
+services:
+  reverse-proxy:
+    image: traefik:v3.1
+    depends_on: []
+    volumes: []
+    networks:
+    - edge
+    ports:
+    - 80:80
+    - 443:443
+    environment:
+      TRAEFIK_API: 'true'
+      TRAEFIK_PING: 'true'
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - http://127.0.0.1:8080/ping
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  monitoring:
+    image: prom/prometheus:v2.55.1
+    depends_on:
+    - reverse-proxy
+    volumes:
+    - prometheus-data
+    networks:
+    - internal
+    ports:
+    - 9090:9090
+    environment: {}
+  backups:
+    image: restic/restic:latest
+    depends_on:
+    - monitoring
+    volumes:
+    - backup-data
+    networks:
+    - internal
+    ports: []
+    environment: {}
+volumes:
+  prometheus-data: {}
+  backup-data: {}
+networks:
+  edge: {}
+  internal: {}
+x-aisha-hooks:
+  monitoring:
+    service: monitoring
+    targets:
+    - metrics
+    - logs
+    - health
+  backups:
+    service: backups
+    targets:
+    - prometheus-data
+    - backup-data

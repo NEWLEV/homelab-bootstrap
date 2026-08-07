@@ -1,0 +1,25 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -38,7 +38,7 @@ from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+-APP_VERSION = "0.9.1"
++APP_VERSION = "0.9.2"
+ 
+ 
+ app = FastAPI(
+@@ -101,9 +101,7 @@ chroma_client = chromadb.PersistentClient(
+ 
+ collection = chroma_client.get_or_create_collection(
+     name="homelab_bootstrap",
+-    metadata={
+-        "description": "Aisha homelab repository",
+-    },
++    metadata=collection_metadata(EMBEDDING_MODEL),
+ )
+@@ -528,6 +526,7 @@ def health() -> dict[str, Any]:
+         "index_status": index_job["status"],
+         "last_index_success_at": index_job["last_success_at"],
++        "index_schema_version": INDEX_SCHEMA_VERSION,
+     }

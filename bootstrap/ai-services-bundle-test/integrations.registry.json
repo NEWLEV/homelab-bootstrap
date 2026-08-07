@@ -1,0 +1,47 @@
+{
+  "entries": [
+    {
+      "layer": "automation",
+      "name": "n8n",
+      "phase": "Phase 3",
+      "priority": 1,
+      "purpose": "durable workflow orchestration and retryable operational automations"
+    },
+    {
+      "layer": "tooling",
+      "name": "MCP",
+      "phase": "Phase 3",
+      "priority": 2,
+      "purpose": "structured tool access and external system bridges"
+    },
+    {
+      "layer": "reuse",
+      "name": "Skills",
+      "phase": "Phase 3",
+      "priority": 3,
+      "purpose": "packaged local procedures and repeatable operator knowledge"
+    },
+    {
+      "layer": "devops",
+      "name": "GitHub Actions",
+      "phase": "Phase 4",
+      "priority": 4,
+      "purpose": "CI, reviews, and release automation"
+    },
+    {
+      "layer": "operations",
+      "name": "browser automation",
+      "phase": "Phase 4",
+      "priority": 5,
+      "purpose": "internal admin UIs, dashboards, and browser-driven workflows"
+    },
+    {
+      "layer": "notifications",
+      "name": "Slack/email",
+      "phase": "Phase 5",
+      "priority": 6,
+      "purpose": "alerts, approvals, and human follow-up"
+    }
+  ],
+  "summary": "Aisha should prefer durable workflows, structured tools, and reusable local capabilities before ad hoc manual operations."
+}

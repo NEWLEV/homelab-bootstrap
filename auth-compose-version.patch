@@ -1,0 +1,22 @@
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17 +17 @@
+-    assert body["version"] == "0.9.3"
++    assert body["version"] == "0.10.0"
+@@ -27,0 +28 @@
++    assert body["authentication_enabled"] is False
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -54,0 +55 @@
++      API_AUTH_TOKEN_FILE: /run/secrets/local_rag_api_token
+@@ -59,0 +61,3 @@
++    secrets:
++      - local_rag_api_token
++
+@@ -86,0 +91,4 @@
++
++secrets:
++  local_rag_api_token:
++    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}

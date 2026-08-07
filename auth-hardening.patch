@@ -1,0 +1,28 @@
+diff --git a/services/local-rag/app/auth.py b/services/local-rag/app/auth.py
+--- a/services/local-rag/app/auth.py
++++ b/services/local-rag/app/auth.py
+@@ -2 +2 @@
+-from dataclasses import dataclass
++from dataclasses import dataclass, field
+@@ -12 +12 @@
+-    token: str | None = None
++    token: str | None = field(default=None, repr=False)
+@@ -24 +23,0 @@
+-
+diff --git a/services/local-rag/tests/test_auth.py b/services/local-rag/tests/test_auth.py
+--- a/services/local-rag/tests/test_auth.py
++++ b/services/local-rag/tests/test_auth.py
+@@ -30,0 +31 @@
++    assert TOKEN not in repr(auth)
+diff --git a/scripts/local-rag-token b/scripts/local-rag-token
+--- a/scripts/local-rag-token
++++ b/scripts/local-rag-token
+@@ -13,0 +14,5 @@
++if [[ -L "$token_directory" ]]; then
++    printf 'Refusing symlinked token directory: %s\n' "$token_directory" >&2
++    exit 1
++fi
++
+@@ -15 +20 @@
+-    if [[ ! -f "$token_file" || ! -s "$token_file" ]]; then
++    if [[ -L "$token_file" || ! -f "$token_file" || ! -s "$token_file" ]]; then

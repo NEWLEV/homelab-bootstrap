@@ -1,0 +1,34 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -11 +11 @@
+-from fastapi.responses import StreamingResponse
++from fastapi.responses import JSONResponse, StreamingResponse
+@@ -13,0 +14 @@
++from app.auth import BearerTokenAuth, is_public_path
+@@ -40 +41 @@
+-APP_VERSION = "0.9.3"
++APP_VERSION = "0.10.0"
+@@ -40,0 +42,2 @@
++api_auth = BearerTokenAuth.from_environment()
++
+@@ -46,0 +49,18 @@
++
++@app.middleware("http")
++async def require_api_authentication(
++    request: Request,
++    call_next,
++):
++    if is_public_path(request.url.path) or api_auth.authorize(
++        request.headers.get("Authorization")
++    ):
++        return await call_next(request)
++
++    return JSONResponse(
++        status_code=401,
++        content={"detail": "Authentication required."},
++        headers={"WWW-Authenticate": "Bearer"},
++    )
++
+@@ -562,0 +584 @@
++        "authentication_enabled": api_auth.enabled,

@@ -1,0 +1,31 @@
+{
+  "routing_notes": "prefer MCP when a task needs structured tool access through a stable typed bridge to an external system, repo, or service",
+  "safety_notes": "keep writes explicit, gated, and auditable; prefer read-only access by default",
+  "service": "MCP gateway",
+  "tools": [
+    {
+      "access_pattern": "request/response with explicit approval for writes",
+      "category": "devops",
+      "description": "read and update repository state through structured tool calls",
+      "name": "repository control"
+    },
+    {
+      "access_pattern": "ticket-oriented operations with audit trails",
+      "category": "workflow",
+      "description": "manage work items, statuses, and review metadata",
+      "name": "issue and task control"
+    },
+    {
+      "access_pattern": "guarded operations with least privilege",
+      "category": "operations",
+      "description": "bridge internal services, dashboards, and admin endpoints",
+      "name": "service administration"
+    },
+    {
+      "access_pattern": "read-only retrieval unless explicitly approved",
+      "category": "knowledge",
+      "description": "query local knowledge sources and reference material",
+      "name": "knowledge access"
+    }
+  ]
+}

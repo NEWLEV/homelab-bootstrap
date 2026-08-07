@@ -1,0 +1,39 @@
+{
+  "alerting_targets": [
+    "containers",
+    "healthchecks",
+    "backups"
+  ],
+  "collection_notes": "monitor health and operational status without manual inspection",
+  "dashboard_expectations": [
+    "service availability",
+    "request latency",
+    "resource utilization"
+  ],
+  "hooks": {
+    "alert": [
+      "containers",
+      "healthchecks",
+      "backups"
+    ],
+    "scrape": [
+      "metrics",
+      "health",
+      "logs"
+    ]
+  },
+  "log_sources": [
+    "reverse-proxy",
+    "monitoring",
+    "mission-control",
+    "backups"
+  ],
+  "metric_targets": [
+    "cpu",
+    "memory",
+    "storage",
+    "network",
+    "service_health"
+  ],
+  "service": "monitoring"
+}

@@ -1,0 +1,24 @@
+diff --git a/services/local-rag/tests/test_chunking.py b/services/local-rag/tests/test_chunking.py
+--- a/services/local-rag/tests/test_chunking.py
++++ b/services/local-rag/tests/test_chunking.py
+@@ -20,7 +20,7 @@
+             Path("compose/ai/local-rag.yml"),
+             "services:\n  ollama:\n" + "a" * 50 + "\n  api:\n" + "b" * 50,
+-            ["services:", "  api:"],
++            ["services:", "api:"],
+@@ -35,7 +35,7 @@
+             Path("config.json"),
+             "{\n  \"agents\": {\n" + "a" * 50 + "\n  \"tools\": {\n" + "b" * 50,
+-            ["{", "\"tools\":"],
++            ["{", "\"tools\": {"],
+@@ -61,7 +61,12 @@
+ def test_small_adjacent_sections_are_packed() -> None:
+     text = "# One\na\n## Two\nb\n"
+ 
+-    chunks = chunk_document(Path("README.md"), text, max_chars=100)
++    chunks = chunk_document(
++        Path("README.md"),
++        text,
++        max_chars=100,
++        overlap_chars=10,
++    )

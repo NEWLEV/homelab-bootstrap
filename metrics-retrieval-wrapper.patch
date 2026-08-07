@@ -1,0 +1,26 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -245,0 +246,25 @@
++def retrieve_chunks(
++    query: str,
++    limit: int,
++    debug: bool = False,
++    path: str | None = None,
++    path_prefix: str | None = None,
++    directory: str | None = None,
++    extension: str | None = None,
++) -> list[dict[str, Any]]:
++    with metrics.time("retrieval"):
++        return _retrieve_chunks(
++            query=query,
++            limit=limit,
++            debug=debug,
++            path=path,
++            path_prefix=path_prefix,
++            directory=directory,
++            extension=extension,
++        )
++
++
++

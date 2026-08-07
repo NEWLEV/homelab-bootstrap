@@ -1,0 +1,45 @@
+{
+  "boundary_notes": "deploy AI services behind the shared infrastructure layer, keep model and vector storage private, and expose only the RAG API if needed",
+  "deployment_order": [
+    "local LLM service",
+    "embedding service",
+    "vector database",
+    "RAG API"
+  ],
+  "services": [
+    {
+      "access": "local network only",
+      "depends_on": [],
+      "name": "local LLM service",
+      "persistence": "model weights on local persistent storage",
+      "role": "generation and reasoning"
+    },
+    {
+      "access": "local network only",
+      "depends_on": [],
+      "name": "embedding service",
+      "persistence": "embedding model weights on local persistent storage",
+      "role": "vector generation"
+    },
+    {
+      "access": "private internal network",
+      "depends_on": [
+        "embedding service"
+      ],
+      "name": "vector database",
+      "persistence": "indexed vectors and metadata on durable disk",
+      "role": "persistent vector storage"
+    },
+    {
+      "access": "private internal network with optional reverse-proxy exposure",
+      "depends_on": [
+        "local LLM service",
+        "embedding service",
+        "vector database"
+      ],
+      "name": "RAG API",
+      "persistence": "stateless service using the other layers",
+      "role": "retrieval and grounded response orchestration"
+    }
+  ]
+}

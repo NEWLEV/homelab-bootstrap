@@ -1,0 +1,12 @@
+{
+  "certificate_source": "ACME-compatible provider or internal certificate authority",
+  "dns_strategy": "split-horizon DNS with optional tunnel fallback",
+  "domain_boundaries": [
+    "public",
+    "private"
+  ],
+  "exposure_boundary": "public traffic terminates at edge; private services stay on internal networks",
+  "renewal_notes": "renew certificates before expiry and verify proxy reloads cleanly",
+  "service": "reverse-proxy",
+  "tls_strategy": "automatic TLS termination at the edge proxy"
+}

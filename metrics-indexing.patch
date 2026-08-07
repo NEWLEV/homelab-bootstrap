@@ -1,0 +1,14 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -1019,0 +1020,3 @@
++
++    metrics.increment("index_requests")
++    indexing_started = perf_counter()
+@@ -1024,0 +1028 @@
++        metrics.dependency_failure("indexing")
+@@ -1028,0 +1033,4 @@
++    finally:
++        metrics.observe(
++            "indexing", perf_counter() - indexing_started
++        )

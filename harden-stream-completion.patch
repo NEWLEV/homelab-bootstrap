@@ -1,0 +1,121 @@
+diff --git a/services/local-rag/app/streaming.py b/services/local-rag/app/streaming.py
+--- a/services/local-rag/app/streaming.py
++++ b/services/local-rag/app/streaming.py
+@@ -73,3 +73,7 @@ async def stream_ollama_answer(
+                     yield token
+                 if done:
+                     return
++
++            raise RuntimeError(
++                "Ollama stream ended before completion."
++            )
+diff --git a/services/local-rag/tests/test_streaming.py b/services/local-rag/tests/test_streaming.py
+--- a/services/local-rag/tests/test_streaming.py
++++ b/services/local-rag/tests/test_streaming.py
+@@ -5,6 +5,7 @@ import pytest
+ from fastapi.testclient import TestClient
+ 
+ import app.main as main
++import app.streaming as streaming
+ from app.streaming import (
+     parse_ollama_line,
+     sse_event,
+@@ -72,6 +73,49 @@ def test_stream_returns_tokens_and_final_grounded_result(
+     assert result["citations"][0]["path"] == "docs.md"
+ 
+ 
++def test_stream_preserves_ask_filters(monkeypatch) -> None:
++    calls: list[dict[str, Any]] = []
++
++    def fake_retrieve(query, limit, **kwargs):
++        calls.append(kwargs)
++        return [confident_match()]
++
++    async def fake_stream(**kwargs):
++        yield "Backups run nightly. [docs.md:10-20]"
++
++    monkeypatch.setattr(main, "retrieve_chunks", fake_retrieve)
++    monkeypatch.setattr(main, "stream_ollama_answer", fake_stream)
++
++    response = client.post(
++        "/ask/stream",
++        json={
++            "question": "When do backups run?",
++            "path": "docs.md",
++            "path_prefix": "docs",
++            "directory": ".",
++            "extension": ".md",
++        },
++    )
++
++    assert response.status_code == 200
++    assert calls == [
++        {
++            "debug": True,
++            "path": "docs.md",
++            "path_prefix": "docs",
++            "directory": ".",
++            "extension": ".md",
++        }
++    ]
++    assert parse_events(response.text)[-1][1]["grounded"] is True
++
++
+ def test_stream_low_confidence_skips_generation(monkeypatch) -> None:
+     match = confident_match()
+     match.update(combined_score=0.05, matching_tokens=[])
+@@ -209,6 +253,55 @@ def test_disconnected_client_skips_ollama_stream() -> None:
+     assert asyncio.run(collect()) == []
+ 
+ 
++def test_truncated_ollama_stream_is_rejected(monkeypatch) -> None:
++    class FakeResponse:
++        async def __aenter__(self):
++            return self
++
++        async def __aexit__(self, *args):
++            return None
++
++        def raise_for_status(self) -> None:
++            return None
++
++        async def aiter_lines(self):
++            yield '{"response":"partial","done":false}'
++
++    class FakeClient:
++        async def __aenter__(self):
++            return self
++
++        async def __aexit__(self, *args):
++            return None
++
++        def stream(self, *args, **kwargs):
++            return FakeResponse()
++
++    monkeypatch.setattr(
++        streaming.httpx,
++        "AsyncClient",
++        lambda **kwargs: FakeClient(),
++    )
++
++    async def connected() -> bool:
++        return False
++
++    async def collect() -> list[str]:
++        return [
++            token
++            async for token in stream_ollama_answer(
++                ollama_url="http://ollama",
++                model="model",
++                prompt="prompt",
++                is_disconnected=connected,
++            )
++        ]
++
++    with pytest.raises(RuntimeError, match="before completion"):
++        asyncio.run(collect())
++
++
+ def test_stream_openapi_marks_tokens_as_provisional() -> None:
+     description = main.app.openapi()["paths"]["/ask/stream"]["post"][
+         "description"

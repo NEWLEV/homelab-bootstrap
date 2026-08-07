@@ -1,0 +1,6 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -246 +246 @@
+-def retrieve_chunks(
++def _retrieve_chunks(

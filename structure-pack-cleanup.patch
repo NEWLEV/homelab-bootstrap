@@ -1,0 +1,16 @@
+diff --git a/services/local-rag/app/chunking.py b/services/local-rag/app/chunking.py
+--- a/services/local-rag/app/chunking.py
++++ b/services/local-rag/app/chunking.py
+@@ -107,7 +107,6 @@ def structural_spans(path: Path, text: str) -> list[tuple[int, int, int]]:
+ 
+ 
+ def pack_spans(
+-    text: str,
+     spans: list[tuple[int, int, int]],
+     max_chars: int,
+@@ -150,7 +149,7 @@ def chunk_document(
+         return []
+ 
+     chunks: list[tuple[int, int, str]] = []
+-    for start, end, start_line in pack_spans(text, spans, max_chars):
++    for start, end, start_line in pack_spans(spans, max_chars):

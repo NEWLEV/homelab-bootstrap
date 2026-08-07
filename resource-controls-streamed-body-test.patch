@@ -1,0 +1,46 @@
+diff --git a/services/local-rag/tests/test_resource_controls.py b/services/local-rag/tests/test_resource_controls.py
+--- a/services/local-rag/tests/test_resource_controls.py
++++ b/services/local-rag/tests/test_resource_controls.py
+@@ -1,4 +1,4 @@
+-from fastapi import FastAPI
++from fastapi import FastAPI, Request
+ from fastapi.testclient import TestClient
+ 
+ from app.resource_controls import (
+@@ -33,8 +33,9 @@
+     )
+ 
+     @app.post("/search")
+-    def search() -> dict[str, bool]:
++    async def search(request: Request) -> dict[str, bool]:
++        await request.body()
+         return {"ok": True}
+ 
+     @app.get("/health")
+@@ -148,6 +149,27 @@
+     assert rejections == ["oversized_requests"]
+ 
+ 
++def test_middleware_counts_streamed_body_bytes() -> None:
++    rejections: list[str] = []
++    app, _ = build_app(
++        max_body_bytes=8,
++        rejections=rejections,
++    )
++    client = TestClient(app)
++
++    def body_chunks():
++        yield b"12345"
++        yield b"6789"
++
++    response = client.post(
++        "/search",
++        content=body_chunks(),
++        headers={"Content-Type": "application/octet-stream"},
++    )
++
++    assert response.status_code == 413
++    assert rejections == ["oversized_requests"]
++
++
+ def test_environment_integer_validation(monkeypatch) -> None:

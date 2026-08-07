@@ -1,0 +1,31 @@
+diff --git a/services/local-rag/app/index_schema.py b/services/local-rag/app/index_schema.py
+--- a/services/local-rag/app/index_schema.py
++++ b/services/local-rag/app/index_schema.py
+@@ -54,14 +54,16 @@ def metadata_issues(
+     if not REQUIRED_METADATA_FIELDS.issubset(metadata):
+         issues.add("missing_fields")
+-    if not all(
+-        isinstance(metadata.get(field), str)
++    if any(
++        field in metadata
++        and not isinstance(metadata[field], str)
+         for field in STRING_METADATA_FIELDS
+     ):
+         issues.add("invalid_types")
+-    if not all(
+-        isinstance(metadata.get(field), int)
++    if any(
++        field in metadata
++        and not isinstance(metadata[field], int)
+         for field in INTEGER_METADATA_FIELDS
+     ):
+         issues.add("invalid_types")
+diff --git a/services/local-rag/tests/test_index_schema.py b/services/local-rag/tests/test_index_schema.py
+--- a/services/local-rag/tests/test_index_schema.py
++++ b/services/local-rag/tests/test_index_schema.py
+@@ -74,6 +74,7 @@ def test_missing_schema_fields_require_reindex() -> None:
+     assert result["invalid_records"] == 1
+     assert result["missing_field_records"] == 1
++    assert result["invalid_type_records"] == 0
+     assert result["schema_mismatch_records"] == 1
+     assert result["embedding_model_mismatch_records"] == 1

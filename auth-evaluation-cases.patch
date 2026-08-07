@@ -1,0 +1,15 @@
+diff --git a/services/local-rag/evaluation/cases.json b/services/local-rag/evaluation/cases.json
+--- a/services/local-rag/evaluation/cases.json
++++ b/services/local-rag/evaluation/cases.json
+@@ -13,7 +13,10 @@
+   {
+     "name": "Local RAG API container",
+     "query": "local-rag-api",
+-    "expected_paths": ["compose/ai/local-rag.yml"]
++    "expected_paths": [
++      "compose/ai/local-rag.yml",
++      "services/local-rag/AUTHENTICATION.md"
++    ]
+   },
+   {
+     "name": "Backup timer unit",

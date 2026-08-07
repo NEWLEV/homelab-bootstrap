@@ -1,0 +1,58 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -23,13 +23,19 @@ from app.index_jobs import (
+     IndexJobAlreadyRunning,
+     IndexJobManager,
+ )
++from app.index_schema import (
++    INDEX_SCHEMA_VERSION,
++    collection_metadata,
++    inspect_collection,
++)
++from app.indexer import CHUNKING_VERSION
+ 
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+-APP_VERSION = "0.9.1"
++APP_VERSION = "0.9.2"
+@@ -94,9 +100,7 @@ chroma_client = chromadb.PersistentClient(
+ 
+ collection = chroma_client.get_or_create_collection(
+     name="homelab_bootstrap",
+-    metadata={
+-        "description": "Aisha homelab repository",
+-    },
++    metadata=collection_metadata(EMBEDDING_MODEL),
+ )
+@@ -522,6 +526,7 @@ def health() -> dict[str, Any]:
+         "confidence_min_score": CONFIDENCE_MIN_SCORE,
+         "index_status": index_job["status"],
+         "last_index_success_at": index_job["last_success_at"],
++        "index_schema_version": INDEX_SCHEMA_VERSION,
+     }
+@@ -931,9 +936,20 @@ def index_status() -> dict[str, Any]:
+     return index_job_manager.snapshot()
+ 
+ 
++@app.get("/index/integrity")
++def index_integrity() -> dict[str, Any]:
++    return inspect_collection(
++        collection,
++        chunking_version=CHUNKING_VERSION,
++        embedding_model=EMBEDDING_MODEL,
++    )
++
++
+ @app.post("/index")
+-def index_documents() -> dict[str, Any]:
++def index_documents(rebuild: bool = False) -> dict[str, Any]:
+     from app.indexer import index_repository
+@@ -944,7 +960,7 @@ def index_documents() -> dict[str, Any]:
+ 
+     try:
+-        result = index_repository()
++        result = index_repository(rebuild=rebuild)

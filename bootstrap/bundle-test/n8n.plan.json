@@ -1,0 +1,18 @@
+{
+  "approval_strategy": "require approval for destructive, externally visible, or state-changing actions",
+  "retry_strategy": "retry transient failures with explicit logging and bounded attempts",
+  "service": "n8n",
+  "triggers": [
+    "schedule",
+    "webhook",
+    "manual approval",
+    "event routing"
+  ],
+  "workflows": [
+    "nightly backups",
+    "index rebuilds",
+    "dependency checks",
+    "security scans",
+    "operational alerts"
+  ]
+}

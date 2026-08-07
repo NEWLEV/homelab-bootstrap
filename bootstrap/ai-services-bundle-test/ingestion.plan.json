@@ -1,0 +1,62 @@
+{
+  "boundary_notes": "keep ingestion local, write only to repository-backed storage and the private vector store, and avoid external publication during indexing",
+  "inputs": [
+    "documents",
+    "markdown",
+    "pdfs",
+    "notes",
+    "internal files"
+  ],
+  "outputs": [
+    "chunks",
+    "embeddings",
+    "vector records",
+    "ingestion status"
+  ],
+  "retry_notes": "retry parse and embedding steps for transient failures; fail fast on invalid source documents",
+  "service": "ingestion and indexing",
+  "steps": [
+    {
+      "depends_on": [],
+      "name": "discover",
+      "purpose": "find eligible local source files and documents"
+    },
+    {
+      "depends_on": [
+        "discover"
+      ],
+      "name": "parse",
+      "purpose": "extract text and structure from source files"
+    },
+    {
+      "depends_on": [
+        "parse"
+      ],
+      "name": "chunk",
+      "purpose": "split content into manageable retrieval chunks"
+    },
+    {
+      "depends_on": [
+        "chunk",
+        "embedding service"
+      ],
+      "name": "embed",
+      "purpose": "send chunks to the embedding service"
+    },
+    {
+      "depends_on": [
+        "embed",
+        "vector database"
+      ],
+      "name": "index",
+      "purpose": "persist vectors and metadata to the vector database"
+    },
+    {
+      "depends_on": [
+        "index"
+      ],
+      "name": "verify",
+      "purpose": "check the indexed documents and record ingestion status"
+    }
+  ]
+}

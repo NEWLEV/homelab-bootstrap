@@ -1,0 +1,267 @@
+diff --git a/services/local-rag/app/index_schema.py b/services/local-rag/app/index_schema.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/app/index_schema.py
+@@ -0,0 +1,134 @@
++from typing import Any
++
++
++INDEX_SCHEMA_VERSION = "1"
++COLLECTION_DESCRIPTION = "Aisha homelab repository"
++
++REQUIRED_METADATA_FIELDS = {
++    "path",
++    "directory",
++    "filename",
++    "extension",
++    "line_start",
++    "line_end",
++    "file_hash",
++    "chunking_version",
++    "schema_version",
++    "embedding_model",
++}
++
++STRING_METADATA_FIELDS = {
++    "path",
++    "directory",
++    "filename",
++    "extension",
++    "file_hash",
++    "chunking_version",
++    "schema_version",
++    "embedding_model",
++}
++INTEGER_METADATA_FIELDS = {
++    "line_start",
++    "line_end",
++}
++
++
++def collection_metadata(embedding_model: str) -> dict[str, str]:
++    return {
++        "description": COLLECTION_DESCRIPTION,
++        "schema_version": INDEX_SCHEMA_VERSION,
++        "embedding_model": embedding_model,
++    }
++
++
++def metadata_issues(
++    metadata: dict[str, Any] | None,
++    *,
++    chunking_version: str,
++    embedding_model: str,
++) -> set[str]:
++    if not metadata:
++        return {"missing_metadata"}
++
++    issues: set[str] = set()
++    if not REQUIRED_METADATA_FIELDS.issubset(metadata):
++        issues.add("missing_fields")
++    if not all(
++        isinstance(metadata.get(field), str)
++        for field in STRING_METADATA_FIELDS
++    ):
++        issues.add("invalid_types")
++    if not all(
++        isinstance(metadata.get(field), int)
++        for field in INTEGER_METADATA_FIELDS
++    ):
++        issues.add("invalid_types")
++    if metadata.get("schema_version") != INDEX_SCHEMA_VERSION:
++        issues.add("schema_mismatch")
++    if metadata.get("chunking_version") != chunking_version:
++        issues.add("chunking_mismatch")
++    if metadata.get("embedding_model") != embedding_model:
++        issues.add("embedding_model_mismatch")
++    return issues
++
++
++def metadata_is_current(
++    metadata: dict[str, Any] | None,
++    *,
++    chunking_version: str,
++    embedding_model: str,
++) -> bool:
++    return not metadata_issues(
++        metadata,
++        chunking_version=chunking_version,
++        embedding_model=embedding_model,
++    )
++
++
++def inspect_collection(
++    collection: Any,
++    *,
++    chunking_version: str,
++    embedding_model: str,
++) -> dict[str, Any]:
++    records = collection.get(include=["metadatas"])
++    metadatas = records.get("metadatas", [])
++    issue_counts = {
++        "missing_metadata_records": 0,
++        "missing_field_records": 0,
++        "invalid_type_records": 0,
++        "schema_mismatch_records": 0,
++        "chunking_mismatch_records": 0,
++        "embedding_model_mismatch_records": 0,
++    }
++    invalid_records = 0
++
++    issue_mapping = {
++        "missing_metadata": "missing_metadata_records",
++        "missing_fields": "missing_field_records",
++        "invalid_types": "invalid_type_records",
++        "schema_mismatch": "schema_mismatch_records",
++        "chunking_mismatch": "chunking_mismatch_records",
++        "embedding_model_mismatch": (
++            "embedding_model_mismatch_records"
++        ),
++    }
++
++    for metadata in metadatas:
++        issues = metadata_issues(
++            metadata,
++            chunking_version=chunking_version,
++            embedding_model=embedding_model,
++        )
++        if issues:
++            invalid_records += 1
++        for issue in issues:
++            issue_counts[issue_mapping[issue]] += 1
++
++    stored_collection_metadata = collection.metadata or {}
++    collection_schema_version = stored_collection_metadata.get(
++        "schema_version"
++    )
++    collection_embedding_model = stored_collection_metadata.get(
++        "embedding_model"
++    )
++    collection_marker_current = (
++        collection_schema_version == INDEX_SCHEMA_VERSION
++        and collection_embedding_model == embedding_model
++    )
++
++    return {
++        "valid": invalid_records == 0 and collection_marker_current,
++        "reindex_required": (
++            invalid_records > 0 or not collection_marker_current
++        ),
++        "records": len(records.get("ids", [])),
++        "invalid_records": invalid_records,
++        **issue_counts,
++        "schema_version": INDEX_SCHEMA_VERSION,
++        "collection_schema_version": collection_schema_version,
++        "embedding_model": embedding_model,
++        "collection_embedding_model": collection_embedding_model,
++        "chunking_version": chunking_version,
++    }
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -9,6 +9,12 @@ import httpx
+ 
+ from app.chunking import chunk_document
++from app.index_schema import (
++    INDEX_SCHEMA_VERSION,
++    REQUIRED_METADATA_FIELDS,
++    collection_metadata,
++    metadata_is_current,
++)
+@@ -55,17 +61,6 @@ EXCLUDED_RELATIVE_PREFIXES = {
+     "services/local-rag/tests",
+ }
+ 
+-REQUIRED_METADATA_FIELDS = {
+-    "path",
+-    "directory",
+-    "filename",
+-    "extension",
+-    "line_start",
+-    "line_end",
+-    "file_hash",
+-    "chunking_version",
+-}
+-
+ MAX_CHARS = 4000
+ OVERLAP_CHARS = 400
+ CHUNKING_VERSION = "2"
+@@ -209,47 +204,11 @@ def has_required_metadata(
+     metadata: dict[str, Any],
+ ) -> bool:
+-    if not REQUIRED_METADATA_FIELDS.issubset(
+-        metadata.keys()
+-    ):
+-        return False
+-
+-    string_fields = (
+-        "path",
+-        "directory",
+-        "filename",
+-        "extension",
+-        "file_hash",
+-        "chunking_version",
+-    )
+-
+-    if not all(
+-        isinstance(metadata.get(field), str)
+-        for field in string_fields
+-    ):
+-        return False
+-
+-    integer_fields = (
+-        "line_start",
+-        "line_end",
+-    )
+-
+-    integers_are_valid = all(
+-        isinstance(metadata.get(field), int)
+-        for field in integer_fields
+-    )
+-    return (
+-        integers_are_valid
+-        and metadata.get("chunking_version") == CHUNKING_VERSION
++    return metadata_is_current(
++        metadata,
++        chunking_version=CHUNKING_VERSION,
++        embedding_model=EMBEDDING_MODEL,
+     )
+ 
+ 
+-def index_repository() -> dict[str, Any]:
++def index_repository(*, rebuild: bool = False) -> dict[str, Any]:
+     client = chromadb.PersistentClient(
+         path=str(CHROMA_PATH),
+     )
+@@ -258,11 +217,7 @@ def index_repository() -> dict[str, Any]:
+     collection = client.get_or_create_collection(
+         name="homelab_bootstrap",
+-        metadata={
+-            "description": (
+-                "Aisha homelab repository"
+-            ),
+-        },
++        metadata=collection_metadata(EMBEDDING_MODEL),
+     )
+@@ -375,6 +330,7 @@ def index_repository() -> dict[str, Any]:
+         if (
+             content_is_unchanged
+             and metadata_is_complete
++            and not rebuild
+         ):
+@@ -455,6 +411,8 @@ def index_repository() -> dict[str, Any]:
+                     ),
+                     "chunking_version": CHUNKING_VERSION,
++                    "schema_version": INDEX_SCHEMA_VERSION,
++                    "embedding_model": EMBEDDING_MODEL,
+                 }
+             )
+@@ -480,6 +438,10 @@ def index_repository() -> dict[str, Any]:
+             ids=stale_ids,
+         )
+ 
++    collection.modify(
++        metadata=collection_metadata(EMBEDDING_MODEL),
++    )
++
+     return {

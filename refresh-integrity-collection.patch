@@ -1,0 +1,40 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -937,8 +937,12 @@ def index_status() -> dict[str, Any]:
+ 
+ @app.get("/index/integrity")
+ def index_integrity() -> dict[str, Any]:
++    current_collection = chroma_client.get_collection(
++        name=collection.name,
++    )
++
+     return inspect_collection(
+-        collection,
++        current_collection,
+         chunking_version=CHUNKING_VERSION,
+         embedding_model=EMBEDDING_MODEL,
+     )
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -27,6 +27,20 @@ def test_health() -> None:
+     assert body["index_schema_version"] == "1"
+ 
+ 
++def test_index_integrity() -> None:
++    response = client.get("/index/integrity")
++
++    assert response.status_code == 200
++
++    body = response.json()
++    assert body["valid"] is True
++    assert body["reindex_required"] is False
++    assert body["invalid_records"] == 0
++    assert body["schema_version"] == "1"
++    assert body["collection_schema_version"] == "1"
++    assert body["embedding_model"] == "nomic-embed-text"
++
++
+ def test_stats() -> None:
+     response = client.get("/stats")

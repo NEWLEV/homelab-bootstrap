@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "restore": "isolated verification restore",
+    "schedule": "daily snapshot rotation"
+  },
+  "restore_check": "restore the latest snapshot into an isolated verification volume",
+  "retention_policy": "7 daily, 4 weekly, 6 monthly",
+  "schedule": "daily",
+  "service": "backups",
+  "targets": [
+    {
+      "path": "/srv/data/services/prometheus-data",
+      "volume": "prometheus-data"
+    },
+    {
+      "path": "/srv/data/services/mission-control-data",
+      "volume": "mission-control-data"
+    },
+    {
+      "path": "/srv/data/services/backup-data",
+      "volume": "backup-data"
+    }
+  ],
+  "volume_names": [
+    "prometheus-data",
+    "mission-control-data",
+    "backup-data"
+  ]
+}

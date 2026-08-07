@@ -1,0 +1,9 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -962,7 +962,7 @@ def index_documents(rebuild: bool = False) -> dict[str, Any]:
+ 
+     try:
+-        result = index_repository()
++        result = index_repository(rebuild=rebuild)
+     except Exception as exc:

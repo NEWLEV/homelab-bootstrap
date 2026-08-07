@@ -1,0 +1,163 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+index 85b3669..2aa11ab 100644
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -7,10 +7,11 @@ import httpx
+ from fastapi import FastAPI, HTTPException
+ from pydantic import BaseModel, Field
+ 
++from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ 
+ 
+-APP_VERSION = "0.6.0"
++APP_VERSION = "0.7.0"
+ 
+ 
+ app = FastAPI(
+@@ -30,6 +31,23 @@ GENERATION_MODEL = os.environ.get(
+     "llama3.2:3b",
+ )
+ 
++RERANKER_ENABLED = os.environ.get(
++    "RERANKER_ENABLED",
++    "false",
++).strip().lower() in {"1", "true", "yes"}
++RERANKER_MODEL = os.environ.get(
++    "RERANKER_MODEL",
++    "Xenova/ms-marco-MiniLM-L-6-v2",
++)
++RERANKER_CACHE_DIR = os.environ.get(
++    "RERANKER_CACHE_DIR",
++    "/models/fastembed",
++)
++RERANKER_THREADS = max(1, int(os.environ.get("RERANKER_THREADS", "2")))
++reranker = LocalReranker(
++    enabled=RERANKER_ENABLED,
++    model_name=RERANKER_MODEL,
++    cache_dir=RERANKER_CACHE_DIR,
++    threads=RERANKER_THREADS,
++)
++
+ 
+ INSUFFICIENT_CONTEXT_MESSAGE = (
+     "The indexed repository does not contain enough information "
+@@ -82,6 +100,10 @@ class RetrievalDiagnostic(BaseModel):
+     combined_score: float
+     matching_tokens: list[str]
+     rank: int
++    hybrid_rank: int | None = None
++    reranker_score: float | None = None
++    reranker_used: bool = False
++    reranker_error: str | None = None
+ 
+ 
+ class AskResponse(BaseModel):
+@@ -226,12 +248,15 @@ def retrieve_chunks(
+             if match["path"].startswith(path_prefix)
+         ]
+ 
+-    return rerank_candidates(
++    hybrid_candidates = rerank_candidates(
+         query,
+         matches,
+-        limit,
+-        debug=debug,
++        len(matches),
++        debug=True,
+     )
++    return reranker.rerank(
++        query, hybrid_candidates, limit, debug=debug
++    )
+ 
+ 
+ def build_grounded_prompt(
+@@ -384,6 +409,10 @@ def health() -> dict[str, Any]:
+         "chunks": collection.count(),
+         "embedding_model": EMBEDDING_MODEL,
+         "generation_model": GENERATION_MODEL,
++        "reranker_enabled": reranker.enabled,
++        "reranker_model": reranker.model_name,
++        "reranker_threads": reranker.threads,
+     }
+ 
+ 
+@@ -471,6 +500,10 @@ def ask(request: AskRequest) -> AskResponse:
+                 combined_score=match["combined_score"],
+                 matching_tokens=match["matching_tokens"],
+                 rank=match["rank"],
++                hybrid_rank=match.get("hybrid_rank"),
++                reranker_score=match.get("reranker_score"),
++                reranker_used=match.get("reranker_used", False),
++                reranker_error=match.get("reranker_error"),
+             )
+             for match in matches
+         ]
+diff --git a/services/local-rag/requirements.txt b/services/local-rag/requirements.txt
+index 7794807..a2ce045 100644
+--- a/services/local-rag/requirements.txt
++++ b/services/local-rag/requirements.txt
+@@ -5,4 +5,5 @@ httpx
+ pydantic
+ python-multipart
+ pytest
++fastembed==0.8.0
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+index 80c1983..55a5dc1 100644
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -43,11 +43,17 @@ services:
+       SOURCE_ROOT: /sources/homelab-bootstrap
+       GENERATION_MODEL: llama3.2:3b
+       PYTHONPATH: /app
++      RERANKER_ENABLED: "true"
++      RERANKER_MODEL: Xenova/ms-marco-MiniLM-L-6-v2
++      RERANKER_CACHE_DIR: /models/fastembed
++      RERANKER_THREADS: "2"
+ 
+     volumes:
+       - /srv/data/services/local-rag/chroma:/data/chroma
+       - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/sources/homelab-bootstrap:ro
++      - /srv/data/services/local-rag/models:/models
+ 
+     ports:
+       - target: 8080
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+index 910bc22..7d0fe5d 100644
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -14,10 +14,13 @@ def test_health() -> None:
+     body = response.json()
+ 
+     assert body["status"] == "ok"
+-    assert body["version"] == "0.6.0"
++    assert body["version"] == "0.7.0"
+     assert body["vector_store"] == "chromadb"
+     assert body["collection"] == "homelab_bootstrap"
+     assert isinstance(body["chunks"], int)
++    assert body["reranker_enabled"] is False
++    assert body["reranker_model"] == "Xenova/ms-marco-MiniLM-L-6-v2"
++    assert body["reranker_threads"] == 2
+ 
+ 
+ def test_stats() -> None:
+diff --git a/services/local-rag/tests/test_search.py b/services/local-rag/tests/test_search.py
+index 78042ca..8e2a3a0 100644
+--- a/services/local-rag/tests/test_search.py
++++ b/services/local-rag/tests/test_search.py
+@@ -196,6 +196,8 @@ def test_search_debug_exposes_retrieval_diagnostics(monkeypatch) -> None:
+     result = response.json()["results"][0]
+     assert result["rank"] == 1
+     assert result["matching_tokens"] == ["ollama_url"]
++    assert result["hybrid_rank"] == 1
++    assert result["reranker_used"] is False
+     assert set(result) >= {
+         "vector_score",
+         "lexical_score",
+@@ -252,6 +254,7 @@ def test_ask_debug_exposes_typed_retrieval_diagnostics(
+             "combined_score": 0.9275,
+             "matching_tokens": ["local-rag-api"],
+             "rank": 1,
++            "reranker_used": False,
+         }
+     ]

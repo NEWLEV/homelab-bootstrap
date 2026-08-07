@@ -1,0 +1,21 @@
+diff --git a/services/local-rag/tests/test_metrics.py b/services/local-rag/tests/test_metrics.py
+--- a/services/local-rag/tests/test_metrics.py
++++ b/services/local-rag/tests/test_metrics.py
+@@ -54,0 +55,8 @@
++    registry.increment("grounded_answers")
++    registry.observe("generation", 0.2)
++
++    registry.reset()
++
++    result = registry.snapshot()
++    assert result["counters"]["grounded_answers"] == 0
++    assert result["latencies_ms"]["generation"]["count"] == 0
+@@ -118,8 +125,0 @@
+-    registry.increment("grounded_answers")
+-    registry.observe("generation", 0.2)
+-
+-    registry.reset()
+-
+-    result = registry.snapshot()
+-    assert result["counters"]["grounded_answers"] == 0
+-    assert result["latencies_ms"]["generation"]["count"] == 0

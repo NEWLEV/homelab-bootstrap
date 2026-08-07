@@ -1,0 +1,99 @@
+{
+  "backup_plan": {
+    "hooks": {
+      "restore": "isolated verification restore",
+      "schedule": "daily snapshot rotation"
+    },
+    "restore_check": "restore the latest snapshot into an isolated verification volume",
+    "retention_policy": "7 daily, 4 weekly, 6 monthly",
+    "schedule": "daily",
+    "service": "backups",
+    "targets": [
+      {
+        "path": "/srv/data/services/prometheus-data",
+        "volume": "prometheus-data"
+      },
+      {
+        "path": "/srv/data/services/mission-control-data",
+        "volume": "mission-control-data"
+      },
+      {
+        "path": "/srv/data/services/backup-data",
+        "volume": "backup-data"
+      }
+    ],
+    "volume_names": [
+      "prometheus-data",
+      "mission-control-data",
+      "backup-data"
+    ]
+  },
+  "compose_output": "bootstrap/prep-bundle-test/compose.generated.yaml",
+  "hooks": {
+    "backups": {
+      "service": "backups",
+      "targets": [
+        "prometheus-data",
+        "mission-control-data",
+        "backup-data"
+      ]
+    },
+    "monitoring": {
+      "service": "monitoring",
+      "targets": [
+        "metrics",
+        "logs",
+        "health"
+      ]
+    }
+  },
+  "manifest": "infrastructure",
+  "network_names": [
+    "edge",
+    "internal"
+  ],
+  "phase_names": [
+    "storage",
+    "networking",
+    "monitoring",
+    "backups"
+  ],
+  "readiness": {
+    "artifacts": {
+      "bundle_dir": "bootstrap/prep-bundle-test/bundle",
+      "compose": "bootstrap/prep-bundle-test/compose.generated.yaml",
+      "report": "bootstrap/prep-bundle-test/compose.generated.ready.json"
+    },
+    "checks": {
+      "backup": true,
+      "backup_hooks": true,
+      "bundle": true,
+      "compose": true,
+      "exposure": true,
+      "monitoring": true,
+      "monitoring_hooks": true,
+      "networking": true,
+      "report": true,
+      "storage": true
+    },
+    "manifest": "infrastructure",
+    "notes": [
+      "Phase 2 core services are described in repository-managed config.",
+      "Storage, networking, monitoring, exposure, and backup plans are explicit.",
+      "Operational hooks for monitoring and backup verification are wired in."
+    ],
+    "ready": true
+  },
+  "service_order": [
+    "reverse-proxy",
+    "monitoring",
+    "backups",
+    "mission-control"
+  ],
+  "storage_root": "/srv/data/services",
+  "volume_names": [
+    "prometheus-data",
+    "mission-control-data",
+    "backup-data"
+  ]
+}

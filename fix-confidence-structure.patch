@@ -1,0 +1,25 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -126,10 +126,10 @@ class AskResponse(BaseModel):
+     answer: str
+     grounded: bool
+     citations: list[Citation]
+-    retrieval_debug: list[RetrievalDiagnostic] | None = None
+     confidence: float
+     citation_completeness: float | None = None
+     confidence_reasons: list[str] | None = None
++    retrieval_debug: list[RetrievalDiagnostic] | None = None
+ 
+ 
+ def embed_text(text: str) -> list[float]:
+@@ -469,9 +469,9 @@ def health() -> dict[str, Any]:
+         "reranker_enabled": reranker.enabled,
+         "reranker_model": reranker.model_name,
+         "reranker_threads": reranker.threads,
++        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+     }
+-        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+ 
+ 
+ @app.post("/search")

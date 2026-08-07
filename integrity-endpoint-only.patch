@@ -1,0 +1,22 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -934,10 +934,21 @@
+ @app.get("/index/status")
+ def index_status() -> dict[str, Any]:
+     return index_job_manager.snapshot()
+ 
+ 
++@app.get("/index/integrity")
++def index_integrity() -> dict[str, Any]:
++    return inspect_collection(
++        collection,
++        chunking_version=CHUNKING_VERSION,
++        embedding_model=EMBEDDING_MODEL,
++    )
++
++
+ @app.post("/index")
+-def index_documents() -> dict[str, Any]:
++def index_documents(rebuild: bool = False) -> dict[str, Any]:
+     from app.indexer import index_repository

@@ -1,0 +1,88 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -35,1 +35,0 @@
+-
+@@ -38,0 +38,6 @@
++from app.resource_controls import (
++    ConcurrencyLimiter,
++    ResourceControlMiddleware,
++    TokenBucketRateLimiter,
++    non_negative_int_from_environment,
++)
+@@ -41,2 +47,29 @@
+-APP_VERSION = "0.10.0"
++APP_VERSION = "0.11.0"
+ api_auth = BearerTokenAuth.from_environment()
++RATE_LIMIT_REQUESTS_PER_MINUTE = non_negative_int_from_environment(
++    "RATE_LIMIT_REQUESTS_PER_MINUTE",
++    0,
++)
++RATE_LIMIT_BURST = non_negative_int_from_environment(
++    "RATE_LIMIT_BURST",
++    10,
++)
++MAX_CONCURRENT_REQUESTS = non_negative_int_from_environment(
++    "MAX_CONCURRENT_REQUESTS",
++    0,
++)
++MAX_REQUEST_BODY_BYTES = non_negative_int_from_environment(
++    "MAX_REQUEST_BODY_BYTES",
++    0,
++)
++if RATE_LIMIT_BURST < 1:
++    raise RuntimeError("RATE_LIMIT_BURST must be at least one.")
++
++rate_limiter = TokenBucketRateLimiter(
++    RATE_LIMIT_REQUESTS_PER_MINUTE,
++    RATE_LIMIT_BURST,
++)
++concurrency_limiter = ConcurrencyLimiter(MAX_CONCURRENT_REQUESTS)
+@@ -48,0 +81,8 @@
++app.add_middleware(
++    ResourceControlMiddleware,
++    rate_limiter=rate_limiter,
++    concurrency_limiter=concurrency_limiter,
++    max_request_body_bytes=MAX_REQUEST_BODY_BYTES,
++    record_rejection=metrics.increment,
++)
++
+@@ -129,1 +170,1 @@
+-    query: str = Field(min_length=1)
++    query: str = Field(min_length=1, max_length=2000)
+@@ -132,4 +173,8 @@
+-    path: str | None = None
+-    path_prefix: str | None = None
+-    directory: str | None = None
+-    extension: str | None = None
++    path: str | None = Field(default=None, max_length=1024)
++    path_prefix: str | None = Field(
++        default=None,
++        max_length=1024,
++    )
++    directory: str | None = Field(default=None, max_length=1024)
++    extension: str | None = Field(default=None, max_length=64)
+@@ -144,1 +189,1 @@
+-    question: str = Field(min_length=1)
++    question: str = Field(min_length=1, max_length=2000)
+@@ -150,1 +195,1 @@
+-    path: str | None = None
++    path: str | None = Field(default=None, max_length=1024)
+@@ -152,3 +197,7 @@
+-    path_prefix: str | None = None
+-    directory: str | None = None
+-    extension: str | None = None
++    path_prefix: str | None = Field(
++        default=None,
++        max_length=1024,
++    )
++    directory: str | None = Field(default=None, max_length=1024)
++    extension: str | None = Field(default=None, max_length=64)
+@@ -582,0 +632,8 @@
++        "rate_limiting_enabled": rate_limiter.enabled,
++        "rate_limit_requests_per_minute": (
++            rate_limiter.requests_per_minute
++        ),
++        "rate_limit_burst": rate_limiter.burst,
++        "max_concurrent_requests": concurrency_limiter.max_concurrent,
++        "max_request_body_bytes": MAX_REQUEST_BODY_BYTES,

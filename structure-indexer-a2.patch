@@ -1,0 +1,22 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -6,6 +6,8 @@
+ 
+ import chromadb
+ import httpx
++
++from app.chunking import chunk_document
+ 
+ SOURCE_ROOT = Path(
+@@ -33,6 +35,7 @@
+     ".yml",
+     ".yaml",
+     ".json",
++    ".py",
+     ".sh",
+@@ -53,3 +56,4 @@
+ EXCLUDED_RELATIVE_PREFIXES = {
+     "services/local-rag/evaluation",
++    "services/local-rag/tests",
+ }

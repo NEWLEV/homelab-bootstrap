@@ -1,0 +1,16 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -578,6 +578,14 @@
+         "index_status": index_job["status"],
+         "last_index_success_at": index_job["last_success_at"],
+         "index_schema_version": INDEX_SCHEMA_VERSION,
+         "authentication_enabled": api_auth.enabled,
++        "rate_limiting_enabled": rate_limiter.enabled,
++        "rate_limit_requests_per_minute": (
++            rate_limiter.requests_per_minute
++        ),
++        "rate_limit_burst": rate_limiter.burst,
++        "max_concurrent_requests": concurrency_limiter.max_concurrent,
++        "max_request_body_bytes": MAX_REQUEST_BODY_BYTES,
+     }

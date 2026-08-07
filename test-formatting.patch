@@ -1,0 +1,37 @@
+diff --git a/services/local-rag/tests/test_indexer.py b/services/local-rag/tests/test_indexer.py
+--- a/services/local-rag/tests/test_indexer.py
++++ b/services/local-rag/tests/test_indexer.py
+@@ -42,12 +42,11 @@ class FakeCollection:
+             self.records.pop(record_id, None)
+ 
+     def count(self) -> int:
+         return len(self.records)
++
+     def modify(self, metadata: dict[str, str]) -> None:
+         self.metadata = metadata
+ 
+ 
+-
+ class FakeClient:
+     def __init__(self, collection: FakeCollection) -> None:
+         self.collection = collection
+diff --git a/services/local-rag/tests/test_index_jobs.py b/services/local-rag/tests/test_index_jobs.py
+--- a/services/local-rag/tests/test_index_jobs.py
++++ b/services/local-rag/tests/test_index_jobs.py
+@@ -130,8 +130,6 @@ def test_index_endpoint_records_success(
+     assert status_response.status_code == 200
+     assert status_response.json() == response.json()["job"]
+ 
+-
+-
+ def test_index_endpoint_passes_rebuild_flag(
+     monkeypatch,
+     tmp_path: Path,
+@@ -149,6 +147,7 @@ def test_index_endpoint_passes_rebuild_flag(
+     assert response.status_code == 200
+     assert captured == {"rebuild": True}
+ 
++
+ def test_index_endpoint_rejects_active_job(
+     monkeypatch,
+     tmp_path: Path,

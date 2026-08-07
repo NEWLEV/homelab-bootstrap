@@ -1,0 +1,105 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -46,6 +46,10 @@ EXCLUDED_PARTS = {
+     "workspaces",
+ }
+ 
++EXCLUDED_RELATIVE_PREFIXES = {
++    "services/local-rag/evaluation",
++}
++
+ REQUIRED_METADATA_FIELDS = {
+     "path",
+     "directory",
+@@ -63,6 +67,17 @@ OVERLAP_CHARS = 400
+ 
+ 
+ def is_allowed(path: Path) -> bool:
++    try:
++        relative = path.relative_to(SOURCE_ROOT).as_posix()
++    except ValueError:
++        relative = ""
++
++    if any(
++        relative == prefix or relative.startswith(f"{prefix}/")
++        for prefix in EXCLUDED_RELATIVE_PREFIXES
++    ):
++        return False
++
+     if not path.is_file():
+         return False
+ 
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -12,7 +12,7 @@ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ 
+ 
+-APP_VERSION = "0.7.0"
++APP_VERSION = "0.7.1"
+ 
+ 
+ app = FastAPI(
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -14,7 +14,7 @@ def test_health() -> None:
+     body = response.json()
+ 
+     assert body["status"] == "ok"
+-    assert body["version"] == "0.7.0"
++    assert body["version"] == "0.7.1"
+     assert body["vector_store"] == "chromadb"
+     assert body["collection"] == "homelab_bootstrap"
+     assert isinstance(body["chunks"], int)
+diff --git a/services/local-rag/tests/test_indexer.py b/services/local-rag/tests/test_indexer.py
+--- a/services/local-rag/tests/test_indexer.py
++++ b/services/local-rag/tests/test_indexer.py
+@@ -261,3 +261,51 @@ def test_excluded_paths_are_not_indexed(
+     }
+ 
+     assert stored_paths == {"README.md"}
++
++
++def test_local_rag_evaluation_fixtures_are_removed(
++    tmp_path: Path,
++    monkeypatch,
++) -> None:
++    source_root = tmp_path / "repository"
++    source_root.mkdir()
++
++    (source_root / "README.md").write_text(
++        "Allowed production documentation",
++        encoding="utf-8",
++    )
++    evaluation = source_root / "services" / "local-rag" / "evaluation"
++    evaluation.mkdir(parents=True)
++    (evaluation / "cases.json").write_text(
++        '{"query": "local-rag.yml"}',
++        encoding="utf-8",
++    )
++
++    collection = FakeCollection()
++    configure_indexer(monkeypatch, source_root, collection)
++    excluded_prefixes = indexer.EXCLUDED_RELATIVE_PREFIXES
++
++    monkeypatch.setattr(indexer, "EXCLUDED_RELATIVE_PREFIXES", set())
++    first = indexer.index_repository()
++    assert first["total_chunks"] == 2
++
++    monkeypatch.setattr(
++        indexer,
++        "EXCLUDED_RELATIVE_PREFIXES",
++        excluded_prefixes,
++    )
++    second = indexer.index_repository()
++
++    assert second["removed_chunks"] == 1
++    assert second["total_chunks"] == 1
++    stored_paths = {
++        record["metadata"]["path"]
++        for record in collection.records.values()
++    }
++    assert stored_paths == {"README.md"}

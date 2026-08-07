@@ -1,0 +1,73 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -6,10 +6,14 @@
+ import chromadb
+ import httpx
+ from fastapi import FastAPI, HTTPException
+ from pydantic import BaseModel, Field
+ 
++from app.confidence import (
++    assess_citation_completeness,
++    assess_retrieval_confidence,
++)
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+ 
+ 
+-APP_VERSION = "0.7.2"
++APP_VERSION = "0.7.3"
+@@ -30,6 +34,9 @@
+ GENERATION_MODEL = os.environ.get(
+     "GENERATION_MODEL",
+     "llama3.2:3b",
+ )
++CONFIDENCE_MIN_SCORE = float(
++    os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
++)
+ 
+ RERANKER_ENABLED = os.environ.get(
+@@ -119,7 +126,10 @@
+ class AskResponse(BaseModel):
+     question: str
+     answer: str
+     grounded: bool
+     citations: list[Citation]
++    confidence: float
++    citation_completeness: float | None = None
++    confidence_reasons: list[str] | None = None
+     retrieval_debug: list[RetrievalDiagnostic] | None = None
+ 
+ 
+@@ -459,6 +469,7 @@
+         "generation_model": GENERATION_MODEL,
+         "reranker_enabled": reranker.enabled,
+         "reranker_model": reranker.model_name,
+         "reranker_threads": reranker.threads,
++        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+     }
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -44,6 +44,7 @@
+       SOURCE_ROOT: /sources/homelab-bootstrap
+       GENERATION_MODEL: llama3.2:3b
+       PYTHONPATH: /app
++      CONFIDENCE_MIN_SCORE: "0.45"
+       RERANKER_ENABLED: "true"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -14,10 +14,11 @@
+     body = response.json()
+ 
+     assert body["status"] == "ok"
+-    assert body["version"] == "0.7.2"
++    assert body["version"] == "0.7.3"
+     assert body["vector_store"] == "chromadb"
+     assert body["collection"] == "homelab_bootstrap"
+     assert isinstance(body["chunks"], int)
+     assert body["reranker_enabled"] is False
+     assert body["reranker_model"] == "Xenova/ms-marco-MiniLM-L-6-v2"
+     assert body["reranker_threads"] == 2
++    assert body["confidence_min_score"] == 0.45

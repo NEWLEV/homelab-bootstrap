@@ -1,0 +1,27 @@
+{
+  "adjacency": {
+    "backups": [],
+    "monitoring": [
+      "backups"
+    ],
+    "reverse-proxy": [
+      "monitoring"
+    ]
+  },
+  "edges": [
+    {
+      "from": "reverse-proxy",
+      "to": "monitoring"
+    },
+    {
+      "from": "monitoring",
+      "to": "backups"
+    }
+  ],
+  "name": "infrastructure",
+  "nodes": [
+    "reverse-proxy",
+    "monitoring",
+    "backups"
+  ]
+}

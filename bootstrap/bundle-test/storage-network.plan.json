@@ -1,0 +1,33 @@
+{
+  "networking": {
+    "boundaries": {
+      "private": [
+        "internal"
+      ],
+      "public": [
+        "edge"
+      ]
+    },
+    "internal_networks": [
+      "internal"
+    ],
+    "networks": [
+      "edge",
+      "internal"
+    ],
+    "reverse_proxy_network": "edge"
+  },
+  "storage": {
+    "root": "/srv/data/services",
+    "volume_paths": {
+      "backup-data": "/srv/data/services/backup-data",
+      "mission-control-data": "/srv/data/services/mission-control-data",
+      "prometheus-data": "/srv/data/services/prometheus-data"
+    },
+    "volumes": [
+      "prometheus-data",
+      "mission-control-data",
+      "backup-data"
+    ]
+  }
+}

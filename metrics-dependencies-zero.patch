@@ -1,0 +1,107 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -172,19 +172,24 @@
+-    response = httpx.post(
+-        f"{OLLAMA_URL}/api/embed",
+-        json={
+-            "model": EMBEDDING_MODEL,
+-            "input": text,
+-        },
+-        timeout=120,
+-    )
+-
+-    response.raise_for_status()
+-
+-    embeddings = response.json().get("embeddings", [])
+-
+-    if not embeddings:
+-        raise RuntimeError(
+-            "Ollama returned no embedding.",
+-        )
+-
+-    return embeddings[0]
++    with metrics.time("embedding"):
++        try:
++            response = httpx.post(
++                f"{OLLAMA_URL}/api/embed",
++                json={
++                    "model": EMBEDDING_MODEL,
++                    "input": text,
++                },
++                timeout=120,
++            )
++
++            response.raise_for_status()
++
++            embeddings = response.json().get("embeddings", [])
++
++            if not embeddings:
++                raise RuntimeError(
++                    "Ollama returned no embedding.",
++                )
++
++            return embeddings[0]
++        except Exception:
++            metrics.dependency_failure("embedding")
++            raise
+@@ -412,27 +417,32 @@
+-    response = httpx.post(
+-        f"{OLLAMA_URL}/api/generate",
+-        json={
+-            "model": GENERATION_MODEL,
+-            "prompt": prompt,
+-            "stream": False,
+-            "options": {
+-                "temperature": 0,
+-            },
+-        },
+-        timeout=300,
+-    )
+-
+-    response.raise_for_status()
+-
+-    answer = (
+-        response.json()
+-        .get("response", "")
+-        .strip()
+-    )
+-
+-    if not answer:
+-        raise RuntimeError(
+-            "Ollama returned an empty generated response.",
+-        )
+-
+-    return answer
++    with metrics.time("generation"):
++        try:
++            response = httpx.post(
++                f"{OLLAMA_URL}/api/generate",
++                json={
++                    "model": GENERATION_MODEL,
++                    "prompt": prompt,
++                    "stream": False,
++                    "options": {
++                        "temperature": 0,
++                    },
++                },
++                timeout=300,
++            )
++
++            response.raise_for_status()
++
++            answer = (
++                response.json()
++                .get("response", "")
++                .strip()
++            )
++
++            if not answer:
++                raise RuntimeError(
++                    "Ollama returned an empty generated response.",
++                )
++
++            return answer
++        except Exception:
++            metrics.dependency_failure("generation")
++            raise

@@ -1,0 +1,45 @@
+{
+  "boundary_notes": "keep retrieval and generation on the internal network; expose only the RAG API surface if external access is explicitly approved",
+  "inputs": [
+    "user question",
+    "indexed vectors",
+    "document metadata"
+  ],
+  "outputs": [
+    "grounded answer",
+    "citations",
+    "confidence notes"
+  ],
+  "service": "RAG API",
+  "steps": [
+    {
+      "depends_on": [
+        "vector database"
+      ],
+      "name": "retrieve",
+      "purpose": "fetch relevant context from the vector database"
+    },
+    {
+      "depends_on": [
+        "retrieve"
+      ],
+      "name": "rerank",
+      "purpose": "rank retrieved chunks for answer quality"
+    },
+    {
+      "depends_on": [
+        "rerank",
+        "local LLM service"
+      ],
+      "name": "generate",
+      "purpose": "ask the local LLM service to produce a grounded answer"
+    },
+    {
+      "depends_on": [
+        "generate"
+      ],
+      "name": "cite",
+      "purpose": "attach source citations to the final response"
+    }
+  ]
+}

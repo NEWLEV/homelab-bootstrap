@@ -1,0 +1,108 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -7,6 +7,8 @@ from typing import Any
+ import chromadb
+ import httpx
+ 
++from app.chunking import chunk_document
++
+ SOURCE_ROOT = Path(
+@@ -36,6 +38,7 @@ ALLOWED_SUFFIXES = {
+     ".yaml",
+     ".json",
++    ".py",
+     ".sh",
+@@ -54,6 +57,7 @@ EXCLUDED_PARTS = {
+ EXCLUDED_RELATIVE_PREFIXES = {
+     "services/local-rag/evaluation",
++    "services/local-rag/tests",
+ }
+@@ -65,10 +69,12 @@ REQUIRED_METADATA_FIELDS = {
+     "line_end",
+     "file_hash",
++    "chunking_version",
+ }
+ 
+ MAX_CHARS = 4000
+ OVERLAP_CHARS = 400
++CHUNKING_VERSION = "2"
+@@ -224,6 +230,7 @@ def has_required_metadata(
+         "filename",
+         "extension",
+         "file_hash",
++        "chunking_version",
+     )
+@@ -240,10 +247,13 @@ def has_required_metadata(
+         "line_end",
+     )
+ 
+-    return all(
++    integers_are_valid = all(
+         isinstance(metadata.get(field), int)
+         for field in integer_fields
+     )
++    return (
++        integers_are_valid
++        and metadata.get("chunking_version") == CHUNKING_VERSION
++    )
+@@ -436,7 +446,7 @@ def index_repository() -> dict[str, Any]:
+             line_end,
+             chunk,
+-        ) in chunk_text(text):
++        ) in chunk_document(relative_path, text):
+@@ -468,6 +478,7 @@ def index_repository() -> dict[str, Any]:
+                     "file_hash": (
+                         current_file_hash
+                     ),
++                    "chunking_version": CHUNKING_VERSION,
+                 }
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -15,1 +15,1 @@
+-APP_VERSION = "0.7.1"
++APP_VERSION = "0.7.2"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17,1 +17,1 @@ def test_health() -> None:
+-    assert body["version"] == "0.7.1"
++    assert body["version"] == "0.7.2"
+diff --git a/services/local-rag/tests/test_indexer.py b/services/local-rag/tests/test_indexer.py
+--- a/services/local-rag/tests/test_indexer.py
++++ b/services/local-rag/tests/test_indexer.py
+@@ -298,3 +298,40 @@ def test_local_rag_evaluation_fixtures_are_removed(
+     }
+     assert stored_paths == {"README.md"}
++
++
++def test_chunking_version_change_reindexes_unchanged_file(
++    tmp_path: Path,
++    monkeypatch,
++) -> None:
++    source_root = tmp_path / "repository"
++    source_root.mkdir()
++    (source_root / "README.md").write_text(
++        "Documentation",
++        encoding="utf-8",
++    )
++
++    collection = FakeCollection()
++    configure_indexer(monkeypatch, source_root, collection)
++    first = indexer.index_repository()
++    assert first["total_chunks"] == 1
++
++    for record in collection.records.values():
++        record["metadata"]["chunking_version"] = "1"
++
++    second = indexer.index_repository()
++
++    assert second["metadata_migrated_files"] == 1
++    assert second["updated_chunks"] == 1
++    assert second["total_chunks"] == 1
++    assert all(
++        record["metadata"]["chunking_version"]
++        == indexer.CHUNKING_VERSION
++        for record in collection.records.values()
++    )

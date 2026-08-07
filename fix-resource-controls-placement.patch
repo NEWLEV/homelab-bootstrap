@@ -1,0 +1,67 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -33,10 +33,9 @@
+ from app.indexer import CHUNKING_VERSION
+ from app.metrics import metrics
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+-from app.streaming import sse_event, stream_ollama_answer
+ from app.resource_controls import (
+     ConcurrencyLimiter,
+     ResourceControlMiddleware,
+@@ -41,6 +40,7 @@
+     TokenBucketRateLimiter,
+     non_negative_int_from_environment,
+ )
++from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+ APP_VERSION = "0.11.0"
+@@ -74,9 +74,6 @@
+     title="Aisha Local RAG",
+     version=APP_VERSION,
+ )
+-
+-
+-@app.middleware("http")
+ app.add_middleware(
+     ResourceControlMiddleware,
+     rate_limiter=rate_limiter,
+@@ -86,6 +83,8 @@
+     record_rejection=metrics.increment,
+ )
+ 
++
++@app.middleware("http")
+ async def require_api_authentication(
+     request: Request,
+     call_next,
+@@ -622,20 +621,20 @@
+         "index_status": index_job["status"],
+         "last_index_success_at": index_job["last_success_at"],
+         "index_schema_version": INDEX_SCHEMA_VERSION,
+         "authentication_enabled": api_auth.enabled,
++        "rate_limiting_enabled": rate_limiter.enabled,
++        "rate_limit_requests_per_minute": (
++            rate_limiter.requests_per_minute
++        ),
++        "rate_limit_burst": rate_limiter.burst,
++        "max_concurrent_requests": concurrency_limiter.max_concurrent,
++        "max_request_body_bytes": MAX_REQUEST_BODY_BYTES,
+     }
+ 
+ 
+ @app.get("/metrics")
+ def service_metrics() -> dict[str, object]:
+     return metrics.snapshot()
+-        "rate_limiting_enabled": rate_limiter.enabled,
+-        "rate_limit_requests_per_minute": (
+-            rate_limiter.requests_per_minute
+-        ),
+-        "rate_limit_burst": rate_limiter.burst,
+-        "max_concurrent_requests": concurrency_limiter.max_concurrent,
+-        "max_request_body_bytes": MAX_REQUEST_BODY_BYTES,
+ 
+ 
+ @app.post("/search")

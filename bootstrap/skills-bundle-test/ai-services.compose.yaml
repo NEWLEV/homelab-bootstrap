@@ -1,0 +1,54 @@
+name: aisha-ai-services
+services:
+  local LLM service:
+    depends_on: []
+    networks:
+    - internal
+    environment:
+      AISHA_SERVICE_ROLE: generation and reasoning
+      AISHA_SERVICE_ACCESS: local network only
+    image: local/llm:latest
+    volumes:
+    - llm-model-data:/models
+  embedding service:
+    depends_on: []
+    networks:
+    - internal
+    environment:
+      AISHA_SERVICE_ROLE: vector generation
+      AISHA_SERVICE_ACCESS: local network only
+    image: local/embeddings:latest
+    volumes:
+    - embedding-model-data:/models
+  vector database:
+    depends_on:
+    - embedding service
+    networks:
+    - internal
+    environment:
+      AISHA_SERVICE_ROLE: persistent vector storage
+      AISHA_SERVICE_ACCESS: private internal network
+    image: qdrant/qdrant:latest
+    volumes:
+    - vector-db-data:/qdrant/storage
+  RAG API:
+    depends_on:
+    - local LLM service
+    - embedding service
+    - vector database
+    networks:
+    - internal
+    environment:
+      AISHA_SERVICE_ROLE: retrieval and grounded response orchestration
+      AISHA_SERVICE_ACCESS: private internal network with optional reverse-proxy exposure
+    image: local/rag-api:latest
+    ports:
+    - 8088:8088
+volumes:
+  llm-model-data: {}
+  embedding-model-data: {}
+  vector-db-data: {}
+networks:
+  internal: {}
+x-aisha-boundary-notes: deploy AI services behind the shared infrastructure layer,
+  keep model and vector storage private, and expose only the RAG API if needed

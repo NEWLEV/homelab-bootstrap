@@ -1,0 +1,37 @@
+diff --git a/services/local-rag/app/auth.py b/services/local-rag/app/auth.py
+--- a/services/local-rag/app/auth.py
++++ b/services/local-rag/app/auth.py
+@@ -17,0 +18,7 @@
++    @property
++    def authorization_header(self) -> str | None:
++        if not self.enabled:
++            return None
++        return f"Bearer {self.token}"
++
++
+diff --git a/services/local-rag/evaluation/run.py b/services/local-rag/evaluation/run.py
+--- a/services/local-rag/evaluation/run.py
++++ b/services/local-rag/evaluation/run.py
+@@ -8,0 +9 @@
++from app.auth import BearerTokenAuth
+@@ -18,0 +20 @@
++    authorization_header: str | None = None,
+@@ -25,0 +28,4 @@
++    headers = {"Content-Type": "application/json"}
++    if authorization_header:
++        headers["Authorization"] = authorization_header
++
+@@ -29 +35 @@
+-        headers={"Content-Type": "application/json"},
++        headers=headers,
+@@ -61,0 +68 @@
++    auth = BearerTokenAuth.from_environment()
+@@ -68,0 +76 @@
++                auth.authorization_header,
+diff --git a/services/local-rag/tests/test_auth.py b/services/local-rag/tests/test_auth.py
+--- a/services/local-rag/tests/test_auth.py
++++ b/services/local-rag/tests/test_auth.py
+@@ -18,0 +19 @@
++    assert auth.authorization_header is None
+@@ -28,0 +30 @@
++    assert auth.authorization_header == f"Bearer {TOKEN}"

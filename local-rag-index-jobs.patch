@@ -1,0 +1,448 @@
+diff --git a/services/local-rag/app/index_jobs.py b/services/local-rag/app/index_jobs.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/app/index_jobs.py
+@@ -0,0 +1,143 @@
++import copy
++import json
++import threading
++from collections.abc import Callable
++from datetime import datetime, timezone
++from pathlib import Path
++from typing import Any
++
++
++class IndexJobAlreadyRunning(RuntimeError):
++    pass
++
++
++def utc_now() -> str:
++    return datetime.now(timezone.utc).isoformat()
++
++
++def default_state() -> dict[str, Any]:
++    return {
++        "status": "idle",
++        "last_run_status": None,
++        "started_at": None,
++        "finished_at": None,
++        "last_success_at": None,
++        "last_error": None,
++        "last_result": None,
++    }
++
++
++class IndexJobManager:
++    def __init__(
++        self,
++        status_path: Path,
++        *,
++        clock: Callable[[], str] = utc_now,
++    ) -> None:
++        self.status_path = status_path
++        self.clock = clock
++        self._lock = threading.Lock()
++        self._state = self._load()
++
++        if self._state["status"] == "running":
++            self._state.update(
++                status="failed",
++                last_run_status="interrupted",
++                finished_at=self.clock(),
++                last_error=(
++                    "Index job was interrupted by a service restart."
++                ),
++            )
++            self._persist()
++
++    def _load(self) -> dict[str, Any]:
++        if not self.status_path.exists():
++            return default_state()
++
++        try:
++            loaded = json.loads(
++                self.status_path.read_text(encoding="utf-8")
++            )
++        except (OSError, json.JSONDecodeError) as exc:
++            state = default_state()
++            state.update(
++                status="failed",
++                last_run_status="status_read_failed",
++                finished_at=self.clock(),
++                last_error=(
++                    "Index status could not be loaded: "
++                    f"{type(exc).__name__}"
++                ),
++            )
++            return state
++
++        if not isinstance(loaded, dict):
++            state = default_state()
++            state.update(
++                status="failed",
++                last_run_status="status_read_failed",
++                finished_at=self.clock(),
++                last_error="Index status file is not a JSON object.",
++            )
++            return state
++
++        return {**default_state(), **loaded}
++
++    def _persist(self) -> None:
++        self.status_path.parent.mkdir(parents=True, exist_ok=True)
++        temporary_path = self.status_path.with_name(
++            f".{self.status_path.name}.tmp"
++        )
++        temporary_path.write_text(
++            json.dumps(self._state, indent=2, sort_keys=True) + "\n",
++            encoding="utf-8",
++        )
++        temporary_path.replace(self.status_path)
++
++    def snapshot(self) -> dict[str, Any]:
++        with self._lock:
++            return copy.deepcopy(self._state)
++
++    def begin(self) -> dict[str, Any]:
++        with self._lock:
++            if self._state["status"] == "running":
++                raise IndexJobAlreadyRunning(
++                    "A repository indexing job is already running."
++                )
++
++            self._state.update(
++                status="running",
++                started_at=self.clock(),
++                finished_at=None,
++                last_error=None,
++            )
++            self._persist()
++            return copy.deepcopy(self._state)
++
++    def succeed(self, result: dict[str, Any]) -> dict[str, Any]:
++        with self._lock:
++            if self._state["status"] != "running":
++                raise RuntimeError("No indexing job is running.")
++
++            finished_at = self.clock()
++            self._state.update(
++                status="idle",
++                last_run_status="succeeded",
++                finished_at=finished_at,
++                last_success_at=finished_at,
++                last_error=None,
++                last_result=copy.deepcopy(result),
++            )
++            self._persist()
++            return copy.deepcopy(self._state)
++
++    def fail(self, error: BaseException) -> dict[str, Any]:
++        with self._lock:
++            if self._state["status"] != "running":
++                raise RuntimeError("No indexing job is running.")
++
++            self._state.update(
++                status="failed",
++                last_run_status="failed",
++                finished_at=self.clock(),
++                last_error=f"{type(error).__name__}: {error}",
++            )
++            self._persist()
++            return copy.deepcopy(self._state)
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -18,6 +18,10 @@ from app.conversation import (
+     format_conversation_history,
+     rewrite_retrieval_query,
+ )
++from app.index_jobs import (
++    IndexJobAlreadyRunning,
++    IndexJobManager,
++)
+ 
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
+@@ -25,7 +29,7 @@ from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+-APP_VERSION = "0.9.0"
++APP_VERSION = "0.9.1"
+ 
+ 
+ app = FastAPI(
+@@ -39,6 +43,11 @@ CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", "/data/chroma"))
++INDEX_STATUS_PATH = Path(
++    os.environ.get(
++        "INDEX_STATUS_PATH",
++        str(CHROMA_PATH / "index-status.json"),
++    )
++)
+ OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama:11434")
+ EMBEDDING_MODEL = os.environ.get(
+     "EMBEDDING_MODEL",
+@@ -77,6 +86,7 @@ INSUFFICIENT_CONTEXT_MESSAGE = (
+ 
+ 
+ CHROMA_PATH.mkdir(parents=True, exist_ok=True)
++index_job_manager = IndexJobManager(INDEX_STATUS_PATH)
+ 
+ chroma_client = chromadb.PersistentClient(
+     path=str(CHROMA_PATH),
+@@ -510,6 +520,8 @@ def health() -> dict[str, Any]:
+         "reranker_model": reranker.model_name,
+         "reranker_threads": reranker.threads,
+         "confidence_min_score": CONFIDENCE_MIN_SCORE,
++        "index_status": index_job_manager.snapshot()["status"],
++        "last_index_success_at": index_job_manager.snapshot()["last_success_at"],
+     }
+ 
+ 
+@@ -911,15 +923,44 @@ async def ask_stream(
+     )
+ 
+ 
++@app.get("/index/status")
++def index_status() -> dict[str, Any]:
++    return index_job_manager.snapshot()
++
++
+ @app.post("/index")
+ def index_documents() -> dict[str, Any]:
+     from app.indexer import index_repository
+ 
+-    result = index_repository()
++    try:
++        index_job_manager.begin()
++    except IndexJobAlreadyRunning as exc:
++        raise HTTPException(
++            status_code=409,
++            detail=str(exc),
++        ) from exc
++
++    try:
++        result = index_repository()
++    except Exception as exc:
++        index_job_manager.fail(exc)
++        raise HTTPException(
++            status_code=500,
++            detail="Repository indexing failed.",
++        ) from exc
++
++    job = index_job_manager.succeed(result)
+ 
+     return {
+         "status": "indexed",
+         **result,
++        "job": job,
+     }
+ 
+ 
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -14,7 +14,7 @@ def test_health() -> None:
+     body = response.json()
+ 
+     assert body["status"] == "ok"
+-    assert body["version"] == "0.9.0"
++    assert body["version"] == "0.9.1"
+     assert body["vector_store"] == "chromadb"
+     assert body["collection"] == "homelab_bootstrap"
+     assert isinstance(body["chunks"], int)
+@@ -24,6 +24,8 @@ def test_health() -> None:
+     assert body["reranker_threads"] == 2
+     assert body["confidence_min_score"] == 0.45
++    assert body["index_status"] in {"idle", "failed"}
++    assert "last_index_success_at" in body
+ 
+ 
+ def test_stats() -> None:
+diff --git a/services/local-rag/tests/test_index_jobs.py b/services/local-rag/tests/test_index_jobs.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/tests/test_index_jobs.py
+@@ -0,0 +1,217 @@
++import json
++from pathlib import Path
++from typing import Any
++
++import pytest
++from fastapi.testclient import TestClient
++
++import app.indexer as indexer
++import app.main as main
++from app.index_jobs import IndexJobAlreadyRunning, IndexJobManager
++
++
++client = TestClient(main.app)
++
++
++def test_successful_job_is_persisted(tmp_path: Path) -> None:
++    manager = IndexJobManager(tmp_path / "status.json")
++
++    running = manager.begin()
++    finished = manager.succeed({"files": 3, "total_chunks": 12})
++    reloaded = IndexJobManager(tmp_path / "status.json").snapshot()
++
++    assert running["status"] == "running"
++    assert running["started_at"] is not None
++    assert finished["status"] == "idle"
++    assert finished["last_run_status"] == "succeeded"
++    assert finished["finished_at"] is not None
++    assert finished["last_success_at"] == finished["finished_at"]
++    assert finished["last_result"] == {
++        "files": 3,
++        "total_chunks": 12,
++    }
++    assert reloaded == finished
++
++
++def test_overlapping_job_is_rejected(tmp_path: Path) -> None:
++    manager = IndexJobManager(tmp_path / "status.json")
++    manager.begin()
++
++    with pytest.raises(IndexJobAlreadyRunning):
++        manager.begin()
++
++
++def test_failed_job_preserves_last_success(tmp_path: Path) -> None:
++    manager = IndexJobManager(tmp_path / "status.json")
++    manager.begin()
++    successful = manager.succeed({"files": 1})
++    manager.begin()
++    failed = manager.fail(RuntimeError("embedding unavailable"))
++
++    assert failed["status"] == "failed"
++    assert failed["last_run_status"] == "failed"
++    assert failed["last_error"] == (
++        "RuntimeError: embedding unavailable"
++    )
++    assert failed["last_success_at"] == successful["last_success_at"]
++    assert failed["last_result"] == {"files": 1}
++
++
++def test_running_job_is_marked_interrupted_on_restart(
++    tmp_path: Path,
++) -> None:
++    status_path = tmp_path / "status.json"
++    status_path.write_text(
++        json.dumps(
++            {
++                "status": "running",
++                "started_at": "2026-07-30T12:00:00+00:00",
++            }
++        ),
++        encoding="utf-8",
++    )
++
++    state = IndexJobManager(status_path).snapshot()
++
++    assert state["status"] == "failed"
++    assert state["last_run_status"] == "interrupted"
++    assert "service restart" in state["last_error"]
++    assert state["finished_at"] is not None
++
++
++def test_invalid_status_file_is_reported_without_crashing(
++    tmp_path: Path,
++) -> None:
++    status_path = tmp_path / "status.json"
++    status_path.write_text("not-json", encoding="utf-8")
++
++    state = IndexJobManager(status_path).snapshot()
++
++    assert state["status"] == "failed"
++    assert state["last_run_status"] == "status_read_failed"
++    assert state["last_error"].endswith("JSONDecodeError")
++
++
++def configure_api_manager(
++    monkeypatch,
++    tmp_path: Path,
++) -> IndexJobManager:
++    manager = IndexJobManager(tmp_path / "api-status.json")
++    monkeypatch.setattr(main, "index_job_manager", manager)
++    return manager
++
++
++def index_result() -> dict[str, Any]:
++    return {
++        "files": 1,
++        "skipped_files": 0,
++        "added_chunks": 1,
++        "updated_chunks": 0,
++        "skipped_chunks": 0,
++        "removed_chunks": 0,
++        "metadata_migrated_files": 0,
++        "total_chunks": 1,
++    }
++
++
++def test_index_endpoint_records_success(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    configure_api_manager(monkeypatch, tmp_path)
++    monkeypatch.setattr(indexer, "index_repository", index_result)
++
++    response = client.post("/index")
++    status_response = client.get("/index/status")
++
++    assert response.status_code == 200
++    assert response.json()["status"] == "indexed"
++    assert response.json()["total_chunks"] == 1
++    assert response.json()["job"]["last_run_status"] == "succeeded"
++    assert status_response.status_code == 200
++    assert status_response.json() == response.json()["job"]
++
++
++def test_index_endpoint_rejects_active_job(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    manager = configure_api_manager(monkeypatch, tmp_path)
++    manager.begin()
++
++    response = client.post("/index")
++
++    assert response.status_code == 409
++    assert response.json()["detail"] == (
++        "A repository indexing job is already running."
++    )
++
++
++def test_index_endpoint_records_failure(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    configure_api_manager(monkeypatch, tmp_path)
++
++    def fail_indexing() -> dict[str, Any]:
++        raise RuntimeError("embedding unavailable")
++
++    monkeypatch.setattr(indexer, "index_repository", fail_indexing)
++
++    response = client.post("/index")
++    status = client.get("/index/status").json()
++
++    assert response.status_code == 500
++    assert response.json()["detail"] == "Repository indexing failed."
++    assert status["status"] == "failed"
++    assert status["last_run_status"] == "failed"
++    assert status["last_error"] == (
++        "RuntimeError: embedding unavailable"
++    )
++
++
++def test_health_reflects_active_index_job(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    manager = configure_api_manager(monkeypatch, tmp_path)
++    manager.begin()
++
++    response = client.get("/health")
++
++    assert response.status_code == 200
++    assert response.json()["index_status"] == "running"

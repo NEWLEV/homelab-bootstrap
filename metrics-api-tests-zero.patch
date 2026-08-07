@@ -1,0 +1,22 @@
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17 +17 @@
+-    assert body["version"] == "0.9.2"
++    assert body["version"] == "0.9.3"
+@@ -47,0 +48,15 @@
++
++def test_metrics() -> None:
++    response = client.get("/metrics")
++
++    assert response.status_code == 200
++
++    body = response.json()
++    assert body["uptime_seconds"] >= 0
++    assert isinstance(body["counters"]["grounded_answers"], int)
++    assert isinstance(body["counters"]["refused_answers"], int)
++    assert isinstance(body["dependency_failures"]["embedding"], int)
++    assert body["latencies_ms"]["retrieval"]["count"] >= 0
++    assert body["latencies_ms"]["embedding"]["average_ms"] >= 0
++    assert body["latencies_ms"]["generation"]["max_ms"] >= 0
++    assert body["latencies_ms"]["indexing"]["last_ms"] >= 0

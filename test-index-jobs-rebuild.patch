@@ -1,0 +1,29 @@
+diff --git a/services/local-rag/tests/test_index_jobs.py b/services/local-rag/tests/test_index_jobs.py
+--- a/services/local-rag/tests/test_index_jobs.py
++++ b/services/local-rag/tests/test_index_jobs.py
+@@ -104 +104 @@
+-def index_result() -> dict[str, Any]:
++def index_result(**kwargs: Any) -> dict[str, Any]:
+@@ -133,0 +134,21 @@
++
++
++def test_index_endpoint_passes_rebuild_flag(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    configure_api_manager(monkeypatch, tmp_path)
++    captured: dict[str, Any] = {}
++
++    def capture_index(**kwargs: Any) -> dict[str, Any]:
++        captured.update(kwargs)
++        return index_result()
++
++    monkeypatch.setattr(indexer, "index_repository", capture_index)
++
++    response = client.post("/index?rebuild=true")
++
++    assert response.status_code == 200
++    assert captured == {"rebuild": True}
+@@ -156 +177 @@
+-    def fail_indexing() -> dict[str, Any]:
++    def fail_indexing(**kwargs: Any) -> dict[str, Any]:

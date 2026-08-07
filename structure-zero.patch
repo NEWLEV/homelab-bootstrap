@@ -1,0 +1,71 @@
+diff --git a/services/local-rag/app/indexer.py b/services/local-rag/app/indexer.py
+--- a/services/local-rag/app/indexer.py
++++ b/services/local-rag/app/indexer.py
+@@ -70,0 +71 @@
++    "chunking_version",
+@@ -74,0 +76 @@
++CHUNKING_VERSION = "2"
+@@ -236,0 +239 @@
++        "chunking_version",
+@@ -250,4 +254,8 @@
+-    return all(
++    integers_are_valid = all(
+         isinstance(metadata.get(field), int)
+         for field in integer_fields
+     )
++    return (
++        integers_are_valid
++        and metadata.get("chunking_version") == CHUNKING_VERSION
++    )
+@@ -444 +452 @@
+-        ) in chunk_text(text):
++        ) in chunk_document(relative_path, text):
+@@ -468,0 +477 @@
++                    "chunking_version": CHUNKING_VERSION,
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -15 +15 @@
+-APP_VERSION = "0.7.1"
++APP_VERSION = "0.7.2"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17 +17 @@
+-    assert body["version"] == "0.7.1"
++    assert body["version"] == "0.7.2"
+diff --git a/services/local-rag/tests/test_indexer.py b/services/local-rag/tests/test_indexer.py
+--- a/services/local-rag/tests/test_indexer.py
++++ b/services/local-rag/tests/test_indexer.py
+@@ -300,0 +301,37 @@
++
++
++def test_chunking_version_change_reindexes_unchanged_file(
++    tmp_path: Path,
++    monkeypatch,
++) -> None:
++    source_root = tmp_path / "repository"
++    source_root.mkdir()
++    (source_root / "README.md").write_text(
++        "Documentation",
++        encoding="utf-8",
++    )
++
++    collection = FakeCollection()
++    configure_indexer(monkeypatch, source_root, collection)
++    first = indexer.index_repository()
++    assert first["total_chunks"] == 1
++
++    for record in collection.records.values():
++        record["metadata"]["chunking_version"] = "1"
++
++    second = indexer.index_repository()
++
++    assert second["metadata_migrated_files"] == 1
++    assert second["updated_chunks"] == 1
++    assert second["total_chunks"] == 1
++    assert all(
++        record["metadata"]["chunking_version"]
++        == indexer.CHUNKING_VERSION
++        for record in collection.records.values()
++    )

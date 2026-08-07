@@ -1,0 +1,61 @@
+{
+  "backup_plan": {
+    "restore_check": "restore the latest snapshot into an isolated verification volume",
+    "retention_policy": "7 daily, 4 weekly, 6 monthly",
+    "schedule": "daily",
+    "service": "backups",
+    "targets": [
+      {
+        "path": "/srv/data/services/prometheus-data",
+        "volume": "prometheus-data"
+      },
+      {
+        "path": "/srv/data/services/backup-data",
+        "volume": "backup-data"
+      }
+    ],
+    "volume_names": [
+      "prometheus-data",
+      "backup-data"
+    ]
+  },
+  "compose_output": "bootstrap/compose.generated.yaml",
+  "hooks": {
+    "backups": {
+      "service": "backups",
+      "targets": [
+        "prometheus-data",
+        "backup-data"
+      ]
+    },
+    "monitoring": {
+      "service": "monitoring",
+      "targets": [
+        "metrics",
+        "logs",
+        "health"
+      ]
+    }
+  },
+  "manifest": "infrastructure",
+  "network_names": [
+    "edge",
+    "internal"
+  ],
+  "phase_names": [
+    "storage",
+    "networking",
+    "monitoring",
+    "backups"
+  ],
+  "service_order": [
+    "reverse-proxy",
+    "monitoring",
+    "backups"
+  ],
+  "storage_root": "/srv/data/services",
+  "volume_names": [
+    "prometheus-data",
+    "backup-data"
+  ]
+}

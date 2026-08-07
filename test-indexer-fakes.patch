@@ -1,0 +1,12 @@
+diff --git a/services/local-rag/tests/test_indexer.py b/services/local-rag/tests/test_indexer.py
+--- a/services/local-rag/tests/test_indexer.py
++++ b/services/local-rag/tests/test_indexer.py
+@@ -9,0 +10 @@ class FakeCollection:
++        self.metadata: dict[str, str] = {}
+@@ -44,0 +46,3 @@ class FakeCollection:
++    def modify(self, metadata: dict[str, str]) -> None:
++        self.metadata = metadata
++
+@@ -57,0 +62,2 @@ class FakeClient:
++        if not self.collection.metadata:
++            self.collection.metadata = metadata

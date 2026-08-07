@@ -1,0 +1,11 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -48,0 +49 @@
++
+@@ -67 +67,0 @@
+-
+@@ -581,0 +582 @@
++        "authentication_enabled": api_auth.enabled,
+@@ -583 +583,0 @@
+-        "authentication_enabled": api_auth.enabled,

@@ -1,0 +1,15 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -22,6 +22,12 @@ from app.index_jobs import (
+     IndexJobAlreadyRunning,
+     IndexJobManager,
+ )
++from app.index_schema import (
++    INDEX_SCHEMA_VERSION,
++    collection_metadata,
++    inspect_collection,
++)
++from app.indexer import CHUNKING_VERSION
+ 
+ from app.reranker import LocalReranker

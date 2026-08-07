@@ -1,0 +1,85 @@
+name: local-rag
+
+services:
+  ollama:
+    image: ollama/ollama:0.32.3
+    container_name: local-rag-ollama
+    restart: unless-stopped
+
+    volumes:
+      - /srv/data/services/local-rag/ollama:/root/.ollama
+
+    networks:
+      - rag-private
+
+    healthcheck:
+      test:
+        - CMD
+        - ollama
+        - list
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    security_opt:
+      - no-new-privileges=true
+
+  api:
+    build:
+      context: ../../services/local-rag
+      dockerfile: Dockerfile
+
+    container_name: local-rag-api
+    restart: unless-stopped
+
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      EMBEDDING_MODEL: nomic-embed-text
+      CHROMA_PATH: /data/chroma
+      SOURCE_ROOT: /sources/homelab-bootstrap
+      GENERATION_MODEL: llama3.2:3b
+      PYTHONPATH: /app
+      RERANKER_ENABLED: "true"
+      RERANKER_MODEL: Xenova/ms-marco-MiniLM-L-6-v2
+      RERANKER_CACHE_DIR: /models/fastembed
+      RERANKER_THREADS: "2"
+      HOME: /models
+      HF_HOME: /models/huggingface
+      HF_HUB_DISABLE_XET: "1"
+
+    volumes:
+      - /srv/data/services/local-rag/chroma:/data/chroma
+      - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/sources/homelab-bootstrap:ro
+      - /srv/data/services/local-rag/models:/models
+
+    ports:
+      - target: 8080
+        published: "8090"
+        host_ip: 127.0.0.1
+        protocol: tcp
+
+    networks:
+      - rag-private
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    security_opt:
+      - no-new-privileges=true
+
+networks:
+  rag-private:
+    driver: bridge

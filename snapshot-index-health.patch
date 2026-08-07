@@ -1,0 +1,21 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -506,6 +506,8 @@ def extract_used_citations(
+ 
+ @app.get("/health")
+ def health() -> dict[str, Any]:
++    index_job = index_job_manager.snapshot()
++
+     return {
+         "status": "ok",
+         "vector_store": "chromadb",
+@@ -519,8 +521,8 @@ def health() -> dict[str, Any]:
+         "reranker_model": reranker.model_name,
+         "reranker_threads": reranker.threads,
+         "confidence_min_score": CONFIDENCE_MIN_SCORE,
+-        "index_status": index_job_manager.snapshot()["status"],
+-        "last_index_success_at": index_job_manager.snapshot()["last_success_at"],
++        "index_status": index_job["status"],
++        "last_index_success_at": index_job["last_success_at"],
+     }

@@ -1,0 +1,54 @@
+from __future__ import annotations
+
+from .infrastructure import BuildDeclaration, InfrastructureManifest, ServiceDeclaration
+
+
+def infrastructure_manifest() -> InfrastructureManifest:
+    return InfrastructureManifest(
+        name="infrastructure",
+        services=(
+            ServiceDeclaration(
+                name="reverse-proxy",
+                image="traefik:v3.1",
+                networks=("edge",),
+                ports=("80:80", "443:443"),
+                environment=(
+                    ("TRAEFIK_API", "true"),
+                    ("TRAEFIK_PING", "true"),
+                ),
+                healthcheck="http://127.0.0.1:8080/ping",
+            ),
+            ServiceDeclaration(
+                name="monitoring",
+                image="prom/prometheus:v2.55.1",
+                depends_on=("reverse-proxy",),
+                networks=("internal",),
+                volumes=("prometheus-data",),
+                ports=("9090:9090",),
+            ),
+            ServiceDeclaration(
+                name="mission-control",
+                build=BuildDeclaration(context="homelab-bootstrap/services/mission-control", dockerfile="Dockerfile"),
+                depends_on=("reverse-proxy", "monitoring"),
+                networks=("internal",),
+                volumes=("mission-control-data",),
+                ports=("8020:8020",),
+                environment=(
+                    ("MISSION_CONTROL_DATABASE", "/srv/data/services/mission-control-data/mission-control.sqlite3"),
+                    ("MISSION_CONTROL_TOKEN", "${MISSION_CONTROL_TOKEN}"),
+                    ("MISSION_CONTROL_HOST", "0.0.0.0"),
+                    ("MISSION_CONTROL_PORT", "8020"),
+                ),
+                command="python -m mission_control",
+            ),
+            ServiceDeclaration(
+                name="backups",
+                image="restic/restic:latest",
+                depends_on=("monitoring",),
+                networks=("internal",),
+                volumes=("backup-data",),
+            ),
+        ),
+        volumes=("prometheus-data", "mission-control-data", "backup-data"),
+        networks=("edge", "internal"),
+    )

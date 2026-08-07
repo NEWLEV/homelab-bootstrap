@@ -1,0 +1,47 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -128,28 +128,35 @@
+ class SearchRequest(BaseModel):
+-    query: str = Field(min_length=1)
++    query: str = Field(min_length=1, max_length=2000)
+     limit: int = Field(default=5, ge=1, le=20)
+     debug: bool = False
+-    path: str | None = None
+-    path_prefix: str | None = None
+-    directory: str | None = None
+-    extension: str | None = None
++    path: str | None = Field(default=None, max_length=1024)
++    path_prefix: str | None = Field(
++        default=None,
++        max_length=1024,
++    )
++    directory: str | None = Field(default=None, max_length=1024)
++    extension: str | None = Field(default=None, max_length=64)
+ 
+ 
+ class ConversationMessage(BaseModel):
+     role: Literal["user", "assistant"]
+     content: str = Field(min_length=1, max_length=2000)
+ 
+ 
+ class AskRequest(BaseModel):
+-    question: str = Field(min_length=1)
++    question: str = Field(min_length=1, max_length=2000)
+     history: list[ConversationMessage] = Field(
+         default_factory=list,
+         max_length=MAX_HISTORY_MESSAGES,
+     )
+     limit: int = Field(default=5, ge=1, le=10)
+-    path: str | None = None
++    path: str | None = Field(default=None, max_length=1024)
+     debug: bool = False
+-    path_prefix: str | None = None
+-    directory: str | None = None
+-    extension: str | None = None
++    path_prefix: str | None = Field(
++        default=None,
++        max_length=1024,
++    )
++    directory: str | None = Field(default=None, max_length=1024)
++    extension: str | None = Field(default=None, max_length=64)

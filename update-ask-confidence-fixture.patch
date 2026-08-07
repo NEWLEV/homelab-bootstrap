@@ -1,0 +1,19 @@
+diff --git a/services/local-rag/tests/test_ask.py b/services/local-rag/tests/test_ask.py
+--- a/services/local-rag/tests/test_ask.py
++++ b/services/local-rag/tests/test_ask.py
+@@ -56,6 +56,9 @@ def test_ask_returns_grounded_answer(monkeypatch):
+                 "line_end": 20,
+                 "distance": 0.1,
+                 "snippet": "Backups run nightly.",
++                "combined_score": 0.9,
++                "matching_tokens": ["backups", "run"],
++                "reranker_used": False,
+             }
+         ],
+     )
+@@ -82,3 +85,5 @@ def test_ask_returns_grounded_answer(monkeypatch):
+     assert body["grounded"] is True
+     assert len(body["citations"]) == 1
+     assert body["citations"][0]["path"] == "docs.md"
++    assert body["confidence"] == 0.92
++    assert body["citation_completeness"] == 1.0

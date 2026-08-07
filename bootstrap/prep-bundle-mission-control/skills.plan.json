@@ -1,0 +1,31 @@
+{
+  "discovery_notes": "discover Skills from repository-backed manifests and keep them visible to automation, agents, and operators",
+  "packaging_notes": "package Skills as repeatable local procedures with explicit metadata, versioning, and approval boundaries",
+  "service": "Skills registry",
+  "skills": [
+    {
+      "category": "operations",
+      "invocation": "aisha skills run bootstrap-validation",
+      "name": "bootstrap-validation",
+      "purpose": "run repeatable bootstrap checks and manifest validation flows"
+    },
+    {
+      "category": "platform",
+      "invocation": "aisha skills run integration-review",
+      "name": "integration-review",
+      "purpose": "summarize and validate n8n, MCP, and tool registry changes"
+    },
+    {
+      "category": "devops",
+      "invocation": "aisha skills run release-prep",
+      "name": "release-prep",
+      "purpose": "package repo changes, smoke tests, and rollout notes"
+    },
+    {
+      "category": "operations",
+      "invocation": "aisha skills run operator-checklist",
+      "name": "operator-checklist",
+      "purpose": "surface guided operator checklists for recurring maintenance tasks"
+    }
+  ]
+}

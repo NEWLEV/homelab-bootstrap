@@ -1,0 +1,16 @@
+[Unit]
+Description=Aisha Local RAG
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/data/git/homelab-bootstrap/workspaces/development/repo/services/local-rag
+Environment=CHROMA_PATH=%h/.local/share/aisha/chroma
+Environment=OLLAMA_URL=http://ollama:11434
+ExecStart=%h/.venvs/aisha/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

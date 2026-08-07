@@ -1,0 +1,7 @@
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -60,0 +61 @@
++
+@@ -64 +64,0 @@
+-

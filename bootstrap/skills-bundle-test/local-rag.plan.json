@@ -1,0 +1,106 @@
+{
+  "capabilities": [
+    "document parsing",
+    "chunking",
+    "embeddings",
+    "vector search",
+    "metadata filtering",
+    "grounded answers"
+  ],
+  "components": [
+    "document parser",
+    "chunker",
+    "embedding service",
+    "vector database",
+    "retrieval API",
+    "grounded answer generator",
+    "citation extractor",
+    "local reranker"
+  ],
+  "data_flow": [
+    "ingest source files",
+    "split content into chunks",
+    "embed chunks",
+    "store vectors and metadata",
+    "retrieve candidates",
+    "rerank candidates",
+    "generate grounded response",
+    "attach citations"
+  ],
+  "deployment_notes": "run the local RAG service beside the shared infrastructure layer so retrieval, embeddings, and generation remain private and reproducible",
+  "ingestion": {
+    "boundary_notes": "keep ingestion local, write only to repository-backed storage and the private vector store, and avoid external publication during indexing",
+    "inputs": [
+      "documents",
+      "markdown",
+      "pdfs",
+      "notes",
+      "internal files"
+    ],
+    "outputs": [
+      "chunks",
+      "embeddings",
+      "vector records",
+      "ingestion status"
+    ],
+    "retry_notes": "retry parse and embedding steps for transient failures; fail fast on invalid source documents",
+    "service": "ingestion and indexing",
+    "steps": [
+      {
+        "depends_on": [],
+        "name": "discover",
+        "purpose": "find eligible local source files and documents"
+      },
+      {
+        "depends_on": [
+          "discover"
+        ],
+        "name": "parse",
+        "purpose": "extract text and structure from source files"
+      },
+      {
+        "depends_on": [
+          "parse"
+        ],
+        "name": "chunk",
+        "purpose": "split content into manageable retrieval chunks"
+      },
+      {
+        "depends_on": [
+          "chunk",
+          "embedding service"
+        ],
+        "name": "embed",
+        "purpose": "send chunks to the embedding service"
+      },
+      {
+        "depends_on": [
+          "embed",
+          "vector database"
+        ],
+        "name": "index",
+        "purpose": "persist vectors and metadata to the vector database"
+      },
+      {
+        "depends_on": [
+          "index"
+        ],
+        "name": "verify",
+        "purpose": "check the indexed documents and record ingestion status"
+      }
+    ]
+  },
+  "roadmap_items": [
+    "hybrid search",
+    "cross-document reasoning",
+    "citation ranking",
+    "incremental updates",
+    "multiple embedding models"
+  ],
+  "storage_plan": {
+    "backend": "persistent vector store",
+    "location": "/srv/data/services/vector-database",
+    "restore": "restore the vector store before resuming retrieval or answer generation",
+    "retention": "keep indexed vectors, metadata, and embedding state on durable storage"
+  }
+}

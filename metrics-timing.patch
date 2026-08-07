@@ -1,0 +1,12 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -4,0 +5 @@
++from time import perf_counter
+@@ -885,0 +887 @@
++        generation_started = perf_counter()
+@@ -900,0 +903,4 @@
++        finally:
++            metrics.observe(
++                "generation", perf_counter() - generation_started
++            )

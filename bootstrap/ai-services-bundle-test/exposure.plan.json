@@ -1,0 +1,23 @@
+{
+  "access_policy": {
+    "private": [
+      "monitoring",
+      "backups"
+    ],
+    "public": [
+      "reverse-proxy"
+    ]
+  },
+  "boundary_notes": "public services terminate at the edge proxy; all other services remain private on internal networks",
+  "dns_strategy": "split-horizon or tunnel-backed external DNS",
+  "exposed_services": [
+    "reverse-proxy"
+  ],
+  "internal_services": [
+    "monitoring",
+    "backups"
+  ],
+  "public_entrypoint": "edge",
+  "service": "reverse-proxy",
+  "tls_terminator": "traefik"
+}

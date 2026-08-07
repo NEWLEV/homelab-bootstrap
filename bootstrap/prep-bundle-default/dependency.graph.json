@@ -1,0 +1,39 @@
+{
+  "adjacency": {
+    "backups": [],
+    "mission-control": [],
+    "monitoring": [
+      "backups",
+      "mission-control"
+    ],
+    "reverse-proxy": [
+      "mission-control",
+      "monitoring"
+    ]
+  },
+  "edges": [
+    {
+      "from": "reverse-proxy",
+      "to": "monitoring"
+    },
+    {
+      "from": "reverse-proxy",
+      "to": "mission-control"
+    },
+    {
+      "from": "monitoring",
+      "to": "mission-control"
+    },
+    {
+      "from": "monitoring",
+      "to": "backups"
+    }
+  ],
+  "name": "infrastructure",
+  "nodes": [
+    "reverse-proxy",
+    "monitoring",
+    "mission-control",
+    "backups"
+  ]
+}

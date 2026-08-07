@@ -1,0 +1,29 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -19 +19 @@
+-APP_VERSION = "0.7.2"
++APP_VERSION = "0.7.3"
+@@ -37,0 +38,3 @@
++CONFIDENCE_MIN_SCORE = float(
++    os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
++)
+@@ -127,0 +132,3 @@
++    confidence: float
++    citation_completeness: float | None = None
++    confidence_reasons: list[str] | None = None
+@@ -467,0 +475 @@
++        "confidence_min_score": CONFIDENCE_MIN_SCORE,
+diff --git a/compose/ai/local-rag.yml b/compose/ai/local-rag.yml
+--- a/compose/ai/local-rag.yml
++++ b/compose/ai/local-rag.yml
+@@ -46,0 +47 @@
++      CONFIDENCE_MIN_SCORE: "0.45"
+diff --git a/services/local-rag/tests/test_api.py b/services/local-rag/tests/test_api.py
+--- a/services/local-rag/tests/test_api.py
++++ b/services/local-rag/tests/test_api.py
+@@ -17 +17 @@
+-    assert body["version"] == "0.7.2"
++    assert body["version"] == "0.7.3"
+@@ -23,0 +24 @@
++    assert body["confidence_min_score"] == 0.45

@@ -1,0 +1,18 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -31,0 +32 @@
++from app.metrics import metrics
+@@ -38 +39 @@
+-APP_VERSION = "0.9.2"
++APP_VERSION = "0.9.3"
+@@ -530,0 +532,5 @@
++
++@app.get("/metrics")
++def service_metrics() -> dict[str, object]:
++    return metrics.snapshot()
++
+@@ -544,0 +551 @@
++    metrics.increment("search_requests")
+@@ -589,0 +597 @@
++    metrics.increment("ask_requests")

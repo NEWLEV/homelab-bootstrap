@@ -1,0 +1,56 @@
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -339,9 +339,13 @@ If the context does not directly answer the question, reply with exactly:
+ INSUFFICIENT_CONTEXT
+ 
+ For a supported answer:
+-- answer the question directly
+-- cite every factual claim inline
+-- use citations exactly like [path:line_start-line_end]
++- return only a concise answer to the question
++- do not reproduce source text or put a citation on its own line
++- end every sentence with one or more citations
++- copy each citation verbatim from a SOURCE bracket above
++- include the complete path and full line range in every citation
++- never shorten [path:line_start-line_end] to [path:line_start]
+ 
+ Repository context:
+ 
+diff --git a/services/local-rag/tests/test_ask.py b/services/local-rag/tests/test_ask.py
+--- a/services/local-rag/tests/test_ask.py
++++ b/services/local-rag/tests/test_ask.py
+@@ -1,6 +1,6 @@
+ from fastapi.testclient import TestClient
+ 
+-from app.main import app
++from app.main import app, build_grounded_prompt
+ 
+ client = TestClient(app)
+ 
+@@ -88,3 +88,23 @@ def test_ask_returns_grounded_answer(monkeypatch):
+     assert body["citations"][0]["path"] == "docs.md"
+     assert body["confidence"] == 0.92
+     assert body["citation_completeness"] == 1.0
++
++
++def test_grounded_prompt_requires_complete_verbatim_citations() -> None:
++    prompt = build_grounded_prompt(
++        "When do backups run?",
++        [
++            {
++                "path": "docs.md",
++                "line_start": 10,
++                "line_end": 20,
++                "snippet": "Backups run nightly.",
++            }
++        ],
++    )
++
++    assert "SOURCE [docs.md:10-20]" in prompt
++    assert "copy each citation verbatim" in prompt
++    assert "complete path and full line range" in prompt
++    assert (
++        "never shorten [path:line_start-line_end]"
++        in prompt
++    )

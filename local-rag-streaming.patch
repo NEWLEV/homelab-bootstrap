@@ -1,0 +1,499 @@
+diff --git a/services/local-rag/app/streaming.py b/services/local-rag/app/streaming.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/app/streaming.py
+@@ -0,0 +1,75 @@
++import json
++from collections.abc import AsyncIterator, Awaitable, Callable
++from typing import Any
++
++import httpx
++
++
++DisconnectCheck = Callable[[], Awaitable[bool]]
++
++
++def sse_event(event: str, payload: dict[str, Any]) -> str:
++    data = json.dumps(
++        payload,
++        ensure_ascii=False,
++        separators=(",", ":"),
++    )
++    return f"event: {event}\ndata: {data}\n\n"
++
++
++def parse_ollama_line(line: str) -> tuple[str, bool]:
++    payload = json.loads(line)
++    error = payload.get("error")
++    if error:
++        raise RuntimeError(f"Ollama generation failed: {error}")
++    return str(payload.get("response", "")), bool(
++        payload.get("done", False)
++    )
++
++
++async def stream_ollama_answer(
++    *,
++    ollama_url: str,
++    model: str,
++    prompt: str,
++    is_disconnected: DisconnectCheck,
++    timeout: float = 300.0,
++) -> AsyncIterator[str]:
++    if await is_disconnected():
++        return
++
++    async with httpx.AsyncClient(timeout=timeout) as client:
++        async with client.stream(
++            "POST",
++            f"{ollama_url}/api/generate",
++            json={
++                "model": model,
++                "prompt": prompt,
++                "stream": True,
++                "options": {
++                    "temperature": 0,
++                },
++            },
++        ) as response:
++            response.raise_for_status()
++
++            async for line in response.aiter_lines():
++                if await is_disconnected():
++                    return
++                if not line:
++                    continue
++
++                token, done = parse_ollama_line(line)
++                if token:
++                    yield token
++                if done:
++                    return
+diff --git a/services/local-rag/app/main.py b/services/local-rag/app/main.py
+--- a/services/local-rag/app/main.py
++++ b/services/local-rag/app/main.py
+@@ -1,3 +1,4 @@
++import asyncio
+ import os
+ import re
+ from pathlib import Path
+@@ -5,8 +6,10 @@ from typing import Any
+ 
+ import chromadb
+ import httpx
+-from fastapi import FastAPI, HTTPException
++from fastapi import FastAPI, HTTPException, Request
++from fastapi.responses import StreamingResponse
+ from pydantic import BaseModel, Field
++from starlette.concurrency import run_in_threadpool
+ from app.confidence import (
+     assess_citation_completeness,
+     assess_retrieval_confidence,
+@@ -15,10 +18,11 @@ from app.confidence import (
+ from app.reranker import LocalReranker
+ from app.retrieval import candidate_pool_size, rerank_candidates
++from app.streaming import sse_event, stream_ollama_answer
+ 
+ 
+-APP_VERSION = "0.7.3"
++APP_VERSION = "0.8.0"
+ 
+ 
+ app = FastAPI(
+@@ -676,6 +680,166 @@ def ask(request: AskRequest) -> AskResponse:
+     )
+ 
+ 
++@app.post("/ask/stream")
++async def ask_stream(
++    request: Request,
++    body: AskRequest,
++) -> StreamingResponse:
++    question = body.question.strip()
++
++    if not question:
++        raise HTTPException(
++            status_code=422,
++            detail="Question must not be empty.",
++        )
++
++    try:
++        matches = await run_in_threadpool(
++            retrieve_chunks,
++            question,
++            body.limit,
++            debug=True,
++            path=body.path,
++            path_prefix=body.path_prefix,
++            directory=body.directory,
++            extension=body.extension,
++        )
++    except httpx.HTTPError as exc:
++        raise HTTPException(
++            status_code=502,
++            detail=(
++                "Ollama embedding request failed: "
++                f"{exc}"
++            ),
++        ) from exc
++    except Exception as exc:
++        raise HTTPException(
++            status_code=500,
++            detail=str(exc),
++        ) from exc
++
++    retrieval_debug = (
++        [
++            RetrievalDiagnostic(
++                path=match["path"],
++                line_start=match["line_start"],
++                line_end=match["line_end"],
++                distance=match["distance"],
++                vector_score=match["vector_score"],
++                lexical_score=match["lexical_score"],
++                combined_score=match["combined_score"],
++                matching_tokens=match["matching_tokens"],
++                rank=match["rank"],
++                hybrid_rank=match.get("hybrid_rank"),
++                reranker_score=match.get("reranker_score"),
++                reranker_used=match.get("reranker_used", False),
++                reranker_error=match.get("reranker_error"),
++            )
++            for match in matches
++        ]
++        if body.debug
++        else None
++    )
++    confidence = assess_retrieval_confidence(
++        question,
++        matches,
++        minimum=CONFIDENCE_MIN_SCORE,
++    )
++
++    def debug_reasons(*extra: str) -> list[str] | None:
++        if not body.debug:
++            return None
++        return list(
++            dict.fromkeys((*confidence.reasons, *extra))
++        )
++
++    def result_event(response: AskResponse) -> str:
++        return sse_event(
++            "result",
++            response.model_dump(exclude_none=True),
++        )
++
++    async def events():
++        if not confidence.sufficient:
++            yield result_event(
++                AskResponse(
++                    question=question,
++                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
++                    grounded=False,
++                    citations=[],
++                    confidence=confidence.score,
++                    confidence_reasons=debug_reasons(),
++                    retrieval_debug=retrieval_debug,
++                )
++            )
++            return
++
++        prompt = build_grounded_prompt(question, matches)
++        answer_parts: list[str] = []
++
++        try:
++            async for token in stream_ollama_answer(
++                ollama_url=OLLAMA_URL,
++                model=GENERATION_MODEL,
++                prompt=prompt,
++                is_disconnected=request.is_disconnected,
++            ):
++                answer_parts.append(token)
++                yield sse_event("token", {"text": token})
++        except asyncio.CancelledError:
++            raise
++        except Exception as exc:
++            yield sse_event("error", {"detail": str(exc)})
++            return
++
++        if await request.is_disconnected():
++            return
++
++        answer = "".join(answer_parts).strip()
++        if not answer:
++            yield sse_event(
++                "error",
++                {"detail": "Ollama returned an empty generated response."},
++            )
++            return
++
++        if is_insufficient_answer(answer):
++            yield result_event(
++                AskResponse(
++                    question=question,
++                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
++                    grounded=False,
++                    citations=[],
++                    confidence=confidence.score,
++                    confidence_reasons=debug_reasons("model_refusal"),
++                    retrieval_debug=retrieval_debug,
++                )
++            )
++            return
++
++        citations = extract_used_citations(answer, matches)
++        citation_assessment = assess_citation_completeness(
++            answer,
++            matches,
++        )
++        final_confidence = round(
++            confidence.score * citation_assessment.completeness,
++            6,
++        )
++
++        if not citation_assessment.complete or not citations:
++            yield result_event(
++                AskResponse(
++                    question=question,
++                    answer=INSUFFICIENT_CONTEXT_MESSAGE,
++                    grounded=False,
++                    citations=[],
++                    confidence=final_confidence,
++                    citation_completeness=(
++                        citation_assessment.completeness
++                    ),
++                    confidence_reasons=debug_reasons(
++                        *citation_assessment.reasons
++                    ),
++                    retrieval_debug=retrieval_debug,
++                )
++            )
++            return
++
++        yield result_event(
++            AskResponse(
++                question=question,
++                answer=answer,
++                grounded=True,
++                citations=citations,
++                confidence=final_confidence,
++                citation_completeness=(
++                    citation_assessment.completeness
++                ),
++                confidence_reasons=debug_reasons(),
++                retrieval_debug=retrieval_debug,
++            )
++        )
++
++    return StreamingResponse(
++        events(),
++        media_type="text/event-stream",
++        headers={
++            "Cache-Control": "no-cache",
++            "X-Accel-Buffering": "no",
++        },
++    )
++
++
+ @app.post("/index")
+ def index_documents() -> dict[str, Any]:
+     from app.indexer import index_repository
+diff --git a/services/local-rag/tests/test_streaming.py b/services/local-rag/tests/test_streaming.py
+new file mode 100644
+--- /dev/null
++++ b/services/local-rag/tests/test_streaming.py
+@@ -0,0 +1,193 @@
++import json
++from typing import Any
++
++import pytest
++from fastapi.testclient import TestClient
++
++import app.main as main
++from app.streaming import parse_ollama_line, sse_event
++
++
++client = TestClient(main.app)
++
++
++def parse_events(body: str) -> list[tuple[str, dict[str, Any]]]:
++    events = []
++    for block in body.strip().split("\n\n"):
++        lines = block.splitlines()
++        event = lines[0].removeprefix("event: ")
++        data = json.loads(lines[1].removeprefix("data: "))
++        events.append((event, data))
++    return events
++
++
++def confident_match() -> dict[str, Any]:
++    return {
++        "path": "docs.md",
++        "line_start": 10,
++        "line_end": 20,
++        "distance": 0.1,
++        "snippet": "Backups run nightly.",
++        "vector_score": 0.9,
++        "lexical_score": 0.9,
++        "combined_score": 0.9,
++        "matching_tokens": ["backups", "run"],
++        "rank": 1,
++        "reranker_used": False,
++    }
++
++
++def test_stream_returns_tokens_and_final_grounded_result(
++    monkeypatch,
++) -> None:
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [confident_match()],
++    )
++
++    async def fake_stream(**kwargs):
++        yield "Backups run "
++        yield "nightly. [docs.md:10-20]"
++
++    monkeypatch.setattr(main, "stream_ollama_answer", fake_stream)
++
++    response = client.post(
++        "/ask/stream",
++        json={"question": "When do backups run?"},
++    )
++
++    assert response.status_code == 200
++    assert response.headers["content-type"].startswith(
++        "text/event-stream"
++    )
++    assert response.headers["cache-control"] == "no-cache"
++    events = parse_events(response.text)
++    assert events[:2] == [
++        ("token", {"text": "Backups run "}),
++        ("token", {"text": "nightly. [docs.md:10-20]"}),
++    ]
++    event, result = events[-1]
++    assert event == "result"
++    assert result["grounded"] is True
++    assert result["confidence"] == 0.92
++    assert result["citation_completeness"] == 1.0
++    assert result["citations"][0]["path"] == "docs.md"
++
++
++def test_stream_low_confidence_skips_generation(monkeypatch) -> None:
++    match = confident_match()
++    match.update(combined_score=0.05, matching_tokens=[])
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [match],
++    )
++
++    async def fail_stream(**kwargs):
++        raise AssertionError("generation must be skipped")
++        yield
++
++    monkeypatch.setattr(main, "stream_ollama_answer", fail_stream)
++
++    response = client.post(
++        "/ask/stream",
++        json={
++            "question": "What color is the moon base cafeteria?",
++            "debug": True,
++        },
++    )
++
++    events = parse_events(response.text)
++    assert len(events) == 1
++    event, result = events[0]
++    assert event == "result"
++    assert result["grounded"] is False
++    assert result["confidence"] < 0.45
++    assert "below_confidence_threshold" in result[
++        "confidence_reasons"
++    ]
++
++
++def test_stream_invalid_citation_finishes_refused(monkeypatch) -> None:
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [confident_match()],
++    )
++
++    async def fake_stream(**kwargs):
++        yield "Backups run nightly without a citation."
++
++    monkeypatch.setattr(main, "stream_ollama_answer", fake_stream)
++
++    response = client.post(
++        "/ask/stream",
++        json={
++            "question": "When do backups run?",
++            "debug": True,
++        },
++    )
++
++    events = parse_events(response.text)
++    assert events[0][0] == "token"
++    event, result = events[-1]
++    assert event == "result"
++    assert result["grounded"] is False
++    assert result["citation_completeness"] == 0.0
++    assert "missing_citations" in result["confidence_reasons"]
++
++
++def test_stream_generation_error_emits_error_event(monkeypatch) -> None:
++    monkeypatch.setattr(
++        main,
++        "retrieve_chunks",
++        lambda query, limit, **kwargs: [confident_match()],
++    )
++
++    async def fail_stream(**kwargs):
++        raise RuntimeError("generation unavailable")
++        yield
++
++    monkeypatch.setattr(main, "stream_ollama_answer", fail_stream)
++
++    response = client.post(
++        "/ask/stream",
++        json={"question": "When do backups run?"},
++    )
++
++    assert parse_events(response.text) == [
++        ("error", {"detail": "generation unavailable"})
++    ]
++
++
++@pytest.mark.parametrize(
++    ("line", "expected"),
++    [
++        ('{"response":"hello","done":false}', ("hello", False)),
++        ('{"response":"","done":true}', ("", True)),
++    ],
++)
++def test_parse_ollama_line(line: str, expected) -> None:
++    assert parse_ollama_line(line) == expected
++
++
++def test_parse_ollama_error() -> None:
++    with pytest.raises(RuntimeError, match="model not found"):
++        parse_ollama_line('{"error":"model not found"}')
++
++
++def test_sse_event_json_encodes_newlines() -> None:
++    encoded = sse_event("token", {"text": "one\ntwo"})
++
++    assert encoded == 'event: token\ndata: {"text":"one\\ntwo"}\n\n'
++
++
++def test_stream_limit_and_blank_question_validation() -> None:
++    assert client.post(
++        "/ask/stream",
++        json={"question": "test", "limit": 11},
++    ).status_code == 422
++    assert client.post(
++        "/ask/stream",
++        json={"question": "   "},
++    ).status_code == 422
