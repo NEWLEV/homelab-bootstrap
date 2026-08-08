@@ -79,6 +79,9 @@ jobs:
       - name: Test OpenClaw scaffold
         run: ./tests/openclaw.sh
 
+      - name: Test Aisha chat gateway
+        run: ./tests/aisha-chat.sh
+
   configuration:
     name: Configuration validation
     runs-on: ubuntu-latest

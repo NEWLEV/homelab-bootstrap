@@ -123,6 +123,25 @@ Configuration:
 compose/networking/traefik.yml
 ```
 
+Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
+
+| Path | Service |
+|------|---------|
+| `/` | Homepage dashboard |
+| `/aisha` | Aisha chat gateway (OpenClaw) |
+
+For direct dashboard access without Traefik, two host ports are published:
+
+| Port | Service |
+|------|---------|
+| `8000` | Homepage dashboard (`http://aisha:8000`) |
+| `18789` | Aisha chat gateway (embedded by the dashboard launcher) |
+
+All routes share the same tailnet/LAN trust boundary, and the Local RAG
+credentials stay inside the gateway container. The gateway only permits
+embedding from the origins listed in `OPENCLAW_EMBED_ORIGINS` in
+`compose/ai/openclaw.yml`.
+
 Verify:
 
 ```bash

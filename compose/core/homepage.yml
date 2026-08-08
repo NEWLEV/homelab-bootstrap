@@ -16,13 +16,19 @@ services:
       traefik.http.routers.homepage.tls: "true"
       traefik.http.services.homepage.loadbalancer.server.port: "3000"
 
+    # Direct dashboard access without Traefik (http://aisha:8000).
+    ports:
+      - target: 3000
+        published: "8000"
+        protocol: tcp
+
     networks:
       - proxy
 
     environment:
       PUID: "1000"
       PGID: "1000"
-      HOMEPAGE_ALLOWED_HOSTS: "aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000"
+      HOMEPAGE_ALLOWED_HOSTS: "aisha:8000,100.106.201.14:8000,aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000,localhost:8000,127.0.0.1:8000"
 
 networks:
   proxy:
