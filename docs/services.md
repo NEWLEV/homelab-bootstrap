@@ -117,8 +117,9 @@ with the bearer token held server-side, and answers stream back over SSE
 with grounded citations. Conversations persist under
 `/srv/data/services/openclaw/conversations`.
 
-The dashboard launcher assets live in `configs/homepage/` and are installed
-with:
+The shared dashboard launcher assets live in `configs/homepage/`. The Python
+platform dashboard serves them directly from `/platform/assets/`, while the
+Homepage container receives them with:
 
 ```bash
 ./scripts/install-homepage-aisha-launcher
@@ -142,8 +143,9 @@ Verify
 
 ```bash
 ./install.sh --validate-manifest
-./tests/openclaw.sh
 ./tests/aisha-chat.sh
+node --test services/openclaw/test/gateway.test.js
+docker compose -f compose/ai/openclaw.yml config --quiet
 ```
 
 ---

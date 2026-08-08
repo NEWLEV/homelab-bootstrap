@@ -79,3 +79,14 @@ def test_digest_and_vitals_and_sse() -> None:
         assert 'pending_approvals' in digest.json()
 
     assert any(route.path == '/api/stream' for route in app.routes)
+
+
+def test_dashboard_uses_mount_relative_api_paths() -> None:
+    with TestClient(app) as client:
+        response = client.get('/')
+
+    assert response.status_code == 200
+    assert "fetch('api/events?limit=30')" in response.text
+    assert "new EventSource('api/stream')" in response.text
+    assert 'href="api/events"' in response.text
+    assert 'href="/api/events"' not in response.text

@@ -10,6 +10,11 @@ Mission Control is the lightweight operational dashboard for agent activity, app
 - Authenticated ingest: `POST /api/events` with `X-Mission-Control-Token`
 - Approval workflow: `POST /api/approvals/{id}/approve?confirm=true` and `/reject?confirm=true` only update records and emit events
 - The UI never shells out, touches Docker, or mutates infrastructure
+- The platform dashboard embeds `/mission-control/`, which proxies to the
+  standalone service at `MISSION_CONTROL_URL` (default
+  `http://127.0.0.1:8020`)
+- Dashboard API references are relative, so the same UI works both standalone
+  and through the platform proxy
 
 ## Runbook
 

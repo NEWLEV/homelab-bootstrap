@@ -99,10 +99,24 @@ The Homepage dashboard loads a floating "Chat with Aisha" launcher from
 repository-managed assets in `configs/homepage/`. Install them with
 `scripts/install-homepage-aisha-launcher`.
 
+## Deployment
+
+From the repository root on Aisha:
+
+```bash
+docker compose -f compose/ai/openclaw.yml config --quiet
+docker compose -f compose/ai/openclaw.yml up -d --build
+docker compose -f compose/ai/openclaw.yml ps
+curl --fail http://127.0.0.1:18789/api/health
+```
+
+The health response can report `ready: false` when Local RAG is unavailable or
+its token has not been provisioned. A connection refusal means the OpenClaw
+container is not running or port `18789` is not published.
+
 ## Validation
 
 ```bash
-./tests/openclaw.sh
 ./tests/aisha-chat.sh
 node --test services/openclaw/test/gateway.test.js
 docker compose -f compose/ai/openclaw.yml config --quiet

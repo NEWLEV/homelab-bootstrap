@@ -8,8 +8,8 @@ from typing import Any
 
 import chromadb
 import httpx
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.indexer import REQUIRED_METADATA_FIELDS, build_index_status
@@ -43,10 +43,12 @@ from bootstrap.mcp import render_mcp_plan
 from bootstrap.n8n import render_n8n_plan
 from bootstrap.rag_api import render_rag_api_plan
 from bootstrap.skills import render_skills_plan
-from mission_control.ui import DASHBOARD_HTML
 
 
 APP_VERSION = "0.7.2"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+HOMEPAGE_ASSET_DIR = REPO_ROOT / "configs" / "homepage"
+MISSION_CONTROL_URL = os.environ.get("MISSION_CONTROL_URL", "http://127.0.0.1:8020").rstrip("/")
 
 
 app = FastAPI(
@@ -1288,6 +1290,69 @@ def platform_personal_os() -> PersonalOsResponse:
 
 
 
+@app.get("/mission-control/api/stream", include_in_schema=False)
+async def mission_control_stream_proxy() -> StreamingResponse:
+    async def relay():
+        try:
+            async with httpx.AsyncClient(timeout=None) as client:
+                async with client.stream("GET", f"{MISSION_CONTROL_URL}/api/stream") as response:
+                    async for chunk in response.aiter_bytes():
+                        yield chunk
+        except httpx.HTTPError:
+            yield b'event: error\ndata: {"detail":"Mission Control is unavailable"}\n\n'
+
+    return StreamingResponse(
+        relay(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.api_route(
+    "/mission-control/{path:path}",
+    methods=["GET", "POST", "DELETE"],
+    include_in_schema=False,
+)
+async def mission_control_proxy(path: str, request: Request) -> Response:
+    headers = {
+        name: value
+        for name, value in request.headers.items()
+        if name.lower() in {"content-type", "x-mission-control-token"}
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            upstream = await client.request(
+                request.method,
+                f"{MISSION_CONTROL_URL}/{path}",
+                params=request.query_params,
+                content=await request.body(),
+                headers=headers,
+            )
+    except httpx.HTTPError:
+        if not path:
+            return HTMLResponse(
+                "<h1>Mission Control unavailable</h1>"
+                "<p>Start <code>aisha-mission-control.service</code> and reload.</p>",
+                status_code=503,
+            )
+        return Response(
+            content='{"detail":"Mission Control is unavailable"}',
+            status_code=503,
+            media_type="application/json",
+        )
+
+    response_headers = {
+        name: value
+        for name, value in upstream.headers.items()
+        if name.lower() in {"content-type", "cache-control"}
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
+
+
 @app.get("/platform/mission-control", response_class=HTMLResponse)
 def platform_mission_control() -> HTMLResponse:
     html = f"""
@@ -1315,13 +1380,35 @@ def platform_mission_control() -> HTMLResponse:
               </div>
               <a href="/platform/web-dashboard">Back to platform dashboard</a>
             </div>
-            {DASHBOARD_HTML}
+            <iframe
+              src="/mission-control/"
+              title="Aisha Mission Control"
+              style="display:block;width:100%;height:calc(100vh - 120px);min-height:680px;border:0;border-radius:16px;background:#111311;"
+            ></iframe>
           </div>
         </div>
       </body>
     </html>
     """
     return HTMLResponse(content=html)
+
+
+@app.get("/platform/assets/aisha-launcher.js", include_in_schema=False)
+def platform_aisha_launcher_script() -> Response:
+    return Response(
+        content=(HOMEPAGE_ASSET_DIR / "custom.js").read_text(encoding="utf-8"),
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/platform/assets/aisha-launcher.css", include_in_schema=False)
+def platform_aisha_launcher_styles() -> Response:
+    return Response(
+        content=(HOMEPAGE_ASSET_DIR / "custom.css").read_text(encoding="utf-8"),
+        media_type="text/css",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @app.get("/platform/runbook", response_class=HTMLResponse)
@@ -1393,6 +1480,7 @@ def platform_web_dashboard() -> HTMLResponse:
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Aisha Dashboard</title>
+    <link rel="stylesheet" href="/platform/assets/aisha-launcher.css" />
     <style>
       :root {{ color-scheme: dark; }}
       body {{ margin: 0; font-family: Inter, Segoe UI, system-ui, sans-serif; background: linear-gradient(160deg, #08111f, #111827 60%, #1f2937); color: #e5e7eb; }}
@@ -1472,6 +1560,7 @@ systemctl --user restart aisha-local-rag.service
         </div>
       </section>
       <p class="muted" style="margin-top:24px">Dashboard sections: {', '.join(sections)}</p>
+      <script src="/platform/assets/aisha-launcher.js" defer></script>
     </main>
   </body>
 </html>"""

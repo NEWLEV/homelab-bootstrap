@@ -555,9 +555,25 @@ def test_platform_web_dashboard_endpoint_renders_html() -> None:
     assert "development assistant" in body
     assert "Mission Control" in body
     assert "Open Mission Control" in body
+    assert body.count("Open Mission Control") == 1
     assert "/platform/mission-control" in body
+    assert "/platform/assets/aisha-launcher.css" in body
+    assert "/platform/assets/aisha-launcher.js" in body
     assert "Dashboard sections" in body
 
+
+
+def test_platform_aisha_launcher_assets_are_served() -> None:
+    script_response = client.get("/platform/assets/aisha-launcher.js")
+    style_response = client.get("/platform/assets/aisha-launcher.css")
+
+    assert script_response.status_code == 200
+    assert "application/javascript" in script_response.headers["content-type"]
+    assert "Chat with Aisha" in script_response.text
+    assert "GATEWAY_PORT = '18789'" in script_response.text
+    assert style_response.status_code == 200
+    assert "text/css" in style_response.headers["content-type"]
+    assert "#aisha-launcher" in style_response.text
 
 
 def test_platform_mission_control_endpoint_renders_embedded_dashboard() -> None:
@@ -569,5 +585,5 @@ def test_platform_mission_control_endpoint_renders_embedded_dashboard() -> None:
     body = response.text
 
     assert 'Mission Control' in body
-    assert '/mission-control' in body
-    assert 'iframe' in body
+    assert '/mission-control/' in body
+    assert '<iframe' in body

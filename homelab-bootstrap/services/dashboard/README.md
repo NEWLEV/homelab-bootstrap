@@ -1,4 +1,4 @@
-﻿# Dashboard Service
+# Dashboard Service
 
 This service starts Aisha's main dashboard app automatically for the operator UI.
 
@@ -25,6 +25,18 @@ systemctl --user start aisha-dashboard.service
 - `http://100.106.201.14:8000/platform/web-dashboard`
 
 The root `/` route redirects to the dashboard page so the short URL works in browsers too.
+
+The platform dashboard loads the same repository-managed Aisha chat launcher
+as Homepage. The floating `Chat with Aisha` button probes the OpenClaw gateway
+at `/aisha` first, then falls back to port `18789` for direct dashboard access.
+The dedicated Mission Control section contains the single
+`Open Mission Control` button.
+
+The dashboard proxies `/mission-control/` to the standalone Mission Control
+service at `http://127.0.0.1:8020`. Override that target with
+`MISSION_CONTROL_URL` if the service moves. Both
+`aisha-dashboard.service` and `aisha-mission-control.service` must be
+running for live Mission Control data.
 
 ## Launcher
 
