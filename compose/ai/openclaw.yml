@@ -27,10 +27,13 @@ services:
       OPENCLAW_SECRETS_FILE: /run/secrets/openclaw_env
       OPENCLAW_LOCAL_RAG_URL: http://local-rag-api:8080
       OPENCLAW_LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
-      # 0.0.0.0 is container-scoped: reachable only through attached Docker
-      # networks. Traefik exposes just the /aisha path on the tailnet host.
+      # 0.0.0.0 is container-scoped; exposure happens via Traefik (/aisha on
+      # the tailnet host) and the published port below for direct dashboard
+      # access on http://<host>:8000.
       OPENCLAW_GATEWAY_BIND: 0.0.0.0
       OPENCLAW_GATEWAY_PORT: "18789"
+      # Dashboard origins allowed to embed the chat and probe its health.
+      OPENCLAW_EMBED_ORIGINS: "http://aisha:8000,http://100.106.201.14:8000"
       NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache
       OPENCLAW_NO_RESPAWN: "1"
 
@@ -38,6 +41,13 @@ services:
       - /srv/data/services/openclaw:/state
       - /srv/data/services/openclaw/config:/config
       - /srv/data/services/openclaw/workspace:/work
+
+    # Published for dashboards accessed directly (not through Traefik); the
+    # same trust boundary as the dashboard's own published port.
+    ports:
+      - target: 18789
+        published: "18789"
+        protocol: tcp
 
     secrets:
       - openclaw_env

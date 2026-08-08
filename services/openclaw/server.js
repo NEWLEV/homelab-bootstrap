@@ -13,6 +13,16 @@ const DEFAULT_UI_DIR = fs.existsSync('/usr/local/share/openclaw-ui')
   ? '/usr/local/share/openclaw-ui'
   : path.join(__dirname, 'ui');
 
+// Origins allowed to embed the chat UI and probe /api/health cross-origin
+// (the dashboard, when it is served from a different origin than this
+// gateway). Same-origin embedding is always allowed.
+function parseEmbedOrigins(value) {
+  return (value || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => /^https?:\/\/[^/\s]+$/.test(entry));
+}
+
 const config = {
   configDir: process.env.OPENCLAW_CONFIG_DIR || '/config',
   stateDir: process.env.OPENCLAW_STATE_DIR || '/state',
@@ -22,6 +32,7 @@ const config = {
     process.env.OPENCLAW_LOCAL_RAG_TOKEN_FILE || '/run/secrets/local_rag_api_token',
   gatewayBind: process.env.OPENCLAW_GATEWAY_BIND || '127.0.0.1',
   gatewayPort: Number.parseInt(process.env.OPENCLAW_GATEWAY_PORT || '18789', 10),
+  embedOrigins: parseEmbedOrigins(process.env.OPENCLAW_EMBED_ORIGINS),
   uiDir: process.env.OPENCLAW_UI_DIR || DEFAULT_UI_DIR,
   nodeCompileCache: process.env.NODE_COMPILE_CACHE || '/var/tmp/openclaw-compile-cache',
   noRespawn: process.env.OPENCLAW_NO_RESPAWN || '1',
@@ -49,10 +60,13 @@ const STATIC_FILES = new Map([
   ['/styles.css', { file: 'styles.css', type: 'text/css; charset=utf-8' }],
 ]);
 
+const FRAME_ANCESTORS = ["'self'", ...config.embedOrigins].join(' ');
+
 const UI_SECURITY_HEADERS = {
   'content-security-policy':
     "default-src 'self'; img-src 'self' data:; style-src 'self'; " +
-    "script-src 'self'; connect-src 'self'; frame-ancestors 'self'; " +
+    "script-src 'self'; connect-src 'self'; " +
+    `frame-ancestors ${FRAME_ANCESTORS}; ` +
     "base-uri 'none'; form-action 'self'",
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'no-referrer',
@@ -288,21 +302,36 @@ async function fetchUpstreamHealth() {
   }
 }
 
-async function handleApiHealth(res) {
+async function handleApiHealth(req, res) {
   const upstream = await fetchUpstreamHealth();
   const tokenConfigured = loadLocalRagToken() !== null;
   const authorizationReady =
     upstream.reachable && (!upstream.authentication_enabled || tokenConfigured);
   const ready = upstream.reachable && upstream.status === 'ok' && authorizationReady;
 
-  sendJson(res, 200, {
-    status: ready ? 'ok' : 'degraded',
-    service: 'aisha-chat-gateway',
-    version: GATEWAY_VERSION,
-    knowledge_service: upstream,
-    knowledge_service_token_configured: tokenConfigured,
-    ready,
-  });
+  // The dashboard launcher may probe health from an allowlisted embedding
+  // origin. Health is the only endpoint with CORS; chat traffic itself is
+  // always same-origin inside the embedded frame.
+  const corsHeaders = { vary: 'Origin' };
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && config.embedOrigins.includes(requestOrigin)) {
+    corsHeaders['access-control-allow-origin'] = requestOrigin;
+  }
+
+  sendJson(
+    res,
+    200,
+    {
+      status: ready ? 'ok' : 'degraded',
+      service: 'aisha-chat-gateway',
+      version: GATEWAY_VERSION,
+      knowledge_service: upstream,
+      knowledge_service_token_configured: tokenConfigured,
+      embed_origins: config.embedOrigins,
+      ready,
+    },
+    corsHeaders,
+  );
 }
 
 async function handleListConversations(res) {
@@ -844,7 +873,7 @@ async function route(req, res) {
       sendJson(res, 405, { detail: 'Method not allowed.' });
       return;
     }
-    await handleApiHealth(res);
+    await handleApiHealth(req, res);
     return;
   }
 

@@ -236,6 +236,8 @@ before(async () => {
   process.env.OPENCLAW_LOCAL_RAG_URL = `http://127.0.0.1:${stubPort}`;
   process.env.OPENCLAW_LOCAL_RAG_TOKEN_FILE = tokenFile;
   process.env.OPENCLAW_GATEWAY_BIND = '127.0.0.1';
+  process.env.OPENCLAW_EMBED_ORIGINS =
+    'http://aisha:8000,http://100.106.201.14:8000,not-an-origin';
 
   // eslint-disable-next-line global-require
   const gateway = require('../server.js');
@@ -273,6 +275,45 @@ test('serves the chat UI with security headers, with and without prefix', async 
 
   const traversal = await fetch(gatewayUrl('/aisha/..%2Fserver.js'));
   assert.equal(traversal.status, 404);
+});
+
+test('allows configured dashboard origins to embed and probe health', async () => {
+  // Malformed allowlist entries are dropped; valid origins are kept.
+  const page = await fetch(gatewayUrl('/aisha/'));
+  const csp = page.headers.get('content-security-policy');
+  assert.match(
+    csp,
+    /frame-ancestors 'self' http:\/\/aisha:8000 http:\/\/100\.106\.201\.14:8000;/,
+  );
+  assert.ok(!csp.includes('not-an-origin'));
+
+  const allowed = await fetch(gatewayUrl('/api/health'), {
+    headers: { origin: 'http://aisha:8000' },
+  });
+  assert.equal(
+    allowed.headers.get('access-control-allow-origin'),
+    'http://aisha:8000',
+  );
+  const payload = await allowed.json();
+  assert.deepEqual(payload.embed_origins, [
+    'http://aisha:8000',
+    'http://100.106.201.14:8000',
+  ]);
+
+  const denied = await fetch(gatewayUrl('/api/health'), {
+    headers: { origin: 'http://evil.example' },
+  });
+  assert.equal(denied.headers.get('access-control-allow-origin'), null);
+
+  // Health is the only CORS-enabled endpoint; conversation APIs stay
+  // same-origin only.
+  const conversations = await fetch(gatewayUrl('/api/conversations'), {
+    headers: { origin: 'http://aisha:8000' },
+  });
+  assert.equal(
+    conversations.headers.get('access-control-allow-origin'),
+    null,
+  );
 });
 
 test('api health reports degraded while the token is unconfigured', async () => {

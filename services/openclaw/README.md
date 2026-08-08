@@ -32,11 +32,23 @@ and container name.
 
 ## Exposure and trust boundary
 
-Traefik routes `https://aisha.tail4553c9.ts.net/aisha/` to this container
-(same host as the Homepage dashboard, so the chat is same-origin with the
-dashboard). The container publishes no host ports; the legacy `/health` and
-`/ready` endpoints are reachable only without the `/aisha` prefix, i.e. only
-from inside the Docker networks.
+Two access paths are supported, matching how the dashboard itself is
+reached:
+
+1. **Through Traefik** — `https://aisha.tail4553c9.ts.net/aisha/`, same
+   origin as the dashboard host.
+2. **Direct dashboard access** — when Homepage is used at
+   `http://aisha:8000` or `http://100.106.201.14:8000`, the launcher falls
+   back to the gateway's published port `18789` on the same host. The
+   dashboard origin must be listed in `OPENCLAW_EMBED_ORIGINS`; that
+   allowlist drives both the CSP `frame-ancestors` directive and CORS,
+   which is enabled for `GET /api/health` only — all conversation traffic
+   stays same-origin inside the embedded frame.
+
+The legacy `/health` and `/ready` endpoints are not served under the
+`/aisha` prefix. Note that direct access is plain HTTP; response copy
+buttons are hidden there because the browser clipboard API requires a
+secure context.
 
 This appliance has no user-account or session system — the Homepage
 dashboard it sits beside has none either. Authorization for the chat is

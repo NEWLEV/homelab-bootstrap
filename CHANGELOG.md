@@ -25,7 +25,12 @@ Component versions, including Local RAG, are maintained independently and are no
 
 - OpenClaw Compose service joins the Traefik proxy network and is routed at
   `https://aisha.tail4553c9.ts.net/aisha` (tailnet-gated, same origin as the
-  dashboard); the container still publishes no host ports.
+  dashboard). For dashboards accessed directly at `http://<host>:8000`, the
+  gateway also publishes port `18789` and permits embedding only from the
+  origins in `OPENCLAW_EMBED_ORIGINS`, which drive CSP `frame-ancestors`
+  and health-endpoint CORS.
+- Homepage Compose now publishes port `8000` and allows the `:8000` hosts,
+  matching how the running appliance is accessed.
 - OpenClaw container healthcheck now uses Node instead of Python, matching
   the runtime image.
 
