@@ -129,19 +129,20 @@ Configuration
 
 ```
 /srv/data/services/openclaw/
-~/.config/openclaw/
+/srv/data/services/openclaw/config/
 ```
 
 Secrets
 
 ```
-~/.config/openclaw/secrets.env
+/srv/data/services/openclaw/secrets.env
 /srv/data/services/local-rag/secrets/api-token
 ```
 
 Verify
 
 ```bash
+scripts/install-openclaw-runtime
 ./install.sh --validate-manifest
 ./tests/aisha-chat.sh
 node --test services/openclaw/test/gateway.test.js

@@ -104,10 +104,11 @@ repository-managed assets in `configs/homepage/`. Install them with
 From the repository root on Aisha:
 
 ```bash
+scripts/install-openclaw-runtime
 docker compose -f compose/ai/openclaw.yml config --quiet
 docker compose -f compose/ai/openclaw.yml up -d --build
 docker compose -f compose/ai/openclaw.yml ps
-curl --fail http://127.0.0.1:18789/api/health
+curl --fail http://127.0.0.1:18789/aisha/api/health
 ```
 
 The health response can report `ready: false` when Local RAG is unavailable or

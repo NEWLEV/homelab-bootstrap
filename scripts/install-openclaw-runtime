@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+OPENCLAW_ROOT="${OPENCLAW_ROOT:-/srv/data/services/openclaw}"
+OPENCLAW_ENV_FILE="${OPENCLAW_ENV_FILE:-$OPENCLAW_ROOT/secrets.env}"
+LOCAL_RAG_API_TOKEN_FILE="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
+
+mkdir -p \
+    "$OPENCLAW_ROOT" \
+    "$OPENCLAW_ROOT/config" \
+    "$OPENCLAW_ROOT/conversations" \
+    "$OPENCLAW_ROOT/workspace"
+
+if [[ ! -e "$OPENCLAW_ENV_FILE" ]]; then
+    install -m 600 /dev/null "$OPENCLAW_ENV_FILE"
+    printf 'Created OpenClaw env file: %s\n' "$OPENCLAW_ENV_FILE"
+elif [[ ! -r "$OPENCLAW_ENV_FILE" ]]; then
+    printf 'OpenClaw env file exists but is not readable: %s\n' "$OPENCLAW_ENV_FILE" >&2
+    exit 1
+else
+    chmod 600 "$OPENCLAW_ENV_FILE" 2>/dev/null || true
+    printf 'OpenClaw env file exists: %s\n' "$OPENCLAW_ENV_FILE"
+fi
+
+if [[ ! -r "$LOCAL_RAG_API_TOKEN_FILE" ]]; then
+    printf 'Warning: Local RAG API token file is missing: %s\n' "$LOCAL_RAG_API_TOKEN_FILE" >&2
+    printf 'Run scripts/local-rag-token if available, or provision the Local RAG API token before expecting chat answers.\n' >&2
+else
+    printf 'Local RAG token file exists: %s\n' "$LOCAL_RAG_API_TOKEN_FILE"
+fi
+
+printf '\nNext commands:\n'
+printf '  docker compose -f compose/ai/openclaw.yml up -d --build\n'
+printf '  docker compose -f compose/ai/openclaw.yml ps\n'
+printf '  curl --fail http://127.0.0.1:18789/aisha/api/health\n'

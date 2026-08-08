@@ -49,6 +49,7 @@ APP_VERSION = "0.7.2"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOMEPAGE_ASSET_DIR = REPO_ROOT / "configs" / "homepage"
 MISSION_CONTROL_URL = os.environ.get("MISSION_CONTROL_URL", "http://127.0.0.1:8020").rstrip("/")
+OPENCLAW_URL = os.environ.get("OPENCLAW_URL", "http://127.0.0.1:18789").rstrip("/")
 
 
 app = FastAPI(
@@ -1289,6 +1290,57 @@ def platform_personal_os() -> PersonalOsResponse:
 
 
 
+
+@app.api_route(
+    "/aisha",
+    methods=["GET", "POST", "DELETE", "OPTIONS"],
+    include_in_schema=False,
+)
+@app.api_route(
+    "/aisha/{path:path}",
+    methods=["GET", "POST", "DELETE", "OPTIONS"],
+    include_in_schema=False,
+)
+async def openclaw_proxy(request: Request, path: str = "") -> Response:
+    upstream_path = f"/aisha/{path}" if path else "/aisha"
+    headers = {
+        name: value
+        for name, value in request.headers.items()
+        if name.lower() in {"accept", "content-type"}
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            upstream = await client.request(
+                request.method,
+                f"{OPENCLAW_URL}{upstream_path}",
+                params=request.query_params,
+                content=await request.body(),
+                headers=headers,
+            )
+    except httpx.HTTPError:
+        return Response(
+            content='{"detail":"Aisha chat is unavailable"}',
+            status_code=503,
+            media_type="application/json",
+        )
+
+    response_headers = {
+        name: value
+        for name, value in upstream.headers.items()
+        if name.lower() in {
+            "cache-control",
+            "content-length",
+            "content-security-policy",
+            "content-type",
+            "referrer-policy",
+            "x-content-type-options",
+        }
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
 
 @app.get("/mission-control/api/stream", include_in_schema=False)
 async def mission_control_stream_proxy() -> StreamingResponse:

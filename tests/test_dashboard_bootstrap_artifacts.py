@@ -35,3 +35,18 @@ def test_mission_control_bootstrap_artifacts_exist() -> None:
     assert 'ExecStart=/usr/bin/env bash homelab-bootstrap/services/mission-control/scripts/run-mission-control.sh' in unit
     assert 'ExecStart=/usr/bin/env bash homelab-bootstrap/services/mission-control/scripts/run-mission-control.sh' in installer
     assert 'python -m mission_control' in launcher
+
+
+def test_openclaw_runtime_installer_exists() -> None:
+    repo_root = Path(r"C:/Users/ZBook/Documents/Aisha")
+    installer = repo_root / "scripts" / "install-openclaw-runtime"
+
+    assert installer.exists()
+
+    contents = installer.read_text(encoding="utf-8")
+
+    assert "OPENCLAW_ENV_FILE" in contents
+    assert 'OPENCLAW_ROOT="${OPENCLAW_ROOT:-/srv/data/services/openclaw}"' in contents
+    assert 'OPENCLAW_ENV_FILE="${OPENCLAW_ENV_FILE:-$OPENCLAW_ROOT/secrets.env}"' in contents
+    assert "/srv/data/services/local-rag/secrets/api-token" in contents
+    assert "18789/aisha/api/health" in contents

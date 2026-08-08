@@ -1,5 +1,8 @@
 import importlib
+import json
 import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -575,6 +578,37 @@ def test_platform_aisha_launcher_assets_are_served() -> None:
     assert "text/css" in style_response.headers["content-type"]
     assert "#aisha-launcher" in style_response.text
 
+
+def test_platform_aisha_proxy_forwards_to_openclaw(monkeypatch) -> None:
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            if self.path != "/aisha/api/health":
+                self.send_response(404)
+                self.end_headers()
+                return
+            body = json.dumps({"status": "ok", "ready": True}).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.setattr(app_main, "OPENCLAW_URL", f"http://127.0.0.1:{server.server_port}")
+    try:
+        response = client.get("/aisha/api/health")
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "ready": True}
 
 def test_platform_mission_control_endpoint_renders_embedded_dashboard() -> None:
     response = client.get('/platform/mission-control')

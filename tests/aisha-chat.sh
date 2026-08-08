@@ -71,6 +71,7 @@ test_launcher_contract() {
     assert_file "homepage launcher script exists" "$REPO_ROOT/configs/homepage/custom.js"
     assert_file "homepage launcher styles exist" "$REPO_ROOT/configs/homepage/custom.css"
     assert_file "launcher install script exists" "$REPO_ROOT/scripts/install-homepage-aisha-launcher"
+    assert_file "openclaw install script exists" "$REPO_ROOT/scripts/install-openclaw-runtime"
 
     local output
     output="$(cat "$REPO_ROOT/configs/homepage/custom.js")"
@@ -78,10 +79,20 @@ test_launcher_contract() {
     assert_contains "launcher falls back to the published gateway port" "GATEWAY_PORT = '18789'" "$output"
     assert_contains "launcher has an accessible label" "Chat with Aisha" "$output"
 
+    output="$(cat "$REPO_ROOT/scripts/install-openclaw-runtime")"
+    assert_contains "openclaw installer creates secrets env" "OPENCLAW_ENV_FILE" "$output"
+    assert_contains "openclaw installer points at health route" "18789/aisha/api/health" "$output"
+
     if [[ -x "$REPO_ROOT/scripts/install-homepage-aisha-launcher" ]]; then
         pass "launcher install script is executable"
     else
         fail "launcher install script is executable"
+    fi
+
+    if [[ -x "$REPO_ROOT/scripts/install-openclaw-runtime" ]]; then
+        pass "openclaw install script is executable"
+    else
+        fail "openclaw install script is executable"
     fi
 }
 
