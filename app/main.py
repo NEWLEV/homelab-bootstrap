@@ -1301,7 +1301,6 @@ def platform_mission_control() -> HTMLResponse:
           body {{ margin: 0; background: #111311; color: #f2f1ed; font: 16px/1.45 Inter, system-ui, sans-serif; }}
           .frame {{ padding: 16px; }}
           .wrap {{ max-width: 1440px; margin: 0 auto; }}
-          .frame iframe {{ width: 100%; height: 92vh; border: 1px solid #2f322d; border-radius: 16px; background: #fff; }}
           .topbar {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 16px; flex-wrap: wrap; }}
           a {{ color: #7bc8a4; text-decoration: none; }}
         </style>
@@ -1316,7 +1315,7 @@ def platform_mission_control() -> HTMLResponse:
               </div>
               <a href="/platform/web-dashboard">Back to platform dashboard</a>
             </div>
-            <iframe src="/mission-control" title="Mission Control dashboard"></iframe>
+            {DASHBOARD_HTML}
           </div>
         </div>
       </body>
@@ -1425,7 +1424,6 @@ def platform_web_dashboard() -> HTMLResponse:
           {''.join(f'<span class="pill">{mode}</span>' for mode in personal_os['assistant_modes'])}
         </div>
         <div class="controls" style="margin-top: 22px;">
-          <a href="/platform/mission-control" style="background: linear-gradient(135deg, #38bdf8, #2563eb); border-color: rgba(125,211,252,.65); color: #f8fafc; box-shadow: 0 14px 30px rgba(37,99,235,.28);">Open Mission Control</a>
           <a href="/platform/runbook">Runbook</a>
           <a href="/docs">API Docs</a>
           <a href="/platform/personal-os">Personal OS</a>
@@ -1994,6 +1992,9 @@ def status() -> StatusResponse:
             "multiple embedding models",
         ],
     )
+
+
+
 
 
 
