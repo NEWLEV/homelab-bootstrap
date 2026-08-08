@@ -11,6 +11,29 @@ Component versions, including Local RAG, are maintained independently and are no
 ### Added
 
 - Release and recovery validation work for the Bootstrap Appliance milestone.
+- Aisha chat experience on the dashboard: a floating launcher on Homepage
+  (`configs/homepage/`, installed with `scripts/install-homepage-aisha-launcher`)
+  that opens a streaming chat panel served by the OpenClaw gateway.
+- OpenClaw gateway now serves the Aisha chat UI and a conversation API,
+  proxies questions to the Local RAG `/ask/stream` endpoint, persists
+  conversations under `/srv/data/services/openclaw/conversations`, and
+  supports idempotent retries, cancellation, and truthful health reporting.
+- Gateway integration test suite (`services/openclaw/test/gateway.test.js`)
+  and chat contract tests (`tests/aisha-chat.sh`) wired into CI.
+
+### Changed
+
+- OpenClaw Compose service joins the Traefik proxy network and is routed at
+  `https://aisha.tail4553c9.ts.net/aisha` (tailnet-gated, same origin as the
+  dashboard); the container still publishes no host ports.
+- OpenClaw container healthcheck now uses Node instead of Python, matching
+  the runtime image.
+
+### Security
+
+- The Local RAG API bearer token is mounted into the OpenClaw gateway as a
+  Compose secret and used only server-side; the browser never receives
+  credentials, and gateway health output excludes paths and secrets.
 
 ## [1.6.0] - Unreleased
 

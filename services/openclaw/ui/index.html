@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Aisha — Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="aisha-app" class="app" role="dialog" aria-labelledby="aisha-title" aria-describedby="aisha-status-text">
+    <header class="app-header">
+      <div class="identity">
+        <span class="avatar" aria-hidden="true">A</span>
+        <div class="identity-text">
+          <h1 id="aisha-title">Aisha</h1>
+          <p id="aisha-status-text" class="status-line" data-state="connecting">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="status-label">Connecting…</span>
+          </p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="new-conversation" type="button" class="icon-button" aria-label="Start a new conversation" title="New conversation">＋</button>
+        <button id="delete-conversation" type="button" class="icon-button" aria-label="Delete this conversation" title="Delete conversation">🗑</button>
+        <button id="minimize-chat" type="button" class="icon-button embedded-only" aria-label="Minimize chat" title="Minimize">–</button>
+        <button id="close-chat" type="button" class="icon-button embedded-only" aria-label="Close chat" title="Close">×</button>
+      </div>
+    </header>
+
+    <div class="conversation-bar">
+      <label class="visually-hidden" for="conversation-picker">Conversation</label>
+      <select id="conversation-picker" aria-label="Select conversation"></select>
+    </div>
+
+    <div id="notice" class="notice" hidden>
+      <p id="notice-text"></p>
+      <div class="notice-actions">
+        <button id="notice-retry" type="button" class="text-button" hidden>Retry</button>
+      </div>
+    </div>
+
+    <main id="message-scroll" class="messages" tabindex="0" aria-label="Conversation messages">
+      <div id="message-list" role="log" aria-live="off" aria-relevant="additions"></div>
+      <div id="empty-state" class="empty-state" hidden>
+        <h2>Hi, I’m Aisha.</h2>
+        <p>
+          I answer questions about this homelab using the indexed
+          <code>homelab-bootstrap</code> repository, and I cite the exact files
+          and lines my answers come from. I can’t answer questions about
+          anything outside the repository index.
+        </p>
+        <div class="suggestions" role="group" aria-label="Suggested questions">
+          <button type="button" class="suggestion" data-question="How do I restore runtime secrets after a fresh install?">How do I restore runtime secrets?</button>
+          <button type="button" class="suggestion" data-question="What does the bootstrap installer do when I run it with --apply?">What does the bootstrap installer do?</button>
+          <button type="button" class="suggestion" data-question="How are backups configured and scheduled?">How are backups configured?</button>
+        </div>
+      </div>
+    </main>
+
+    <button id="jump-latest" type="button" class="jump-latest" hidden>
+      Jump to latest
+    </button>
+
+    <div id="live-region" class="visually-hidden" aria-live="polite"></div>
+
+    <footer class="composer-area">
+      <form id="composer" class="composer">
+        <label class="visually-hidden" for="composer-input">Message Aisha</label>
+        <textarea
+          id="composer-input"
+          rows="1"
+          maxlength="2000"
+          placeholder="Ask about the homelab…"
+          autocomplete="off"
+        ></textarea>
+        <button id="send-button" type="submit" class="send-button" aria-label="Send message" disabled>
+          <span aria-hidden="true">➤</span>
+        </button>
+        <button id="stop-button" type="button" class="stop-button" aria-label="Stop generating" hidden>
+          <span aria-hidden="true">■</span> Stop
+        </button>
+      </form>
+      <p id="composer-hint" class="composer-hint" aria-hidden="true">
+        Enter to send · Shift+Enter for a new line
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

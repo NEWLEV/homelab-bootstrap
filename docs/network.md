@@ -123,6 +123,17 @@ Configuration:
 compose/networking/traefik.yml
 ```
 
+Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
+
+| Path | Service |
+|------|---------|
+| `/` | Homepage dashboard |
+| `/aisha` | Aisha chat gateway (OpenClaw) |
+
+Both routes share the same tailnet trust boundary. The Aisha chat gateway
+publishes no host ports; only the `/aisha` path is reachable through
+Traefik, and the Local RAG credentials stay inside the gateway container.
+
 Verify:
 
 ```bash

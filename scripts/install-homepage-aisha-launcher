@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Installs the repository-managed Aisha chat launcher assets into the
+# Homepage runtime configuration directory. Homepage serves custom.js and
+# custom.css from its config directory automatically; no restart required.
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
+
+config_dir="${HOMEPAGE_CONFIG_DIR:-/srv/data/services/homepage/config}"
+source_dir="$repo_root/configs/homepage"
+
+if [[ ! -d "$source_dir" ]]; then
+    printf 'Launcher source directory is missing: %s\n' "$source_dir" >&2
+    exit 1
+fi
+
+if [[ -L "$config_dir" ]]; then
+    printf 'Refusing symlinked Homepage config directory: %s\n' "$config_dir" >&2
+    exit 1
+fi
+
+if [[ ! -d "$config_dir" ]]; then
+    printf 'Homepage config directory does not exist: %s\n' "$config_dir" >&2
+    printf 'Start the homepage service once, or create the directory first.\n' >&2
+    exit 1
+fi
+
+install_file() {
+    local name="$1"
+    local source_file="$source_dir/$name"
+    local target_file="$config_dir/$name"
+    local temporary_file
+
+    if [[ ! -s "$source_file" ]]; then
+        printf 'Launcher asset is missing or empty: %s\n' "$source_file" >&2
+        exit 1
+    fi
+
+    if [[ -L "$target_file" ]]; then
+        printf 'Refusing symlinked target: %s\n' "$target_file" >&2
+        exit 1
+    fi
+
+    if [[ -f "$target_file" ]] && cmp -s -- "$source_file" "$target_file"; then
+        printf 'Already up to date: %s\n' "$target_file"
+        return 0
+    fi
+
+    temporary_file="$(mktemp "$config_dir/.$name.XXXXXX")"
+    cp -- "$source_file" "$temporary_file"
+    chmod 644 -- "$temporary_file"
+    mv -f -- "$temporary_file" "$target_file"
+    printf 'Installed: %s\n' "$target_file"
+}
+
+install_file custom.js
+install_file custom.css
+
+printf 'Aisha launcher assets are installed. Reload the dashboard to load them.\n'

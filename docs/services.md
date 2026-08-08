@@ -90,9 +90,10 @@ restic snapshots
 
 Purpose
 
-Gateway for the local assistant runtime.
+Gateway for the local assistant runtime. Hosts the Aisha chat interface
+and conversation API used by the dashboard.
 
-Current scaffold
+Implementation
 
 ```
 compose/ai/openclaw.yml
@@ -103,7 +104,24 @@ Runtime contract
 
 ```
 services/openclaw/start.sh
+services/openclaw/server.js
 services/openclaw/Dockerfile
+```
+
+Aisha chat
+
+The gateway serves the Aisha chat UI and API at
+`https://aisha.tail4553c9.ts.net/aisha/`, same-origin with the Homepage
+dashboard. Questions are forwarded to the Local RAG `/ask/stream` endpoint
+with the bearer token held server-side, and answers stream back over SSE
+with grounded citations. Conversations persist under
+`/srv/data/services/openclaw/conversations`.
+
+The dashboard launcher assets live in `configs/homepage/` and are installed
+with:
+
+```bash
+./scripts/install-homepage-aisha-launcher
 ```
 
 Configuration
@@ -117,6 +135,7 @@ Secrets
 
 ```
 ~/.config/openclaw/secrets.env
+/srv/data/services/local-rag/secrets/api-token
 ```
 
 Verify
@@ -124,6 +143,7 @@ Verify
 ```bash
 ./install.sh --validate-manifest
 ./tests/openclaw.sh
+./tests/aisha-chat.sh
 ```
 
 ---

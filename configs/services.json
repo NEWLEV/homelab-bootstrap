@@ -119,7 +119,9 @@
       "required": false,
       "deferred": true,
       "validation": "none",
-      "backup_paths": []
+      "backup_paths": [
+        "/srv/data/services/openclaw/conversations"
+      ]
     }
   ],
   "systemd_units": [

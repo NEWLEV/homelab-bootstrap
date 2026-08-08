@@ -1,0 +1,126 @@
+/* Aisha chat launcher styles for the Homepage dashboard.
+ * Installed at /srv/data/services/homepage/config/custom.css
+ * (see scripts/install-homepage-aisha-launcher).
+ */
+
+.aisha-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+#aisha-launcher {
+  position: fixed;
+  right: calc(20px + env(safe-area-inset-right, 0));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  z-index: 900;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: #4756e0;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+  display: grid;
+  place-items: center;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #aisha-launcher {
+    transition: none;
+  }
+}
+
+#aisha-launcher:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 35%);
+}
+
+#aisha-launcher:active {
+  transform: translateY(1px);
+}
+
+#aisha-launcher:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+#aisha-launcher[data-state='loading'] {
+  opacity: 0.7;
+}
+
+#aisha-launcher[data-state='unavailable'] {
+  background: #5b6472;
+  cursor: not-allowed;
+}
+
+#aisha-launcher[data-state='unavailable']::after {
+  content: '';
+  position: absolute;
+  width: 34px;
+  height: 2px;
+  background: rgb(255 255 255 / 75%);
+  transform: rotate(-45deg);
+  border-radius: 1px;
+}
+
+.aisha-launcher-glyph {
+  font: 700 22px/1 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.aisha-unread-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f0453b;
+  border: 2px solid #ffffff;
+}
+
+#aisha-panel {
+  position: fixed;
+  z-index: 899;
+  right: calc(16px + env(safe-area-inset-right, 0));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0));
+  width: min(420px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 120px));
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 40%);
+  background: #101418;
+}
+
+#aisha-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  #aisha-panel {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100dvh;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  #aisha-panel {
+    background: #f6f7f9;
+  }
+}

@@ -7,6 +7,13 @@ services:
       com.newlev.service: openclaw
       com.newlev.layer: deployment
       com.newlev.boundary: runtime
+      # Aisha chat surface: same host as the dashboard, path-scoped, tailnet-gated.
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.aisha-chat.rule: "Host(`aisha.tail4553c9.ts.net`) && PathPrefix(`/aisha`)"
+      traefik.http.routers.aisha-chat.entrypoints: "websecure"
+      traefik.http.routers.aisha-chat.tls: "true"
+      traefik.http.services.aisha-chat.loadbalancer.server.port: "18789"
     build:
       context: ../../services/openclaw
 
@@ -19,7 +26,10 @@ services:
       OPENCLAW_STATE_DIR: /state
       OPENCLAW_SECRETS_FILE: /run/secrets/openclaw_env
       OPENCLAW_LOCAL_RAG_URL: http://local-rag-api:8080
-      OPENCLAW_GATEWAY_BIND: 127.0.0.1
+      OPENCLAW_LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
+      # 0.0.0.0 is container-scoped: reachable only through attached Docker
+      # networks. Traefik exposes just the /aisha path on the tailnet host.
+      OPENCLAW_GATEWAY_BIND: 0.0.0.0
       OPENCLAW_GATEWAY_PORT: "18789"
       NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache
       OPENCLAW_NO_RESPAWN: "1"
@@ -31,10 +41,12 @@ services:
 
     secrets:
       - openclaw_env
+      - local_rag_api_token
 
     networks:
       - openclaw-private
       - rag-private
+      - proxy
 
     security_opt:
       - no-new-privileges=true
@@ -58,9 +70,13 @@ services:
 secrets:
   openclaw_env:
     file: ${OPENCLAW_ENV_FILE:-/srv/data/services/openclaw/secrets.env}
+  local_rag_api_token:
+    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}
 
 networks:
   openclaw-private:
     driver: bridge
   rag-private:
+    external: true
+  proxy:
     external: true
