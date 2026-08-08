@@ -49,7 +49,7 @@ APP_VERSION = "0.7.2"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOMEPAGE_ASSET_DIR = REPO_ROOT / "configs" / "homepage"
 MISSION_CONTROL_URL = os.environ.get("MISSION_CONTROL_URL", "http://127.0.0.1:8020").rstrip("/")
-OPENCLAW_URL = os.environ.get("OPENCLAW_URL", "http://127.0.0.1:18789").rstrip("/")
+OPENCLAW_URL = os.environ.get("OPENCLAW_URL", "http://127.0.0.1:18790").rstrip("/")
 
 
 app = FastAPI(

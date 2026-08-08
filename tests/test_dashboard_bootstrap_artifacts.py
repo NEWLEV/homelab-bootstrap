@@ -49,4 +49,4 @@ def test_openclaw_runtime_installer_exists() -> None:
     assert 'OPENCLAW_ROOT="${OPENCLAW_ROOT:-/srv/data/services/openclaw}"' in contents
     assert 'OPENCLAW_ENV_FILE="${OPENCLAW_ENV_FILE:-$OPENCLAW_ROOT/secrets.env}"' in contents
     assert "/srv/data/services/local-rag/secrets/api-token" in contents
-    assert "18789/aisha/api/health" in contents
+    assert "18790/aisha/api/health" in contents

@@ -6,7 +6,7 @@ set -Eeuo pipefail
 : "${OPENCLAW_SECRETS_FILE:=/run/secrets/openclaw_env}"
 : "${OPENCLAW_LOCAL_RAG_URL:=http://local-rag-api:8080}"
 : "${OPENCLAW_GATEWAY_BIND:=127.0.0.1}"
-: "${OPENCLAW_GATEWAY_PORT:=18789}"
+: "${OPENCLAW_GATEWAY_PORT:=18790}"
 : "${OPENCLAW_LOCAL_RAG_TOKEN_FILE:=/run/secrets/local_rag_api_token}"
 : "${NODE_COMPILE_CACHE:=/var/tmp/openclaw-compile-cache}"
 : "${OPENCLAW_NO_RESPAWN:=1}"

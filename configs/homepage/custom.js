@@ -23,7 +23,7 @@
   // 2. the gateway's published port on the same host (dashboard accessed
   //    directly, e.g. http://aisha:8000). The gateway must list this
   //    dashboard origin in OPENCLAW_EMBED_ORIGINS for the probe to succeed.
-  const GATEWAY_PORT = '18789';
+  const GATEWAY_PORT = '18790';
   const isPlatformDashboard = window.location.pathname.startsWith('/platform/');
   const CHAT_BASES = [{ base: '/aisha', origin: window.location.origin }];
   if (!isPlatformDashboard) {

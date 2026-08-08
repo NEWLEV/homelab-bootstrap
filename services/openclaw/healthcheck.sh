@@ -4,7 +4,7 @@ set -Eeuo pipefail
 : "${OPENCLAW_SECRETS_FILE:=/run/secrets/openclaw_env}"
 : "${OPENCLAW_LOCAL_RAG_URL:=http://local-rag-api:8080}"
 : "${OPENCLAW_GATEWAY_BIND:=127.0.0.1}"
-: "${OPENCLAW_GATEWAY_PORT:=18789}"
+: "${OPENCLAW_GATEWAY_PORT:=18790}"
 
 if [[ ! -r "$OPENCLAW_SECRETS_FILE" ]]; then
     printf 'OpenClaw healthcheck missing secrets file: %s\n' "$OPENCLAW_SECRETS_FILE" >&2

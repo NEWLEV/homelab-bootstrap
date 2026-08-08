@@ -13,7 +13,7 @@ services:
       traefik.http.routers.aisha-chat.rule: "Host(`aisha.tail4553c9.ts.net`) && PathPrefix(`/aisha`)"
       traefik.http.routers.aisha-chat.entrypoints: "websecure"
       traefik.http.routers.aisha-chat.tls: "true"
-      traefik.http.services.aisha-chat.loadbalancer.server.port: "18789"
+      traefik.http.services.aisha-chat.loadbalancer.server.port: "18790"
     build:
       context: ../../services/openclaw
 
@@ -31,7 +31,7 @@ services:
       # the tailnet host) and the published port below for direct dashboard
       # access on http://<host>:8000.
       OPENCLAW_GATEWAY_BIND: 0.0.0.0
-      OPENCLAW_GATEWAY_PORT: "18789"
+      OPENCLAW_GATEWAY_PORT: "18790"
       # Dashboard origins allowed to embed the chat and probe its health.
       OPENCLAW_EMBED_ORIGINS: "http://aisha:8000,http://100.106.201.14:8000"
       NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache
@@ -45,8 +45,8 @@ services:
     # Published for dashboards accessed directly (not through Traefik); the
     # same trust boundary as the dashboard's own published port.
     ports:
-      - target: 18789
-        published: "18789"
+      - target: 18790
+        published: "18790"
         protocol: tcp
 
     secrets:

@@ -31,7 +31,7 @@ const config = {
   localRagTokenFile:
     process.env.OPENCLAW_LOCAL_RAG_TOKEN_FILE || '/run/secrets/local_rag_api_token',
   gatewayBind: process.env.OPENCLAW_GATEWAY_BIND || '127.0.0.1',
-  gatewayPort: Number.parseInt(process.env.OPENCLAW_GATEWAY_PORT || '18789', 10),
+  gatewayPort: Number.parseInt(process.env.OPENCLAW_GATEWAY_PORT || '18790', 10),
   embedOrigins: parseEmbedOrigins(process.env.OPENCLAW_EMBED_ORIGINS),
   uiDir: process.env.OPENCLAW_UI_DIR || DEFAULT_UI_DIR,
   nodeCompileCache: process.env.NODE_COMPILE_CACHE || '/var/tmp/openclaw-compile-cache',

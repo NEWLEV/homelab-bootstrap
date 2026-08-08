@@ -573,7 +573,7 @@ def test_platform_aisha_launcher_assets_are_served() -> None:
     assert script_response.status_code == 200
     assert "application/javascript" in script_response.headers["content-type"]
     assert "Chat with Aisha" in script_response.text
-    assert "GATEWAY_PORT = '18789'" in script_response.text
+    assert "GATEWAY_PORT = '18790'" in script_response.text
     assert "isPlatformDashboard = window.location.pathname.startsWith('/platform/');" in script_response.text
     assert style_response.status_code == 200
     assert "text/css" in style_response.headers["content-type"]

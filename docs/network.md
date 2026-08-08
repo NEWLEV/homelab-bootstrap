@@ -135,7 +135,7 @@ For direct dashboard access without Traefik, two host ports are published:
 | Port | Service |
 |------|---------|
 | `8000` | Homepage dashboard (`http://aisha:8000`) |
-| `18789` | Aisha chat gateway (embedded by the dashboard launcher) |
+| `18790` | Aisha chat gateway (embedded by the dashboard launcher) |
 
 All routes share the same tailnet/LAN trust boundary, and the Local RAG
 credentials stay inside the gateway container. The gateway only permits

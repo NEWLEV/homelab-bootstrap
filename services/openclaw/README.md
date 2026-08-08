@@ -39,7 +39,7 @@ reached:
    origin as the dashboard host.
 2. **Direct dashboard access** — when Homepage is used at
    `http://aisha:8000` or `http://100.106.201.14:8000`, the launcher falls
-   back to the gateway's published port `18789` on the same host. The
+   back to the gateway's published port `18790` on the same host. The
    dashboard origin must be listed in `OPENCLAW_EMBED_ORIGINS`; that
    allowlist drives both the CSP `frame-ancestors` directive and CORS,
    which is enabled for `GET /api/health` only — all conversation traffic
@@ -86,7 +86,7 @@ silently attached.
 | `OPENCLAW_LOCAL_RAG_URL` | `http://local-rag-api:8080` | Knowledge service endpoint |
 | `OPENCLAW_LOCAL_RAG_TOKEN_FILE` | `/run/secrets/local_rag_api_token` | Bearer token file |
 | `OPENCLAW_GATEWAY_BIND` | `127.0.0.1` (compose sets `0.0.0.0`) | Listen address |
-| `OPENCLAW_GATEWAY_PORT` | `18789` | Listen port |
+| `OPENCLAW_GATEWAY_PORT` | `18790` | Listen port |
 | `OPENCLAW_STATE_DIR` | `/state` | Durable state root |
 | `OPENCLAW_UI_DIR` | `/usr/local/share/openclaw-ui` | Chat UI assets |
 
@@ -108,12 +108,12 @@ scripts/install-openclaw-runtime
 docker compose -f compose/ai/openclaw.yml config --quiet
 docker compose -f compose/ai/openclaw.yml up -d --build
 docker compose -f compose/ai/openclaw.yml ps
-curl --fail http://127.0.0.1:18789/aisha/api/health
+curl --fail http://127.0.0.1:18790/aisha/api/health
 ```
 
 The health response can report `ready: false` when Local RAG is unavailable or
 its token has not been provisioned. A connection refusal means the OpenClaw
-container is not running or port `18789` is not published.
+container is not running or port `18790` is not published.
 
 ## Validation
 

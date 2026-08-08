@@ -28,7 +28,7 @@ The root `/` route redirects to the dashboard page so the short URL works in bro
 
 The platform dashboard loads the same repository-managed Aisha chat launcher
 as Homepage. The floating `Chat with Aisha` button probes the OpenClaw gateway
-at `/aisha` first, which the Python dashboard proxies to OpenClaw, then falls back to port `18789` for direct dashboard access.
+at `/aisha` first, which the Python dashboard proxies to OpenClaw, then falls back to port `18790` for direct dashboard access.
 The dedicated Mission Control section contains the single
 `Open Mission Control` button.
 
