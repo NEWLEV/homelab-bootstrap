@@ -43,6 +43,17 @@
   // Origins the embedding dashboard may message from. Starts with our own
   // origin; extended with the gateway-configured embed origins from /api/health.
   const allowedParentOrigins = new Set([window.location.origin]);
+  const initialParentOrigin = (() => {
+    if (!embedded || !document.referrer) {
+      return null;
+    }
+    try {
+      return new URL(document.referrer).origin;
+    } catch {
+      return null;
+    }
+  })();
+  let parentOrigin = initialParentOrigin;
 
   const state = {
     conversationId: null,
@@ -383,6 +394,9 @@
     if (health && Array.isArray(health.embed_origins)) {
       for (const origin of health.embed_origins) {
         allowedParentOrigins.add(origin);
+      }
+      if (initialParentOrigin && allowedParentOrigins.has(initialParentOrigin)) {
+        parentOrigin = initialParentOrigin;
       }
     }
 
@@ -943,12 +957,16 @@
   /* ---------- embedding protocol ---------- */
 
   function postToParent(message) {
-    // postMessage takes a single target origin; posting once per allowed
-    // origin delivers to whichever one the parent actually is and is
-    // filtered by the browser for the rest.
-    for (const origin of allowedParentOrigins) {
-      window.parent.postMessage(message, origin);
+    const targetOrigin =
+      parentOrigin && allowedParentOrigins.has(parentOrigin)
+        ? parentOrigin
+        : initialParentOrigin && allowedParentOrigins.has(initialParentOrigin)
+          ? initialParentOrigin
+          : null;
+    if (!targetOrigin) {
+      return;
     }
+    window.parent.postMessage(message, targetOrigin);
   }
 
   if (embedded) {
@@ -960,6 +978,7 @@
       if (!allowedParentOrigins.has(event.origin) || !event.data) {
         return;
       }
+      parentOrigin = event.origin;
       if (event.data.type === 'aisha:opened') {
         state.panelVisible = true;
         el.input.focus();

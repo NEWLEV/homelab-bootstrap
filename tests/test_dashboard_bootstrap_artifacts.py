@@ -50,3 +50,13 @@ def test_openclaw_runtime_installer_exists() -> None:
     assert 'OPENCLAW_ENV_FILE="${OPENCLAW_ENV_FILE:-$OPENCLAW_ROOT/secrets.env}"' in contents
     assert "/srv/data/services/local-rag/secrets/api-token" in contents
     assert "18790/aisha/api/health" in contents
+
+def test_openclaw_ui_resolves_parent_origin() -> None:
+    ui = Path(r"C:/Users/ZBook/Documents/Aisha/services/openclaw/ui/app.js")
+
+    contents = ui.read_text(encoding="utf-8")
+
+    assert "document.referrer" in contents
+    assert "let parentOrigin = initialParentOrigin;" in contents
+    assert "window.parent.postMessage(message, targetOrigin);" in contents
+    assert "parentOrigin = event.origin;" in contents
