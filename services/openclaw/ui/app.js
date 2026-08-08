@@ -40,6 +40,10 @@
     stop: document.getElementById('stop-button'),
   };
 
+  // Origins the embedding dashboard may message from. Starts with our own
+  // origin; extended with the gateway-configured embed origins from /api/health.
+  const allowedParentOrigins = new Set([window.location.origin]);
+
   const state = {
     conversationId: null,
     conversations: [],
@@ -376,6 +380,12 @@
       health = null;
     }
 
+    if (health && Array.isArray(health.embed_origins)) {
+      for (const origin of health.embed_origins) {
+        allowedParentOrigins.add(origin);
+      }
+    }
+
     const previouslyReady = Boolean(state.health && state.health.ready);
     state.health = health;
     const described = describeHealth(health);
@@ -387,19 +397,13 @@
         announce('Aisha is connected.');
       }
       if (embedded) {
-        window.parent.postMessage(
-          { type: 'aisha:status', available: true },
-          window.location.origin,
-        );
+        postToParent({ type: 'aisha:status', available: true });
       }
       return;
     }
 
     if (embedded) {
-      window.parent.postMessage(
-        { type: 'aisha:status', available: false },
-        window.location.origin,
-      );
+      postToParent({ type: 'aisha:status', available: false });
     }
 
     // Reconnect probing with bounded backoff while the panel is visible.
@@ -786,10 +790,7 @@
       clearDraft();
       announce('Aisha replied.');
       if (embedded && (!state.panelVisible || document.hidden)) {
-        window.parent.postMessage(
-          { type: 'aisha:activity' },
-          window.location.origin,
-        );
+        postToParent({ type: 'aisha:activity' });
       }
       refreshConversations();
     } catch (error) {
@@ -942,7 +943,12 @@
   /* ---------- embedding protocol ---------- */
 
   function postToParent(message) {
-    window.parent.postMessage(message, window.location.origin);
+    // postMessage takes a single target origin; posting once per allowed
+    // origin delivers to whichever one the parent actually is and is
+    // filtered by the browser for the rest.
+    for (const origin of allowedParentOrigins) {
+      window.parent.postMessage(message, origin);
+    }
   }
 
   if (embedded) {
@@ -951,7 +957,7 @@
     el.close.addEventListener('click', () => postToParent({ type: 'aisha:close' }));
 
     window.addEventListener('message', (event) => {
-      if (event.origin !== window.location.origin || !event.data) {
+      if (!allowedParentOrigins.has(event.origin) || !event.data) {
         return;
       }
       if (event.data.type === 'aisha:opened') {

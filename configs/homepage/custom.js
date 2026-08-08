@@ -14,13 +14,27 @@
   }
   window.__aishaLauncher = true;
 
-  const CHAT_PATH = '/aisha/';
-  const HEALTH_PATH = '/aisha/api/health';
   const STATE_KEY = 'aisha:panel-state';
   const UNREAD_KEY = 'aisha:unread';
   const PROBE_INTERVAL_MS = 60000;
 
+  // Where the chat gateway may live, probed in order:
+  // 1. same-origin /aisha (dashboard served through Traefik), or
+  // 2. the gateway's published port on the same host (dashboard accessed
+  //    directly, e.g. http://aisha:8000). The gateway must list this
+  //    dashboard origin in OPENCLAW_EMBED_ORIGINS for the probe to succeed.
+  const GATEWAY_PORT = '18789';
+  const CHAT_BASES = [
+    { base: '/aisha', origin: window.location.origin },
+    {
+      base: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
+      origin: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
+    },
+  ];
+
   let available = false;
+  let chatBase = null;
+  let chatOrigin = null;
   let panel = null;
   let iframe = null;
   let probeTimer = null;
@@ -90,17 +104,30 @@
   }
 
   async function probeAvailability() {
-    try {
-      const response = await fetch(HEALTH_PATH, { cache: 'no-store' });
-      if (!response.ok) {
-        setAvailability(false);
-        return;
+    for (const candidate of CHAT_BASES) {
+      try {
+        const response = await fetch(`${candidate.base}/api/health`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          continue;
+        }
+        const payload = await response.json();
+        // The panel keeps a live iframe with chat state; once a base is
+        // chosen it stays chosen so the conversation is not torn down.
+        if (!chatBase) {
+          chatBase = candidate.base;
+          chatOrigin = candidate.origin;
+        }
+        if (candidate.base === chatBase) {
+          setAvailability(Boolean(payload && payload.ready));
+          return;
+        }
+      } catch {
+        // Try the next candidate base.
       }
-      const payload = await response.json();
-      setAvailability(Boolean(payload && payload.ready));
-    } catch {
-      setAvailability(false);
     }
+    setAvailability(false);
   }
 
   function scheduleProbes() {
@@ -124,19 +151,22 @@
 
     iframe = document.createElement('iframe');
     iframe.id = 'aisha-frame';
-    iframe.src = CHAT_PATH;
+    iframe.src = `${chatBase}/`;
     iframe.title = 'Aisha chat';
     panel.appendChild(iframe);
     document.body.appendChild(panel);
   }
 
   function notifyFrame(message) {
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage(message, window.location.origin);
+    if (iframe && iframe.contentWindow && chatOrigin) {
+      iframe.contentWindow.postMessage(message, chatOrigin);
     }
   }
 
   function openPanel() {
+    if (!chatBase) {
+      return;
+    }
     ensurePanel();
     panel.hidden = false;
     button.setAttribute('aria-expanded', 'true');
@@ -177,7 +207,7 @@
   });
 
   window.addEventListener('message', (event) => {
-    if (event.origin !== window.location.origin || !event.data) {
+    if (event.origin !== chatOrigin || !event.data) {
       return;
     }
     const { type } = event.data;
