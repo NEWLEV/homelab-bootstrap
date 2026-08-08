@@ -76,7 +76,10 @@ secrets:
 networks:
   openclaw-private:
     driver: bridge
+  # The local-rag project (compose/ai/local-rag.yml, project name "local-rag")
+  # owns this network; Docker names it with the project prefix.
   rag-private:
     external: true
+    name: local-rag_rag-private
   proxy:
     external: true

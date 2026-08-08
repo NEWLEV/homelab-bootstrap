@@ -116,9 +116,10 @@
     {
       "name": "openclaw",
       "compose_file": "compose/ai/openclaw.yml",
+      "compose_service": "openclaw",
+      "container": "openclaw",
       "required": false,
-      "deferred": true,
-      "validation": "none",
+      "validation": "docker-health",
       "backup_paths": [
         "/srv/data/services/openclaw/conversations"
       ]
