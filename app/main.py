@@ -50,6 +50,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 HOMEPAGE_ASSET_DIR = REPO_ROOT / "configs" / "homepage"
 MISSION_CONTROL_URL = os.environ.get("MISSION_CONTROL_URL", "http://127.0.0.1:8020").rstrip("/")
 OPENCLAW_URL = os.environ.get("OPENCLAW_URL", "http://127.0.0.1:18790").rstrip("/")
+OPENCLAW_CONTROL_UI_URL = os.environ.get("OPENCLAW_CONTROL_UI_URL", "").rstrip("/")
+OPENCLAW_CONTROL_UI_BASE_PATH = "/" + os.environ.get("OPENCLAW_CONTROL_UI_BASE_PATH", "openclaw").strip("/")
 
 
 app = FastAPI(
@@ -61,6 +63,13 @@ app = FastAPI(
 @app.get("/", include_in_schema=False)
 def root_redirect() -> RedirectResponse:
     return RedirectResponse(url="/platform/web-dashboard", status_code=307)
+
+
+def resolve_openclaw_control_ui_url(request: Request) -> str:
+    if OPENCLAW_CONTROL_UI_URL:
+        return f"{OPENCLAW_CONTROL_UI_URL}/"
+
+    return f"{request.url.scheme}://{request.url.hostname}:18789{OPENCLAW_CONTROL_UI_BASE_PATH}/"
 
 
 CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", str(Path(tempfile.gettempdir()) / "aisha" / "chroma")))
@@ -1369,6 +1378,16 @@ def platform_personal_os() -> PersonalOsResponse:
 
 
 
+@app.get("/openclaw", include_in_schema=False)
+def openclaw_control_ui_root_redirect(request: Request) -> RedirectResponse:
+    return RedirectResponse(url=resolve_openclaw_control_ui_url(request), status_code=307)
+
+
+@app.get("/openclaw/", include_in_schema=False)
+def openclaw_control_ui_redirect(request: Request) -> RedirectResponse:
+    return RedirectResponse(url=resolve_openclaw_control_ui_url(request), status_code=307)
+
+
 @app.api_route(
     "/aisha",
     methods=["GET", "POST", "DELETE", "OPTIONS"],
@@ -1648,6 +1667,7 @@ def platform_web_dashboard() -> HTMLResponse:
           <a href="/platform/status">Status</a>
           <a class="secondary" href="/platform/summary">Summary</a>
           <a class="secondary" href="/platform/web-interface">Web Interface</a>
+          <a class="secondary" href="/openclaw/">OpenClaw UI</a>
         </div>
       </section>
       <section class="card" style="margin-top: 22px; border: 1px solid rgba(125,211,252,.45); background: linear-gradient(135deg, rgba(12,74,110,.92), rgba(30,41,59,.96)); box-shadow: 0 22px 50px rgba(2,132,199,.12);">
@@ -1675,8 +1695,9 @@ def platform_web_dashboard() -> HTMLResponse:
           <ul>{''.join(f'<li>{entry["name"]}</li>' for entry in personal_os['integration_layers']['integrations']['entries'])}</ul>
           <div class="controls" style="margin-top: 14px;">
             <a class="secondary" href="/platform/integration-webhooks">Integration Webhooks</a>
+            <a class="secondary" href="/openclaw/">OpenClaw Control UI</a>
           </div>
-          <p class="muted" style="margin-top:12px;">Shared webhook exports now cover Slack, Discord, and Telegram with the same payload shape.</p>
+          <p class="muted" style="margin-top:12px;">Shared webhook exports now cover Slack, Discord, and Telegram with the same payload shape. The stock OpenClaw Control UI remains available side by side for native gateway operations.</p>
         </div>
         <div class="card">
           <h2>Local RAG</h2>

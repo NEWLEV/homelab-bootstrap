@@ -129,6 +129,7 @@ Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
 |------|---------|
 | `/` | Homepage dashboard |
 | `/aisha` | Aisha chat gateway (OpenClaw) |
+| `/openclaw` | Stock OpenClaw Control UI redirect target |
 
 For direct dashboard access without Traefik, two host ports are published:
 
@@ -136,6 +137,7 @@ For direct dashboard access without Traefik, two host ports are published:
 |------|---------|
 | `8000` | Homepage dashboard (`http://aisha:8000`) |
 | `18790` | Aisha chat gateway (embedded by the dashboard launcher) |
+| `18789` | Stock OpenClaw Control UI gateway |
 
 All routes share the same tailnet/LAN trust boundary, and the Local RAG
 credentials stay inside the gateway container. The gateway only permits

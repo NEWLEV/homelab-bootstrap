@@ -125,6 +125,15 @@ Homepage container receives them with:
 ./scripts/install-homepage-aisha-launcher
 ```
 
+Stock OpenClaw Control UI
+
+The upstream OpenClaw Control UI remains available separately from the Aisha
+chat surface. The dashboard exposes a convenience route at `/openclaw/`, which
+redirects to the stock Control UI on port `18789` using the same host.
+
+If you want a different path, set the OpenClaw gateway base path to `/openclaw`
+and optionally override the public URL with `OPENCLAW_CONTROL_UI_URL`.
+
 Configuration
 
 ```
