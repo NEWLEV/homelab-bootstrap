@@ -28,6 +28,7 @@ This package contains the infrastructure bootstrap path for Aisha and the planni
 - the Mission Control dashboard is the operational surface for agent activity, approvals, and vitals
 - the Mission Control service wrapper lives in `homelab-bootstrap/services/mission-control/` and mirrors the dashboard launcher pattern
 - the Mission Control SQLite database lives on the `mission-control-data` volume and is included in the backup plan
+- the first external notification path is Slack via n8n using `scripts/slack_alerts_n8n_export.json`
 - the dashboard runbook is exposed at `http://aisha:8000/platform/runbook`
 - the local RAG service is installed and enabled through the `homelab-bootstrap/services/local-rag/` service scripts
 
@@ -108,3 +109,4 @@ The checked-in manifest describes the initial infrastructure stack:
 - shared volumes
 - internal and edge networks
 - explicit monitoring, backup, exposure, and readiness hooks
+

@@ -21,6 +21,7 @@ Component versions, including Local RAG, are maintained independently and are no
 - Gateway integration test suite (`services/openclaw/test/gateway.test.js`)
   and chat contract tests (`tests/aisha-chat.sh`) wired into CI.
 
+
 ### Changed
 
 - OpenClaw Compose service joins the Traefik proxy network and is routed at
@@ -54,6 +55,10 @@ Component versions, including Local RAG, are maintained independently and are no
 - Disaster-recovery guide.
 - Repository architecture decisions covering MCP access, secret escrow, boot storage, vector storage, and notifications.
 - Local RAG authentication, resource controls, metrics, integrity checks, job control, streaming, conversation support, evaluation, retrieval diagnostics, reranking, and grounded response controls.
+
+- Repo-managed Slack notification scaffolding for Mission Control via n8n,
+  including scripts/slack_alerts_n8n_export.json, the approval export, and
+  updated docs for the first external chat integration path.
 
 ### Changed
 

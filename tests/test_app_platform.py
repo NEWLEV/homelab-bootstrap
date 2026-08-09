@@ -436,9 +436,10 @@ def test_platform_web_interface_endpoint_exposes_dashboard_surface() -> None:
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["pages"] == ["home", "assistant", "operations", "memory", "integrations", "settings"]
+    assert body["pages"] == ["home", "assistant", "operations", "memory", "integrations", "integration webhooks", "settings"]
     assert body["dashboard_sections"][0] == "status"
     assert body["entrypoints"][1] == "quick actions"
+    assert body["entrypoints"][-1] == "integration webhook setup"
     assert "conversational at the top" in body["navigation_notes"]
     assert body["personal_os"]["assistant_modes"][0] == "development assistant"
 
@@ -538,11 +539,30 @@ def test_platform_external_integrations_endpoint_exposes_outside_world_controls(
     body = response.json()
 
     assert body["status"] == "ok"
-    assert body["systems"] == ["GitHub Actions", "browser automation", "Slack/email", "calendar"]
+    assert body["systems"] == ["GitHub Actions", "browser automation", "Slack", "Discord", "Telegram", "calendar"]
     assert body["use_cases"][0] == "code review and CI"
     assert body["control_modes"][1] == "approval-gated writes"
     assert body["safety_rules"][2] == "log every external side effect"
+    assert body["webhook_targets"][0]["name"] == "Slack"
+    assert body["webhook_targets"][1]["env_var"] == "DISCORD_WEBHOOK_URL"
+    assert body["webhook_targets"][2]["example_export"] == "scripts/telegram_alerts_n8n_export.json"
+    assert body["setup_flow"][0] == "choose the target platform"
     assert "outside world" in body["notes"]
+
+
+def test_platform_integration_webhooks_page_renders_html() -> None:
+    response = client.get("/platform/integration-webhooks")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+    body = response.text
+
+    assert "Integration Webhooks" in body
+    assert "Slack" in body
+    assert "Discord" in body
+    assert "Telegram" in body
+    assert "mission_control_webhook_dispatcher.py" in body
 
 
 def test_platform_web_dashboard_endpoint_renders_html() -> None:
@@ -563,6 +583,8 @@ def test_platform_web_dashboard_endpoint_renders_html() -> None:
     assert "/platform/assets/aisha-launcher.css" in body
     assert "/platform/assets/aisha-launcher.js" in body
     assert "Dashboard sections" in body
+    assert "/platform/integration-webhooks" in body
+    assert "Integration Webhooks" in body
 
 
 

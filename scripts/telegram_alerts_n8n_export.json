@@ -1,0 +1,66 @@
+{
+  "name": "mission-control-telegram-alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "mission-control/telegram",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 320]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "text",
+              "value": "=={{ $json.body.text || ('Mission Control\n' + ($json.body.title || 'Untitled event') + (($json.body.detail || $json.body.summary) ? ('\n' + ($json.body.detail || $json.body.summary)) : '') + ($json.body.risk ? ('\nRisk: ' + $json.body.risk) : '')) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-message",
+      "name": "Format Telegram Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [520, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { chat_id: $env.TELEGRAM_CHAT_ID, text: $json.text } }}",
+        "options": {}
+      },
+      "id": "post-to-telegram",
+      "name": "Post to Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 320]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Format Telegram Message", "type": "main", "index": 0 }]]
+    },
+    "Format Telegram Message": {
+      "main": [[{ "node": "Post to Telegram", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

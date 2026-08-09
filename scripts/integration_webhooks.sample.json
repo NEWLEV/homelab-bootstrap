@@ -1,0 +1,29 @@
+{
+  "mission_control_public_url": "http://aisha:8000/platform/mission-control",
+  "targets": [
+    {
+      "name": "slack",
+      "enabled": true,
+      "env_var": "SLACK_WEBHOOK_URL",
+      "example_export": "scripts/slack_alerts_n8n_export.json"
+    },
+    {
+      "name": "discord",
+      "enabled": false,
+      "env_var": "DISCORD_WEBHOOK_URL",
+      "example_export": "scripts/discord_alerts_n8n_export.json"
+    },
+    {
+      "name": "telegram",
+      "enabled": false,
+      "env_var": "TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID",
+      "example_export": "scripts/telegram_alerts_n8n_export.json"
+    }
+  ],
+  "sample_payload": {
+    "title": "Aisha test alert",
+    "summary": "Integration webhook check",
+    "detail": "This payload shape is shared across Slack, Discord, and Telegram examples.",
+    "risk": "low"
+  }
+}

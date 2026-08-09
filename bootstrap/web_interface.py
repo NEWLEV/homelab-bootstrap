@@ -19,9 +19,9 @@ def build_web_interface_plan(manifest: InfrastructureManifest) -> WebInterfacePl
     personal_os = render_personal_os_plan(manifest)
     _ = personal_os
     return WebInterfacePlan(
-        pages=("home", "assistant", "operations", "memory", "integrations", "settings"),
+        pages=("home", "assistant", "operations", "memory", "integrations", "integration webhooks", "settings"),
         dashboard_sections=("status", "tasks", "alerts", "memory", "automation", "roadmap"),
-        entrypoints=("conversational command bar", "quick actions", "operations panel", "memory timeline"),
+        entrypoints=("conversational command bar", "quick actions", "operations panel", "memory timeline", "integration webhook setup"),
         navigation_notes="keep the interface conversational at the top, operational in the middle, and deeply inspectable behind each panel",
     )
 

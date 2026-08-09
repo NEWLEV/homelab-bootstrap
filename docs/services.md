@@ -276,3 +276,64 @@ Run:
 ```
 
 Resolve all reported validation errors before applying changes.
+---
+
+## Slack integration
+
+The first supported external chat integration path is outbound Slack
+notifications through n8n, not a native Slack bot inside OpenClaw.
+
+- Import `scripts/slack_alerts_n8n_export.json` into n8n.
+- Set `SLACK_WEBHOOK_URL` to a Slack Incoming Webhook URL.
+- Set `MISSION_CONTROL_PUBLIC_URL` to the Mission Control base URL that your
+  operators can reach, for example `https://aisha.tail4553c9.ts.net/mission-control`.
+- Post Mission Control approval or alert payloads to the workflow webhook at
+  `/webhook/mission-control/slack`.
+
+This keeps Slack as a notification and approval-routing surface while Aisha
+and OpenClaw remain the local reasoning and control boundary.
+
+---
+
+## Integration webhooks
+
+Aisha now uses one shared webhook pattern for external alerting integrations.
+Users should not have to design each target from scratch.
+
+Available example exports:
+
+- `scripts/slack_alerts_n8n_export.json`
+- `scripts/discord_alerts_n8n_export.json`
+- `scripts/telegram_alerts_n8n_export.json`
+- `scripts/integration_webhooks.sample.json`
+
+Recommended setup flow:
+
+1. choose the target platform
+2. create or rotate the platform webhook secret
+3. store secrets only in n8n or local runtime environment variables
+4. import the matching example export
+5. test with the shared Mission Control-shaped payload
+
+Shared payload example:
+
+```json
+{
+  "title": "Aisha test alert",
+  "summary": "Integration webhook check",
+  "detail": "This payload shape is shared across Slack, Discord, and Telegram examples.",
+  "risk": "low"
+}
+```
+
+
+
+Automatic forwarding helper:
+
+- `scripts/mission_control_webhook_dispatcher.py` polls Mission Control and forwards
+  new events and pending approvals to any configured Slack, Discord, or Telegram
+  integration webhook endpoint.
+
+The dashboard also exposes an operator-facing setup page at `/platform/integration-webhooks`.
+
+Use `python scripts/seed_mission_control_demo.py` to populate Mission Control with demo events and a pending approval for UI and webhook testing.

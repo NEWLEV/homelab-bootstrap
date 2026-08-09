@@ -437,6 +437,8 @@ class ExternalIntegrationsResponse(BaseModel):
     use_cases: list[str]
     control_modes: list[str]
     safety_rules: list[str]
+    webhook_targets: list[dict[str, str]]
+    setup_flow: list[str]
     notes: str
 
 
@@ -1172,8 +1174,84 @@ def platform_external_integrations() -> ExternalIntegrationsResponse:
         use_cases=plan["use_cases"],
         control_modes=plan["control_modes"],
         safety_rules=plan["safety_rules"],
+        webhook_targets=plan["webhook_targets"],
+        setup_flow=plan["setup_flow"],
         notes=plan["notes"],
     )
+
+
+@app.get("/platform/integration-webhooks", response_class=HTMLResponse)
+def platform_integration_webhooks() -> HTMLResponse:
+    plan = render_external_integration_plan(None)
+    webhook_cards = ''.join(
+        f"""
+        <article class="card">
+          <h2>{target['name']}</h2>
+          <p><strong>Transport:</strong> {target['transport']}</p>
+          <p><strong>Env var:</strong> <code>{target['env_var']}</code></p>
+          <p><strong>Use case:</strong> {target['use_case']}</p>
+          <p><strong>Example export:</strong> <code>{target['example_export']}</code></p>
+        </article>
+        """
+        for target in plan["webhook_targets"]
+    )
+    setup_steps = ''.join(f'<li>{step}</li>' for step in plan['setup_flow'])
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aisha Integration Webhooks</title>
+    <style>
+      :root {{ color-scheme: dark; }}
+      body {{ margin: 0; font-family: Inter, Segoe UI, system-ui, sans-serif; background: linear-gradient(160deg, #08111f, #111827 60%, #1f2937); color: #e5e7eb; }}
+      .wrap {{ max-width: 1100px; margin: 0 auto; padding: 40px 20px 64px; }}
+      .hero, .card {{ background: rgba(17,24,39,.82); border: 1px solid rgba(148,163,184,.14); border-radius: 18px; padding: 20px; }}
+      .hero {{ margin-bottom: 18px; }}
+      .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 18px; }}
+      h1, h2 {{ margin: 0 0 12px; }}
+      p, li {{ color: #cbd5e1; line-height: 1.6; }}
+      code, pre {{ background: rgba(15,23,42,.88); color: #dbeafe; border-radius: 10px; }}
+      code {{ padding: 0.15rem 0.35rem; }}
+      pre {{ margin: 0; padding: 14px; overflow-x: auto; }}
+      .links a {{ display: inline-block; margin: 6px 8px 0 0; padding: 8px 12px; border-radius: 999px; text-decoration: none; color: #bfdbfe; background: rgba(59,130,246,.16); border: 1px solid rgba(96,165,250,.22); }}
+      ul {{ margin: 0; padding-left: 18px; }}
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>Integration Webhooks</h1>
+        <p>Use one shared setup flow for Slack, Discord, and Telegram. Aisha keeps the payload shape consistent so operators do not have to rebuild each integration from scratch.</p>
+        <div class="links">
+          <a href="/platform/web-dashboard">Back to dashboard</a>
+          <a href="/platform/external-integrations">JSON view</a>
+          <a href="/platform/mission-control">Mission Control</a>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Setup Flow</h2>
+        <ul>{setup_steps}</ul>
+      </section>
+      <section class="grid">{webhook_cards}</section>
+      <section class="card" style="margin-top:18px;">
+        <h2>Shared Payload</h2>
+        <pre><code>{{
+  "title": "Aisha test alert",
+  "summary": "Integration webhook check",
+  "detail": "This payload shape is shared across Slack, Discord, and Telegram examples.",
+  "risk": "low"
+}}</code></pre>
+      </section>
+      <section class="card" style="margin-top:18px;">
+        <h2>Automatic Forwarding</h2>
+        <p>Use <code>scripts/mission_control_webhook_dispatcher.py</code> to poll Mission Control and forward new events and pending approvals to any enabled target.</p>
+        <pre><code>INTEGRATION_DISPATCH_ONCE=true python scripts/mission_control_webhook_dispatcher.py</code></pre>
+      </section>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(content=html)
 
 
 @app.get("/platform/workflow-engine", response_model=WorkflowEngineResponse)
@@ -1595,6 +1673,10 @@ def platform_web_dashboard() -> HTMLResponse:
         <div class="card">
           <h2>Integrations</h2>
           <ul>{''.join(f'<li>{entry["name"]}</li>' for entry in personal_os['integration_layers']['integrations']['entries'])}</ul>
+          <div class="controls" style="margin-top: 14px;">
+            <a class="secondary" href="/platform/integration-webhooks">Integration Webhooks</a>
+          </div>
+          <p class="muted" style="margin-top:12px;">Shared webhook exports now cover Slack, Discord, and Telegram with the same payload shape.</p>
         </div>
         <div class="card">
           <h2>Local RAG</h2>

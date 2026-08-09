@@ -19,7 +19,7 @@ WorkingDirectory=$REPO_ROOT
 Environment=MISSION_CONTROL_HOST=127.0.0.1
 Environment=MISSION_CONTROL_PORT=8020
 Environment=MISSION_CONTROL_DATABASE=%h/.local/share/aisha/mission-control.sqlite3
-ExecStart=/usr/bin/env bash homelab-bootstrap/services/mission-control/scripts/run-mission-control.sh
+ExecStart=%h/.venvs/aisha/bin/python -m mission_control
 Restart=always
 RestartSec=5
 

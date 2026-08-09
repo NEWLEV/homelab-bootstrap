@@ -1,0 +1,66 @@
+{
+  "name": "mission-control-discord-alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "mission-control/discord",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 320]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "content",
+              "value": "=={{ $json.body.content || ('**Mission Control**\n' + ($json.body.title || 'Untitled event') + (($json.body.detail || $json.body.summary) ? ('\n' + ($json.body.detail || $json.body.summary)) : '') + ($json.body.risk ? ('\nRisk: ' + $json.body.risk) : '')) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-message",
+      "name": "Format Discord Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [520, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.DISCORD_WEBHOOK_URL}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { content: $json.content } }}",
+        "options": {}
+      },
+      "id": "post-to-discord",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 320]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Format Discord Message", "type": "main", "index": 0 }]]
+    },
+    "Format Discord Message": {
+      "main": [[{ "node": "Post to Discord", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
