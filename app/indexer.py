@@ -69,6 +69,8 @@ ALLOWED_SUFFIXES = {
 EXCLUDED_PARTS = {
     ".git",
     ".env",
+    ".venv",
+    "venv",
     "__pycache__",
     "node_modules",
     "backups",
@@ -76,8 +78,26 @@ EXCLUDED_PARTS = {
     "caches",
     "credentials",
     "secrets",
+    "site-packages",
     "workspaces",
 }
+
+EXCLUDED_FILE_NAMES = {
+    "conversation-request.json",
+    "grounded-request.json",
+    "diagnose-generation.py",
+}
+
+EXCLUDED_PATH_FRAGMENTS = (
+    "/bootstrap/prep-bundle-",
+    "/bootstrap/bundle-test/",
+    "/bootstrap/ai-services-bundle-test/",
+    "/bootstrap/skills-bundle-test/",
+    "/bootstrap/bootstrap.prep-",
+    "/bootstrap/compose.prep-",
+    "/bootstrap/bootstrap.write-test.json",
+    "/bootstrap/compose.write-test.yaml",
+)
 
 REQUIRED_METADATA_FIELDS = {
     "path",
@@ -108,7 +128,14 @@ def is_allowed(path: Path) -> bool:
     if lowered_parts & EXCLUDED_PARTS:
         return False
 
+    normalized_path = path.as_posix().lower()
+    if any(fragment in normalized_path for fragment in EXCLUDED_PATH_FRAGMENTS):
+        return False
+
     name = path.name.lower()
+
+    if name in EXCLUDED_FILE_NAMES:
+        return False
 
     if name.endswith(
         (
