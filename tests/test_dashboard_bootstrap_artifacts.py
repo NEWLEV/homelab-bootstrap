@@ -60,3 +60,14 @@ def test_openclaw_ui_resolves_parent_origin() -> None:
     assert "let parentOrigin = initialParentOrigin;" in contents
     assert "window.parent.postMessage(message, targetOrigin);" in contents
     assert "parentOrigin = event.origin;" in contents
+
+def test_openclaw_ui_generates_message_ids_without_randomuuid() -> None:
+    ui = Path(r"C:/Users/ZBook/Documents/Aisha/services/openclaw/ui/app.js")
+
+    contents = ui.read_text(encoding="utf-8")
+
+    assert "function createClientMessageId()" in contents
+    assert "window.crypto.randomUUID" in contents
+    assert "window.crypto.getRandomValues" in contents
+    assert "fallback-" in contents
+    assert "sendQuestion(question, createClientMessageId());" in contents
