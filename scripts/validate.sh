@@ -92,6 +92,16 @@ validate_manifest() {
     fi
 }
 
+validate_system_profile() {
+    section "System profile"
+
+    if "${REPO_ROOT}/tests/system-profile.sh"; then
+        pass "System profile and drift map are valid"
+    else
+        fail "System profile or drift map validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -438,6 +448,7 @@ main() {
     fi
 
     validate_manifest
+    validate_system_profile
 
     if ((FAIL_COUNT > 0)); then
         print_summary

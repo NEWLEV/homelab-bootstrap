@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "inventory_id": "aisha-20260809",
+  "observed_at": "2026-08-09T19:21:45-04:00",
+  "host": {
+    "hostname": "aisha",
+    "platform": "Raspberry Pi 5",
+    "virtualization": "none",
+    "architecture": "aarch64",
+    "cpu": {
+      "model": "ARM Cortex-A76",
+      "cores": 4,
+      "max_mhz": 2400
+    },
+    "memory_gib": 15,
+    "temperature_c": 44.4,
+    "throttled": false
+  },
+  "operating_system": {
+    "distribution": "Debian GNU/Linux",
+    "version": "13.6",
+    "codename": "trixie",
+    "kernel": "6.18.34+rpt-rpi-2712"
+  },
+  "storage": [
+    {"device": "nvme0n1", "model": "SK hynix P41", "size_gib": 931.5, "mount": "/", "filesystem": "ext4", "encrypted": false},
+    {"device": "nvme1n1", "model": "SK hynix P41", "size_gib": 931.5, "mount": "/srv/data", "filesystem": "ext4", "encrypted": false}
+  ],
+  "runtimes": {
+    "openclaw": "2026.7.1-2",
+    "node": "24.18.0",
+    "npm": "11.16.0",
+    "python": "3.13.5",
+    "docker": "29.7.1",
+    "git": "2.47.3",
+    "gcc": "14.2.0"
+  },
+  "network_interfaces": ["eth0", "wlan0", "tailscale0"],
+  "containers": [
+    "openclaw", "local-rag-api", "local-rag-ollama", "homepage",
+    "traefik", "socket-proxy", "filebrowser", "portainer", "netdata",
+    "uptime-kuma"
+  ],
+  "backup": {
+    "local": {"status": "green", "verified_at": "2026-08-09T03:28:22-04:00", "snapshots_checked": 10},
+    "offsite": {"status": "green", "verified_at": "2026-08-08T04:43:20-04:00", "snapshots_checked": 3},
+    "restore_proof": "local-script-present-offsite-unproven"
+  },
+  "security": {
+    "automatic_updates": true,
+    "fail2ban": true,
+    "tailscale": true,
+    "disk_encryption": false,
+    "firewall_verdict": "unverified",
+    "openclaw_audit": {"critical": 0, "warnings": 4, "info": 1}
+  },
+  "known_findings": [
+    "globally routed IPv6 is present",
+    "multiple services bind all host interfaces",
+    "containerized OpenClaw exposure differs from repository declaration",
+    "a manually launched OpenClaw gateway duplicates deployment ownership",
+    "agent capabilities exceed least-privilege targets",
+    "SMART device queries require unavailable privilege",
+    "sixteen package updates were pending at inventory time"
+  ]
+}
