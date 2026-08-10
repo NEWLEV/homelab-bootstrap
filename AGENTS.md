@@ -16,7 +16,8 @@ Do not claim that one-command recovery is complete unless it has been implemente
 - Host: `aisha`
 - Hardware: Raspberry Pi 5
 - Operating system: Raspberry Pi OS Lite 64-bit
-- Repository root: `/srv/data/git/homelab-bootstrap/workspaces/development/repo`
+- Repository root: `/srv/data/git/homelab-bootstrap`
+- Knowledge index source: `/srv/data/git/homelab-bootstrap-index`
 - Runtime service data root: `/srv/data/services`
 - GitHub repository: `NEWLEV/homelab-bootstrap`
 

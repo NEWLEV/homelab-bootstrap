@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly REPOSITORY="${AISHA_REPOSITORY_ROOT:-/srv/data/git/homelab-bootstrap}"
+readonly TARGET="${AISHA_KNOWLEDGE_SOURCE:-/srv/data/git/homelab-bootstrap-index}"
+readonly REVISION="${1:-}"
+
+fail() {
+    printf 'ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
+[[ "$REVISION" =~ ^[0-9a-f]{40}$ ]] ||
+    fail "an explicit lowercase 40-character commit SHA is required"
+
+git -C "$REPOSITORY" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
+    fail "repository is unavailable: ${REPOSITORY}"
+
+resolved="$(git -C "$REPOSITORY" rev-parse --verify "${REVISION}^{commit}")" ||
+    fail "commit is unavailable in the local repository: ${REVISION}"
+
+[[ "$resolved" == "$REVISION" ]] ||
+    fail "revision did not resolve exactly to the requested commit"
+
+if [[ ! -e "$TARGET" ]]; then
+    git -C "$REPOSITORY" worktree add --detach "$TARGET" "$REVISION"
+else
+    git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
+        fail "target exists but is not a Git worktree: ${TARGET}"
+
+    [[ -z "$(git -C "$TARGET" status --porcelain)" ]] ||
+        fail "knowledge source worktree is dirty: ${TARGET}"
+
+    current="$(git -C "$TARGET" rev-parse HEAD)"
+
+    if [[ "$current" != "$REVISION" ]]; then
+        git -C "$TARGET" checkout --detach "$REVISION"
+    fi
+fi
+
+[[ -z "$(git -C "$TARGET" status --porcelain)" ]] ||
+    fail "knowledge source worktree became dirty"
+
+current="$(git -C "$TARGET" rev-parse HEAD)"
+[[ "$current" == "$REVISION" ]] ||
+    fail "knowledge source revision verification failed"
+
+printf 'Knowledge source ready at %s (%s).\n' "$TARGET" "$current"

@@ -60,7 +60,7 @@ services:
 
     volumes:
       - /srv/data/services/local-rag/chroma:/data/chroma
-      - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/sources/homelab-bootstrap:ro
+      - ${AISHA_KNOWLEDGE_SOURCE:-/srv/data/git/homelab-bootstrap-index}:/sources/homelab-bootstrap:ro
       - /srv/data/services/local-rag/models:/models
 
     secrets:

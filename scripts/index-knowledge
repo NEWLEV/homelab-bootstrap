@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly SOURCE="${AISHA_KNOWLEDGE_SOURCE:-/srv/data/git/homelab-bootstrap-index}"
+readonly TOKEN_FILE="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
+readonly API_URL="${LOCAL_RAG_API_URL:-http://127.0.0.1:8090}"
+
+fail() {
+    printf 'ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
+git -C "$SOURCE" rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
+    fail "knowledge source is not a Git worktree: ${SOURCE}"
+
+[[ -z "$(git -C "$SOURCE" status --porcelain)" ]] ||
+    fail "knowledge source worktree is dirty"
+
+source_revision="$(git -C "$SOURCE" rev-parse HEAD)"
+[[ "$source_revision" =~ ^[0-9a-f]{40}$ ]] ||
+    fail "knowledge source revision is invalid"
+
+[[ -r "$TOKEN_FILE" ]] ||
+    fail "Local RAG token file is not readable"
+
+token="$(tr -d '\r\n' < "$TOKEN_FILE")"
+[[ "$token" =~ ^[A-Za-z0-9._~-]+$ ]] ||
+    fail "Local RAG token contains unsupported characters"
+
+request() {
+    local method="$1"
+    local path="$2"
+
+    printf '%s\n' \
+        "url = \"${API_URL}${path}\"" \
+        "request = \"${method}\"" \
+        "header = \"Authorization: Bearer ${token}\"" \
+        'fail' \
+        'silent' \
+        'show-error' |
+        curl --config -
+}
+
+index_result="$(request POST '/index?rebuild=true')"
+status_result="$(request GET '/index/status')"
+integrity_result="$(request GET '/index/integrity')"
+
+jq -e '.status == "indexed" and .job.last_run_status == "succeeded"' \
+    >/dev/null <<<"$index_result" ||
+    fail "index rebuild did not report success"
+
+jq -e '.status == "idle" and .last_run_status == "succeeded"' \
+    >/dev/null <<<"$status_result" ||
+    fail "index job status verification failed"
+
+jq -e '.valid == true and .reindex_required == false' \
+    >/dev/null <<<"$integrity_result" ||
+    fail "index integrity verification failed"
+
+jq -n \
+    --arg indexed_git_sha "$source_revision" \
+    --argjson index "$index_result" \
+    --argjson status "$status_result" \
+    --argjson integrity "$integrity_result" \
+    '{indexed_git_sha: $indexed_git_sha, index: $index, status: $status, integrity: $integrity}'

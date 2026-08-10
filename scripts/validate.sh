@@ -102,6 +102,16 @@ validate_system_profile() {
     fi
 }
 
+validate_knowledge_source_contract() {
+    section "Knowledge source contract"
+
+    if "${REPO_ROOT}/tests/knowledge-source.sh"; then
+        pass "Knowledge source and indexing contract are valid"
+    else
+        fail "Knowledge source or indexing contract validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -449,6 +459,7 @@ main() {
 
     validate_manifest
     validate_system_profile
+    validate_knowledge_source_contract
 
     if ((FAIL_COUNT > 0)); then
         print_summary

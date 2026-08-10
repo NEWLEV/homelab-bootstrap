@@ -45,3 +45,11 @@ This machine is not yet reproducible from `main`. The drift map is the
 authoritative backlog for reconciliation. A component becomes reproducible
 only after its declaration, bootstrap/application path, validation,
 monitoring, backup/restore behavior, and rollback are represented together.
+
+## Knowledge indexing target
+
+Repository commit `3759d03b9d0eb63bccf629669fdb309d51be5acd` introduced
+the governed inventory baseline. The target indexing architecture uses a clean,
+detached worktree at `/srv/data/git/homelab-bootstrap-index`, pinned to an
+explicit reviewed commit. The live service continues to use the historical
+prototype mount until the Step 0C deployment approval is applied and verified.
