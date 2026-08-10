@@ -28,6 +28,14 @@
     { label: 'Pironman5 Max', href: '/platform/web-dashboard#pironman5', note: 'coming soon' },
   ];
 
+  const PORT_LINKS = [
+    { label: '3001', href: 'http://100.106.201.14:3001', title: 'Kuma' },
+    { label: '8080', href: 'http://100.106.201.14:8080', title: 'File Browser' },
+    { label: '9443', href: 'https://100.106.201.14:9443', title: 'Portainer' },
+    { label: '19999', href: 'http://100.106.201.14:19999', title: 'Netdata' },
+    { label: '34001', href: '/platform/web-dashboard#pironman5', title: 'Pironman5 Max' },
+  ];
+
   // The gateway is intentionally reachable only through the same-origin,
   // tailnet-restricted Traefik route. It has no host-published fallback port.
   const CHAT_BASES = [
@@ -105,6 +113,35 @@
     }
 
     panel.appendChild(list);
+
+    const ports = document.createElement('section');
+    ports.className = 'aisha-port-links';
+
+    const portsHeading = document.createElement('h3');
+    portsHeading.textContent = 'Ports';
+    ports.appendChild(portsHeading);
+
+    const portsIntro = document.createElement('p');
+    portsIntro.className = 'aisha-port-links-intro';
+    portsIntro.textContent = 'Quick access to the live service ports.';
+    ports.appendChild(portsIntro);
+
+    const portsRow = document.createElement('div');
+    portsRow.className = 'aisha-port-links-row';
+
+    for (const item of PORT_LINKS) {
+      const port = document.createElement('a');
+      port.className = 'aisha-port-link';
+      port.href = item.href;
+      port.title = `${item.title} (${item.label})`;
+      port.target = item.href.startsWith('/') ? '_self' : '_blank';
+      port.rel = port.target === '_blank' ? 'noreferrer noopener' : '';
+      port.textContent = item.label;
+      portsRow.appendChild(port);
+    }
+
+    ports.appendChild(portsRow);
+    panel.appendChild(ports);
 
     const mission = document.createElement('section');
     mission.id = 'mission-control';
