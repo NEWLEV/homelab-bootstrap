@@ -32,25 +32,30 @@ and container name.
 
 ## Exposure and trust boundary
 
-Two access paths are supported, matching how the dashboard itself is
-reached:
+Two access paths are supported:
 
-1. **Through Traefik** — `https://aisha.tail4553c9.ts.net/aisha/`, same
-   origin as the dashboard host.
-2. **Direct dashboard access** — when Homepage is used at
-   `http://aisha:8000` or `http://100.106.201.14:8000`, the launcher falls
-   back to the gateway's published port `18789` on the same host. The
-   dashboard origin must be listed in `OPENCLAW_EMBED_ORIGINS`; that
-   allowlist drives both the CSP `frame-ancestors` directive and CORS,
-   which is enabled for `GET /api/health` only — all conversation traffic
-   stays same-origin inside the embedded frame.
+1. **Tailscale Serve control UI** - `https://aisha.tail4553c9.ts.net/openclaw/`
+   exposes the stock OpenClaw Control UI in a secure browser context. The
+   gateway listens on loopback and Tailscale Serve provides the HTTPS
+   transport, which keeps the browser secure-context requirements intact.
+2. **Aisha chat gateway** - `https://aisha.tail4553c9.ts.net/aisha/`
+   serves the chat surface used by the Homepage launcher. That path remains
+   same-origin with the dashboard host so the embedded panel can talk to the
+   gateway without exposing credentials to the browser.
+
+When Homepage is used at `http://aisha:8000` or
+`http://100.106.201.14:8000`, the launcher opens the same Aisha chat surface
+through `/aisha/`. The dashboard origin must be listed in
+`OPENCLAW_EMBED_ORIGINS`; that allowlist drives both the CSP
+`frame-ancestors` directive and CORS, which is enabled for
+`GET /api/health` only - all conversation traffic stays same-origin inside
+the embedded frame.
 
 The legacy `/health` and `/ready` endpoints are not served under the
-`/aisha` prefix. Note that direct access is plain HTTP; response copy
-buttons are hidden there because the browser clipboard API requires a
-secure context.
+`/aisha` prefix. Response copy buttons are hidden on insecure origins
+because the browser clipboard API requires a secure context.
 
-This appliance has no user-account or session system — the Homepage
+This appliance has no user-account or session system - the Homepage
 dashboard it sits beside has none either. Authorization for the chat is
 therefore the same boundary that protects the rest of the dashboard: the
 Tailscale tailnet plus Traefik TLS. Conversations are scoped to the
@@ -65,7 +70,7 @@ local user store would duplicate infrastructure the appliance does not have.
 
 Answers are grounded in the indexed repository only. The gateway sends the
 user's question and the bounded recent conversation history upstream, and
-nothing else — no dashboard state, service inventory, or host telemetry is
+nothing else - no dashboard state, service inventory, or host telemetry is
 silently attached.
 
 ## Runtime contract

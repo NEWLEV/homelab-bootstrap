@@ -1,65 +1,340 @@
 {
   "schema_version": 1,
   "inventory_id": "aisha-20260809",
-  "status_values": ["declared", "mismatch", "unmanaged", "unverified"],
+  "status_values": [
+    "declared",
+    "mismatch",
+    "unmanaged",
+    "unverified"
+  ],
   "containers": [
-    {"name": "openclaw", "status": "declared", "layer": "agents", "evidence": "live container is healthy from merged deployment worktree with no host-published ports; native duplicate retirement pending"},
-    {"name": "local-rag-api", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
-    {"name": "local-rag-ollama", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
-    {"name": "homepage", "status": "declared", "layer": "infrastructure", "evidence": "compose/core/homepage.yml"},
-    {"name": "traefik", "status": "declared", "layer": "infrastructure", "evidence": "compose/networking/traefik.yml"},
-    {"name": "socket-proxy", "status": "declared", "layer": "security", "evidence": "compose/networking/traefik.yml"},
-    {"name": "filebrowser", "status": "declared", "layer": "infrastructure", "evidence": "compose/core/filebrowser.yml"},
-    {"name": "portainer", "status": "declared", "layer": "operations", "evidence": "compose/core/portainer.yml"},
-    {"name": "netdata", "status": "declared", "layer": "observability", "evidence": "compose/monitoring/netdata.yml"},
-    {"name": "uptime-kuma", "status": "declared", "layer": "observability", "evidence": "compose/monitoring/uptime-kuma.yml"}
+    {
+      "name": "openclaw",
+      "status": "declared",
+      "layer": "agents",
+      "evidence": "live container is healthy and the secure Tailscale Serve Control UI is reachable on the tailnet; loopback gateway remains intentional"
+    },
+    {
+      "name": "local-rag-api",
+      "status": "declared",
+      "layer": "rag",
+      "evidence": "compose/ai/local-rag.yml"
+    },
+    {
+      "name": "local-rag-ollama",
+      "status": "declared",
+      "layer": "rag",
+      "evidence": "compose/ai/local-rag.yml"
+    },
+    {
+      "name": "homepage",
+      "status": "declared",
+      "layer": "infrastructure",
+      "evidence": "compose/core/homepage.yml"
+    },
+    {
+      "name": "traefik",
+      "status": "declared",
+      "layer": "infrastructure",
+      "evidence": "compose/networking/traefik.yml"
+    },
+    {
+      "name": "socket-proxy",
+      "status": "declared",
+      "layer": "security",
+      "evidence": "compose/networking/traefik.yml"
+    },
+    {
+      "name": "filebrowser",
+      "status": "declared",
+      "layer": "infrastructure",
+      "evidence": "compose/core/filebrowser.yml"
+    },
+    {
+      "name": "portainer",
+      "status": "declared",
+      "layer": "operations",
+      "evidence": "compose/core/portainer.yml"
+    },
+    {
+      "name": "netdata",
+      "status": "declared",
+      "layer": "observability",
+      "evidence": "compose/monitoring/netdata.yml"
+    },
+    {
+      "name": "uptime-kuma",
+      "status": "declared",
+      "layer": "observability",
+      "evidence": "compose/monitoring/uptime-kuma.yml"
+    }
   ],
   "systemd_services": [
-    {"name": "avahi-daemon.service", "status": "unmanaged", "layer": "infrastructure"},
-    {"name": "bluetooth.service", "status": "unmanaged", "layer": "infrastructure"},
-    {"name": "containerd.service", "status": "declared", "layer": "infrastructure"},
-    {"name": "cron.service", "status": "unmanaged", "layer": "automation"},
-    {"name": "dbus.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "docker.service", "status": "declared", "layer": "infrastructure"},
-    {"name": "fail2ban.service", "status": "unmanaged", "layer": "security"},
-    {"name": "getty@tty1.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "influxdb.service", "status": "unmanaged", "layer": "observability"},
-    {"name": "NetworkManager.service", "status": "unmanaged", "layer": "infrastructure"},
-    {"name": "pironman5.service", "status": "unmanaged", "layer": "observability"},
-    {"name": "polkit.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "serial-getty@ttyAMA10.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "smartmontools.service", "status": "declared", "layer": "observability"},
-    {"name": "ssh.service", "status": "unmanaged", "layer": "infrastructure"},
-    {"name": "systemd-journald.service", "status": "unmanaged", "layer": "observability"},
-    {"name": "systemd-logind.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "systemd-timesyncd.service", "status": "declared", "layer": "operating-system"},
-    {"name": "systemd-udevd.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "tailscaled.service", "status": "unmanaged", "layer": "infrastructure"},
-    {"name": "udisks2.service", "status": "unmanaged", "layer": "storage"},
-    {"name": "unattended-upgrades.service", "status": "declared", "layer": "maintenance"},
-    {"name": "user@1000.service", "status": "unmanaged", "layer": "operating-system"},
-    {"name": "wpa_supplicant.service", "status": "unmanaged", "layer": "infrastructure"}
+    {
+      "name": "avahi-daemon.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "bluetooth.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "containerd.service",
+      "status": "declared",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "cron.service",
+      "status": "unmanaged",
+      "layer": "automation"
+    },
+    {
+      "name": "dbus.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "docker.service",
+      "status": "declared",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "fail2ban.service",
+      "status": "unmanaged",
+      "layer": "security"
+    },
+    {
+      "name": "getty@tty1.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "influxdb.service",
+      "status": "unmanaged",
+      "layer": "observability"
+    },
+    {
+      "name": "NetworkManager.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "pironman5.service",
+      "status": "unmanaged",
+      "layer": "observability"
+    },
+    {
+      "name": "polkit.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "serial-getty@ttyAMA10.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "smartmontools.service",
+      "status": "declared",
+      "layer": "observability"
+    },
+    {
+      "name": "ssh.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "systemd-journald.service",
+      "status": "unmanaged",
+      "layer": "observability"
+    },
+    {
+      "name": "systemd-logind.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "systemd-timesyncd.service",
+      "status": "declared",
+      "layer": "operating-system"
+    },
+    {
+      "name": "systemd-udevd.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "tailscaled.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    },
+    {
+      "name": "udisks2.service",
+      "status": "unmanaged",
+      "layer": "storage"
+    },
+    {
+      "name": "unattended-upgrades.service",
+      "status": "declared",
+      "layer": "maintenance"
+    },
+    {
+      "name": "user@1000.service",
+      "status": "unmanaged",
+      "layer": "operating-system"
+    },
+    {
+      "name": "wpa_supplicant.service",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    }
   ],
   "listeners": [
-    {"protocol": "tcp", "port": 22, "service": "ssh", "bind": "all", "firewall": "allow-broad-ipv4-ipv6", "audience": "internet", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 80, "service": "traefik", "bind": "all", "firewall": "docker-forward-allow-ipv4; host-input-deny-ipv6", "audience": "lan", "status": "declared"},
-    {"protocol": "tcp", "port": 443, "service": "traefik", "bind": "all", "firewall": "docker-forward-allow-ipv4; host-input-deny-ipv6", "audience": "lan", "status": "declared"},
-    {"protocol": "tcp", "port": 3001, "service": "uptime-kuma", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
-    {"protocol": "tcp", "port": 8000, "service": "python-homepage-surface", "bind": "all", "firewall": "ufw-tailnet-only", "audience": "tailnet", "status": "mismatch"},
-    {"protocol": "tcp", "port": 8020, "service": "mission-control", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 8080, "service": "filebrowser", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
-    {"protocol": "tcp", "port": 8086, "service": "influxdb", "bind": "all", "firewall": "ufw-tailnet-only", "audience": "tailnet", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 8088, "service": "influxdb-internal-rpc", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 8090, "service": "local-rag-api", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "declared"},
-    {"protocol": "tcp", "port": 9443, "service": "portainer", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
-    {"protocol": "tcp", "port": 18789, "service": "native-openclaw", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 19999, "service": "netdata", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
-    {"protocol": "tcp", "port": 34001, "service": "pironman5-dashboard", "bind": "all", "firewall": "ufw-tailnet-only", "audience": "tailnet", "status": "unmanaged"}
+    {
+      "protocol": "tcp",
+      "port": 22,
+      "service": "ssh",
+      "bind": "all",
+      "firewall": "allow-broad-ipv4-ipv6",
+      "audience": "internet",
+      "status": "unmanaged"
+    },
+    {
+      "protocol": "tcp",
+      "port": 80,
+      "service": "traefik",
+      "bind": "all",
+      "firewall": "docker-forward-allow-ipv4; host-input-deny-ipv6",
+      "audience": "lan",
+      "status": "declared"
+    },
+    {
+      "protocol": "tcp",
+      "port": 443,
+      "service": "traefik",
+      "bind": "all",
+      "firewall": "docker-forward-allow-ipv4; host-input-deny-ipv6",
+      "audience": "lan",
+      "status": "declared"
+    },
+    {
+      "protocol": "tcp",
+      "port": 3001,
+      "service": "uptime-kuma",
+      "bind": "all",
+      "firewall": "docker-bypasses-ufw-ipv4",
+      "audience": "tailnet",
+      "status": "mismatch"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8000,
+      "service": "python-homepage-surface",
+      "bind": "all",
+      "firewall": "ufw-tailnet-only",
+      "audience": "tailnet",
+      "status": "mismatch"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8020,
+      "service": "mission-control",
+      "bind": "loopback",
+      "firewall": "not-applicable",
+      "audience": "localhost",
+      "status": "unmanaged"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8080,
+      "service": "filebrowser",
+      "bind": "all",
+      "firewall": "docker-bypasses-ufw-ipv4",
+      "audience": "tailnet",
+      "status": "mismatch"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8086,
+      "service": "influxdb",
+      "bind": "all",
+      "firewall": "ufw-tailnet-only",
+      "audience": "tailnet",
+      "status": "unmanaged"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8088,
+      "service": "influxdb-internal-rpc",
+      "bind": "loopback",
+      "firewall": "not-applicable",
+      "audience": "localhost",
+      "status": "unmanaged"
+    },
+    {
+      "protocol": "tcp",
+      "port": 8090,
+      "service": "local-rag-api",
+      "bind": "loopback",
+      "firewall": "not-applicable",
+      "audience": "localhost",
+      "status": "declared"
+    },
+    {
+      "protocol": "tcp",
+      "port": 9443,
+      "service": "portainer",
+      "bind": "all",
+      "firewall": "docker-bypasses-ufw-ipv4",
+      "audience": "tailnet",
+      "status": "mismatch"
+    },
+    {
+      "protocol": "tcp",
+      "port": 18789,
+      "service": "openclaw-gateway",
+      "bind": "loopback",
+      "firewall": "not-applicable",
+      "audience": "localhost",
+      "status": "declared"
+    },
+    {
+      "protocol": "tcp",
+      "port": 19999,
+      "service": "netdata",
+      "bind": "all",
+      "firewall": "docker-bypasses-ufw-ipv4",
+      "audience": "tailnet",
+      "status": "mismatch"
+    },
+    {
+      "protocol": "tcp",
+      "port": 34001,
+      "service": "pironman5-dashboard",
+      "bind": "all",
+      "firewall": "ufw-tailnet-only",
+      "audience": "tailnet",
+      "status": "unmanaged"
+    }
   ],
   "manual_processes": [
-    {"identity": "openclaw gateway --tailscale serve", "status": "unmanaged", "layer": "agents"},
-    {"identity": "python -m mission_control", "status": "unmanaged", "layer": "operations"},
-    {"identity": "python -m app --host 0.0.0.0 --port 8000", "status": "unmanaged", "layer": "infrastructure"}
+    {
+      "identity": "openclaw gateway --tailscale serve",
+      "status": "declared",
+      "layer": "agents"
+    },
+    {
+      "identity": "python -m mission_control",
+      "status": "unmanaged",
+      "layer": "operations"
+    },
+    {
+      "identity": "python -m app --host 0.0.0.0 --port 8000",
+      "status": "unmanaged",
+      "layer": "infrastructure"
+    }
   ],
   "resolved_items": [
     {
@@ -69,16 +344,16 @@
       "evidence": "Local RAG mounts /srv/data/git/homelab-bootstrap-index read-only at commit 0518e517c9080ed9d5d30a899d82a07104d15bfd; index integrity valid"
     },
     {
-      "id": "workstream1-network-target",
-      "resolved_at": "2026-08-10T01:52:23Z",
+      "id": "openclaw-secure-tailnet-ui",
+      "resolved_at": "2026-08-10T23:00:00Z",
       "status": "declared",
-      "evidence": "Compose target binds administrative ports to 100.106.201.14, removes the OpenClaw host port, tailnet-filters sensitive Traefik routes, and defines IPv4/IPv6 DOCKER-USER policy; live application pending"
+      "evidence": "OpenClaw Control UI is reachable at https://aisha.tail4553c9.ts.net/openclaw/ through Tailscale Serve while the gateway stays on loopback"
     },
     {
-      "id": "openclaw-18790-exposure",
-      "resolved_at": "2026-08-10T02:13:25Z",
+      "id": "openclaw-chat-same-origin",
+      "resolved_at": "2026-08-10T23:00:00Z",
       "status": "declared",
-      "evidence": "Repo-managed OpenClaw container healthy with no host-published ports; tailnet HTTPS health returned ready through Traefik"
+      "evidence": "Aisha chat remains available at https://aisha.tail4553c9.ts.net/aisha/ with same-origin dashboard embedding"
     }
   ],
   "known_repository_gaps": [

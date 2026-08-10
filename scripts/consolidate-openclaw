@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly TAILNET_URL="${OPENCLAW_TAILNET_URL:-https://aisha.tail4553c9.ts.net/aisha/api/health}"
+readonly TAILNET_URL="${OPENCLAW_TAILNET_URL:-https://aisha.tail4553c9.ts.net/openclaw/api/health}"
 readonly NATIVE_CLI="/home/nlc/.npm-global/bin/openclaw"
 readonly NATIVE_UNIT="openclaw-gateway.service"
 
@@ -49,9 +49,9 @@ tailnet_is_ready() {
         jq -e '.status == "ok" and .ready == true' >/dev/null
 }
 
-serve_is_reset() {
+serve_is_ready() {
     tailscale serve status --json |
-        jq -e '((.TCP // {}) | length) == 0 and ((.Web // {}) | length) == 0' >/dev/null
+        jq -e '((.TCP // {}) | length) > 0 or ((.Web // {}) | length) > 0' >/dev/null
 }
 
 host_gateway_ports_are_closed() {
@@ -76,8 +76,8 @@ verify_state() {
         printf '%s\n' 'FAIL: host gateway port 18789 or 18790 remains open.' >&2
         failed=1
     }
-    serve_is_reset || {
-        printf '%s\n' 'FAIL: Tailscale Serve configuration remains.' >&2
+    serve_is_ready || {
+        printf '%s\n' 'FAIL: Tailscale Serve route is not ready.' >&2
         failed=1
     }
     tailnet_is_ready || {
@@ -130,8 +130,6 @@ apply_consolidation() {
         fi
     fi
 
-    run tailscale serve reset
-
     if [[ "$MODE" != "dry-run" ]]; then
         verify_state
     fi
@@ -149,8 +147,7 @@ case "$1" in
         printf '+ identify native gateway by exact argv: node %q gateway --tailscale serve\n' "$NATIVE_CLI"
         run systemctl --user disable --now "$NATIVE_UNIT"
         printf '+ kill -TERM <exact-native-gateway-pid-if-present>\n'
-        run tailscale serve reset
-        printf '+ verify container health, closed host ports, reset Serve state, and tailnet route\n'
+        printf '+ verify container health, closed host ports, and tailnet route\n'
         ;;
     --apply)
         MODE="apply"
