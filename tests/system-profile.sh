@@ -10,8 +10,14 @@ readonly PROFILE="${REPO_ROOT}/docs/system-profile.json"
 readonly DRIFT="${REPO_ROOT}/docs/drift-map.json"
 readonly EVENT_SCHEMA="${REPO_ROOT}/schemas/mission_control/agent-event.schema.json"
 readonly APPROVAL_SCHEMA="${REPO_ROOT}/schemas/mission_control/approval.schema.json"
+readonly STEP0C_EVIDENCE="${REPO_ROOT}/docs/step0c-application-20260810.json"
 
-for document in "$PROFILE" "$DRIFT" "$EVENT_SCHEMA" "$APPROVAL_SCHEMA"; do
+for document in \
+    "$PROFILE" \
+    "$DRIFT" \
+    "$EVENT_SCHEMA" \
+    "$APPROVAL_SCHEMA" \
+    "$STEP0C_EVIDENCE"; do
     jq empty "$document"
 done
 
@@ -37,8 +43,20 @@ jq -e '
         | all(. == "localhost" or . == "tailnet" or . == "lan" or
               . == "internet")) and
     ([.listeners[] | "\(.protocol):\(.port):\(.bind)"] as $keys
-        | ($keys | length) == ($keys | unique | length))
+        | ($keys | length) == ($keys | unique | length)) and
+    (any(.resolved_items[]; .id == "local-rag-canonical-source" and
+        .status == "declared"))
 ' "$DRIFT" >/dev/null
+
+jq -e '
+    .schema_version == 1 and
+    .applied_commit == "0518e517c9080ed9d5d30a899d82a07104d15bfd" and
+    .index.files == 96 and
+    .index.total_chunks == 132 and
+    .index.integrity_valid == true and
+    .verification.full_validation.passed == 44 and
+    .rollback.invoked == false
+' "$STEP0C_EVIDENCE" >/dev/null
 
 while IFS= read -r line; do
     jq -e '
