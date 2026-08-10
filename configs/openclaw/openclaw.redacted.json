@@ -66,6 +66,9 @@
     },
     "port": 18789,
     "bind": "loopback",
+    "trustedProxies": [
+      "172.23.0.0/16"
+    ],
     "tailscale": {
       "mode": "off",
       "resetOnExit": false

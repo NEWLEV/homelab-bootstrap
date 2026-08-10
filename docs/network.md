@@ -130,17 +130,17 @@ Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
 | `/` | Homepage dashboard |
 | `/aisha` | Aisha chat gateway (OpenClaw) |
 
-For direct dashboard access without Traefik, two host ports are published:
+For direct dashboard access without Traefik, one tailnet-address port is
+published:
 
 | Port | Service |
 |------|---------|
-| `8000` | Homepage dashboard (`http://aisha:8000`) |
-| `18789` | Aisha chat gateway (embedded by the dashboard launcher) |
+| `100.106.201.14:8000` | Homepage dashboard |
 
-All routes share the same tailnet/LAN trust boundary, and the Local RAG
-credentials stay inside the gateway container. The gateway only permits
-embedding from the origins listed in `OPENCLAW_EMBED_ORIGINS` in
-`compose/ai/openclaw.yml`.
+The Homepage and OpenClaw routes use Traefik IP allowlists for the Tailscale
+CGNAT and ULA ranges. OpenClaw publishes no host port and trusts proxy headers
+only from the declared Traefik network. Local RAG credentials remain inside
+the gateway container.
 
 Verify:
 
@@ -171,8 +171,37 @@ http://local-rag:8080
 Firewall configuration is managed by:
 
 ```text
-security/firewall.sh
+security/firewall.sh --dry-run
+sudo security/firewall.sh --apply
+sudo security/firewall.sh --verify
 ```
+
+The policy keeps SSH and Traefik ports 80/443 broadly reachable, permits
+Tailscale transport and tailnet input, and installs IPv4 and IPv6
+`DOCKER-USER` rules. All other forwarded container traffic is dropped unless
+it arrives over `tailscale0`.
+
+## Intended audience matrix
+
+| Port | Service | Declared bind | Intended audience |
+|------|---------|---------------|-------------------|
+| 22 | SSH | all IPv4/IPv6 | approved administrative clients |
+| 80, 443 | Traefik | all IPv4/IPv6 | HTTP(S) ingress; sensitive routes tailnet-filtered |
+| 3001 | Uptime Kuma | Tailscale IPv4 | tailnet |
+| 8000 | Homepage direct access | Tailscale IPv4 | tailnet |
+| 8020 | Mission Control | loopback | localhost |
+| 8080 | File Browser | Tailscale IPv4 | tailnet |
+| 8086 | InfluxDB | host wildcard, firewall-limited | tailnet pending bind remediation |
+| 8088 | InfluxDB internal RPC | loopback | localhost |
+| 8090 | Local RAG | loopback | localhost |
+| 9443 | Portainer | Tailscale IPv4 | tailnet |
+| 18789 | OpenClaw container | container network only | Traefik |
+| 19999 | Netdata | Tailscale IPv4 | tailnet |
+| 34001 | Pironman dashboard | host wildcard, firewall-limited | tailnet pending bind remediation |
+
+Tailscale Serve must be disabled before live application because Traefik is
+the sole owner of port 443. Port 18790 is legacy live drift and must disappear
+when the repo-managed OpenClaw container is recreated.
 
 Verify firewall status:
 

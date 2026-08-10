@@ -18,18 +18,10 @@
   const UNREAD_KEY = 'aisha:unread';
   const PROBE_INTERVAL_MS = 60000;
 
-  // Where the chat gateway may live, probed in order:
-  // 1. same-origin /aisha (dashboard served through Traefik), or
-  // 2. the gateway's published port on the same host (dashboard accessed
-  //    directly, e.g. http://aisha:8000). The gateway must list this
-  //    dashboard origin in OPENCLAW_EMBED_ORIGINS for the probe to succeed.
-  const GATEWAY_PORT = '18789';
+  // The gateway is intentionally reachable only through the same-origin,
+  // tailnet-restricted Traefik route. It has no host-published fallback port.
   const CHAT_BASES = [
     { base: '/aisha', origin: window.location.origin },
-    {
-      base: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
-      origin: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
-    },
   ];
 
   let available = false;
