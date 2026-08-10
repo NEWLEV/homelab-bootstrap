@@ -62,11 +62,18 @@
     {"identity": "python -m mission_control", "status": "unmanaged", "layer": "operations"},
     {"identity": "python -m app --host 0.0.0.0 --port 8000", "status": "unmanaged", "layer": "infrastructure"}
   ],
+  "resolved_items": [
+    {
+      "id": "local-rag-canonical-source",
+      "resolved_at": "2026-08-10T00:59:44.664278+00:00",
+      "status": "declared",
+      "evidence": "Local RAG mounts /srv/data/git/homelab-bootstrap-index read-only at commit 0518e517c9080ed9d5d30a899d82a07104d15bfd; index integrity valid"
+    }
+  ],
   "known_repository_gaps": [
     "firewall implementation is an empty placeholder",
     "SMART monitoring implementation is an empty placeholder",
     "health script is an empty placeholder",
-    "live Local RAG source mount remains on an untracked prototype tree until the approved Step 0C deployment",
     "off-site restore testing is absent",
     "n8n is described by the roadmap but not deployed"
   ]

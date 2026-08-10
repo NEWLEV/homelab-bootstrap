@@ -99,6 +99,7 @@ export SOPS_AGE_KEY_FILE=/mnt/aisha-recovery/age/aisha.agekey
 | `docs/drift-map.json` | Live-to-repository reconciliation map |
 | `docs/mission-events.jsonl` | Mission Control-compatible action trail |
 | `docs/mission-approvals.jsonl` | Operator approval trail |
+| `docs/step0c-application-20260810.json` | Step 0C live application evidence |
 
 ---
 

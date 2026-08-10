@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "operation": "step0c-canonical-knowledge-application",
+  "applied_commit": "0518e517c9080ed9d5d30a899d82a07104d15bfd",
+  "started_at": "2026-08-10T00:55:10.203897+00:00",
+  "finished_at": "2026-08-10T00:59:44.664278+00:00",
+  "source": {
+    "path": "/srv/data/git/homelab-bootstrap-index",
+    "mount_destination": "/sources/homelab-bootstrap",
+    "read_only": true,
+    "git_clean": true
+  },
+  "index": {
+    "files": 96,
+    "added_chunks": 124,
+    "updated_chunks": 8,
+    "removed_obsolete_chunks": 3856,
+    "total_chunks": 132,
+    "integrity_valid": true,
+    "invalid_records": 0,
+    "schema_version": "1",
+    "chunking_version": "2",
+    "embedding_model": "nomic-embed-text"
+  },
+  "verification": {
+    "container": {"running": true, "healthy": true},
+    "documents": {
+      "docs/roadmap.md": {"present": true, "records": 1},
+      "docs/system-profile.json": {"present": true, "records": 1}
+    },
+    "full_validation": {"passed": 44, "warnings": 0, "failed": 0},
+    "memory_path": "/home/nlc/.openclaw/workspace/memory/2026-08-09.md"
+  },
+  "anomalies": [
+    {
+      "id": "compose-rollback-container-reconciled",
+      "outcome": "Compose removed the renamed rollback container because its project labels still identified it as the managed API service."
+    },
+    {
+      "id": "original-image-unavailable",
+      "outcome": "The original image SHA was unavailable after reconciliation; operator approved a data-only rollback instead."
+    }
+  ],
+  "rollback": {
+    "invoked": false,
+    "chroma_snapshot": "/srv/data/scratch/local-rag-chroma-pre-step0c-20260809",
+    "snapshot_retained": true,
+    "container_rollback_available": false,
+    "data_rollback_available": true
+  },
+  "approval_references": [
+    "APPROVE STEP-0C LIVE APPLICATION AND ROLLBACK",
+    "APPROVE STEP-0C RESUME WITH REVISED ROLLBACK",
+    "APPROVE STEP-0C INDEX WITH DATA-ONLY ROLLBACK"
+  ]
+}

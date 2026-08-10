@@ -46,10 +46,15 @@ authoritative backlog for reconciliation. A component becomes reproducible
 only after its declaration, bootstrap/application path, validation,
 monitoring, backup/restore behavior, and rollback are represented together.
 
-## Knowledge indexing target
+## Knowledge indexing state
 
-Repository commit `3759d03b9d0eb63bccf629669fdb309d51be5acd` introduced
-the governed inventory baseline. The target indexing architecture uses a clean,
-detached worktree at `/srv/data/git/homelab-bootstrap-index`, pinned to an
-explicit reviewed commit. The live service continues to use the historical
-prototype mount until the Step 0C deployment approval is applied and verified.
+Local RAG now uses the clean, detached worktree at
+`/srv/data/git/homelab-bootstrap-index`, pinned to reviewed merge commit
+`0518e517c9080ed9d5d30a899d82a07104d15bfd` and mounted read-only.
+
+The verified rebuild completed on 2026-08-10 with 96 indexed files and 132
+chunks. Index integrity reported zero invalid records, and both
+`docs/roadmap.md` and `docs/system-profile.json` were present in Chroma. The
+pre-change Chroma snapshot remains at
+`/srv/data/scratch/local-rag-chroma-pre-step0c-20260809` pending a separately
+approved cleanup decision.
