@@ -78,7 +78,7 @@
 
     const intro = document.createElement('p');
     intro.className = 'aisha-quick-links-intro';
-    intro.textContent = 'Open the secure OpenClaw UI, the chat surface, or the homelab tools below.';
+    intro.textContent = 'Open the secure OpenClaw UI, the chat surface, or the homelab tools below. Mission Control and Pi dashboard features are marked coming soon until their standalone pages are ready.';
     panel.appendChild(intro);
 
     const list = document.createElement('div');
@@ -112,7 +112,7 @@
     const missionTitle = document.createElement('h3');
     missionTitle.textContent = 'Mission Control';
     const missionBody = document.createElement('p');
-    missionBody.textContent = 'Coming soon: the dedicated Mission Control surface will live here once its standalone page is ready.';
+    missionBody.textContent = 'Coming soon: approvals, live activity, vitals, and replay will live here once the standalone page is ready.';
     mission.appendChild(missionTitle);
     mission.appendChild(missionBody);
     panel.appendChild(mission);
@@ -123,7 +123,7 @@
     const pironmanTitle = document.createElement('h3');
     pironmanTitle.textContent = 'Pironman5 Max';
     const pironmanBody = document.createElement('p');
-    pironmanBody.textContent = 'Coming soon: hardware dashboard shortcut placeholder until the Pi dashboard is verified live.';
+    pironmanBody.textContent = 'Coming soon: hardware telemetry and control will live here after the Pi dashboard is verified live.';
     pironman.appendChild(pironmanTitle);
     pironman.appendChild(pironmanBody);
     panel.appendChild(pironman);
