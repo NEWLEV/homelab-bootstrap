@@ -50,7 +50,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 HOMEPAGE_ASSET_DIR = REPO_ROOT / "configs" / "homepage"
 MISSION_CONTROL_URL = os.environ.get("MISSION_CONTROL_URL", "http://127.0.0.1:8020").rstrip("/")
 OPENCLAW_URL = os.environ.get("OPENCLAW_URL", "http://127.0.0.1:18790").rstrip("/")
-OPENCLAW_CONTROL_UI_URL = os.environ.get("OPENCLAW_CONTROL_UI_URL", "").rstrip("/")
+OPENCLAW_CONTROL_UI_URL = os.environ.get(
+    "OPENCLAW_CONTROL_UI_URL",
+    "https://aisha.tail4553c9.ts.net/openclaw",
+).rstrip("/")
 OPENCLAW_CONTROL_UI_BASE_PATH = "/" + os.environ.get("OPENCLAW_CONTROL_UI_BASE_PATH", "openclaw").strip("/")
 
 
@@ -69,7 +72,7 @@ def resolve_openclaw_control_ui_url(request: Request) -> str:
     if OPENCLAW_CONTROL_UI_URL:
         return f"{OPENCLAW_CONTROL_UI_URL}/"
 
-    return f"{request.url.scheme}://{request.url.hostname}:18789{OPENCLAW_CONTROL_UI_BASE_PATH}/"
+    return f"https://{request.url.hostname}.tail4553c9.ts.net{OPENCLAW_CONTROL_UI_BASE_PATH}/"
 
 
 CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", str(Path(tempfile.gettempdir()) / "aisha" / "chroma")))

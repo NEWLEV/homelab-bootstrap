@@ -129,10 +129,11 @@ Stock OpenClaw Control UI
 
 The upstream OpenClaw Control UI remains available separately from the Aisha
 chat surface. The dashboard exposes a convenience route at `/openclaw/`, which
-redirects to the stock Control UI on port `18789` using the same host.
+redirects to the stock Control UI on the secure Tailscale URL. The default
+point is `https://aisha.tail4553c9.ts.net/openclaw/`, and the target can be
+overridden with `OPENCLAW_CONTROL_UI_URL` if you need a different host.
 
-If you want a different path, set the OpenClaw gateway base path to `/openclaw`
-and optionally override the public URL with `OPENCLAW_CONTROL_UI_URL`.
+The secure path avoids the device-identity errors that appear over plain HTTP.
 
 Configuration
 

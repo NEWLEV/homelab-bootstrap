@@ -594,7 +594,7 @@ def test_platform_openclaw_control_ui_redirects_to_stock_ui() -> None:
     response = client.get("/openclaw/", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "http://testserver:18789/openclaw/"
+    assert response.headers["location"] == "https://aisha.tail4553c9.ts.net/openclaw/"
 
 
 def test_platform_aisha_launcher_assets_are_served() -> None:

@@ -97,7 +97,9 @@ The token file is provisioned on the host with `scripts/local-rag-token`
 
 The Homepage dashboard loads a floating "Chat with Aisha" launcher from
 repository-managed assets in `configs/homepage/`. Install them with
-`scripts/install-homepage-aisha-launcher`.
+`scripts/install-homepage-aisha-launcher`. The dashboard's OpenClaw button
+points at the secure Tailscale Control UI URL so users do not land on the old
+HTTP-only path.
 
 ## Deployment
 
@@ -113,7 +115,9 @@ curl --fail http://127.0.0.1:18790/aisha/api/health
 
 The health response can report `ready: false` when Local RAG is unavailable or
 its token has not been provisioned. A connection refusal means the OpenClaw
-container is not running or port `18790` is not published.
+container is not running or port `18790` is not published. For the stock
+Control UI, use `openclaw gateway --tailscale serve` and open the HTTPS URL
+that the gateway prints.
 
 ## Validation
 
