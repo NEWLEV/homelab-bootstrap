@@ -50,6 +50,35 @@ Configuration
 /srv/data/services/local-rag/
 ```
 
+Knowledge source
+
+```text
+/srv/data/git/homelab-bootstrap-index
+```
+
+Prepare an exact reviewed revision before deploying or indexing:
+
+```bash
+./scripts/sync-knowledge-source <40-character-commit-sha>
+```
+
+The command refuses symbolic revisions and dirty source state. After the
+Local RAG container mounts that worktree, rebuild and verify the index:
+
+```bash
+./scripts/index-knowledge
+```
+
+The indexing wrapper reads the existing bearer-token file without printing
+the token. It requires a clean detached worktree, calls the authenticated
+index API, and verifies both job status and index integrity.
+
+Rollback
+
+1. Run `scripts/sync-knowledge-source` with the previously verified commit.
+2. Recreate only the Local RAG API container using the repository Compose file.
+3. Run `scripts/index-knowledge` and confirm integrity is valid.
+
 Secrets
 
 ```
