@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "inventory_id": "aisha-20260809",
+  "status_values": ["declared", "mismatch", "unmanaged", "unverified"],
+  "containers": [
+    {"name": "openclaw", "status": "mismatch", "layer": "agents", "evidence": "live publishes 18790; compose publishes 18789"},
+    {"name": "local-rag-api", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
+    {"name": "local-rag-ollama", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
+    {"name": "homepage", "status": "declared", "layer": "infrastructure", "evidence": "compose/core/homepage.yml"},
+    {"name": "traefik", "status": "declared", "layer": "infrastructure", "evidence": "compose/networking/traefik.yml"},
+    {"name": "socket-proxy", "status": "declared", "layer": "security", "evidence": "compose/networking/traefik.yml"},
+    {"name": "filebrowser", "status": "declared", "layer": "infrastructure", "evidence": "compose/core/filebrowser.yml"},
+    {"name": "portainer", "status": "declared", "layer": "operations", "evidence": "compose/core/portainer.yml"},
+    {"name": "netdata", "status": "declared", "layer": "observability", "evidence": "compose/monitoring/netdata.yml"},
+    {"name": "uptime-kuma", "status": "declared", "layer": "observability", "evidence": "compose/monitoring/uptime-kuma.yml"}
+  ],
+  "systemd_services": [
+    {"name": "avahi-daemon.service", "status": "unmanaged", "layer": "infrastructure"},
+    {"name": "bluetooth.service", "status": "unmanaged", "layer": "infrastructure"},
+    {"name": "containerd.service", "status": "declared", "layer": "infrastructure"},
+    {"name": "cron.service", "status": "unmanaged", "layer": "automation"},
+    {"name": "dbus.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "docker.service", "status": "declared", "layer": "infrastructure"},
+    {"name": "fail2ban.service", "status": "unmanaged", "layer": "security"},
+    {"name": "getty@tty1.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "influxdb.service", "status": "unmanaged", "layer": "observability"},
+    {"name": "NetworkManager.service", "status": "unmanaged", "layer": "infrastructure"},
+    {"name": "pironman5.service", "status": "unmanaged", "layer": "observability"},
+    {"name": "polkit.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "serial-getty@ttyAMA10.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "smartmontools.service", "status": "declared", "layer": "observability"},
+    {"name": "ssh.service", "status": "unmanaged", "layer": "infrastructure"},
+    {"name": "systemd-journald.service", "status": "unmanaged", "layer": "observability"},
+    {"name": "systemd-logind.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "systemd-timesyncd.service", "status": "declared", "layer": "operating-system"},
+    {"name": "systemd-udevd.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "tailscaled.service", "status": "unmanaged", "layer": "infrastructure"},
+    {"name": "udisks2.service", "status": "unmanaged", "layer": "storage"},
+    {"name": "unattended-upgrades.service", "status": "declared", "layer": "maintenance"},
+    {"name": "user@1000.service", "status": "unmanaged", "layer": "operating-system"},
+    {"name": "wpa_supplicant.service", "status": "unmanaged", "layer": "infrastructure"}
+  ],
+  "listeners": [
+    {"protocol": "tcp", "port": 22, "service": "ssh", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "unmanaged"},
+    {"protocol": "tcp", "port": 80, "service": "traefik", "bind": "all", "firewall": "unverified", "audience": "lan", "status": "declared"},
+    {"protocol": "tcp", "port": 443, "service": "traefik", "bind": "all", "firewall": "unverified", "audience": "lan", "status": "declared"},
+    {"protocol": "tcp", "port": 3001, "service": "uptime-kuma", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "declared"},
+    {"protocol": "tcp", "port": 8000, "service": "python-homepage-surface", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "mismatch"},
+    {"protocol": "tcp", "port": 8020, "service": "mission-control", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
+    {"protocol": "tcp", "port": 8080, "service": "filebrowser", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "declared"},
+    {"protocol": "tcp", "port": 8086, "service": "influxdb", "bind": "all", "firewall": "unverified", "audience": "localhost", "status": "unmanaged"},
+    {"protocol": "tcp", "port": 8088, "service": "unidentified", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unverified"},
+    {"protocol": "tcp", "port": 8090, "service": "local-rag-api", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "declared"},
+    {"protocol": "tcp", "port": 9443, "service": "portainer", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "declared"},
+    {"protocol": "tcp", "port": 18789, "service": "native-openclaw", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
+    {"protocol": "tcp", "port": 18790, "service": "container-openclaw", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "mismatch"},
+    {"protocol": "tcp", "port": 19999, "service": "netdata", "bind": "all", "firewall": "unverified", "audience": "tailnet", "status": "declared"},
+    {"protocol": "tcp", "port": 34001, "service": "unidentified", "bind": "all", "firewall": "unverified", "audience": "localhost", "status": "unverified"}
+  ],
+  "manual_processes": [
+    {"identity": "openclaw gateway --tailscale serve", "status": "unmanaged", "layer": "agents"},
+    {"identity": "python -m mission_control", "status": "unmanaged", "layer": "operations"},
+    {"identity": "python -m app --host 0.0.0.0 --port 8000", "status": "unmanaged", "layer": "infrastructure"}
+  ],
+  "known_repository_gaps": [
+    "firewall implementation is an empty placeholder",
+    "SMART monitoring implementation is an empty placeholder",
+    "health script is an empty placeholder",
+    "Local RAG source mount points at an untracked prototype tree",
+    "off-site restore testing is absent",
+    "n8n is described by the roadmap but not deployed"
+  ]
+}

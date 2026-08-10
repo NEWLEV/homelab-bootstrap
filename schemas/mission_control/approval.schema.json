@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisha.local/schemas/mission-control/approval.json",
+  "title": "Mission Control Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["requested_by", "title"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "created_ts": { "type": "string", "minLength": 1 },
+    "requested_by": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": ["string", "null"] },
+    "risk": { "type": ["string", "null"], "enum": ["low", "medium", "high", null] },
+    "diff_ref": { "type": ["string", "null"] },
+    "rollback_available": { "type": "boolean" },
+    "status": { "type": "string", "enum": ["pending", "approved", "rejected", "expired"] },
+    "resolved_by": { "type": ["string", "null"] },
+    "resolved_ts": { "type": ["string", "null"] },
+    "expires_ts": { "type": ["string", "null"] }
+  }
+}

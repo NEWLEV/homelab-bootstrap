@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisha.local/schemas/mission-control/agent-event.json",
+  "title": "Mission Control Agent Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["agent", "kind", "title"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "ts": { "type": "string", "minLength": 1 },
+    "agent": { "type": "string", "minLength": 1 },
+    "kind": {
+      "type": "string",
+      "enum": ["task_started", "task_progress", "task_completed", "task_failed", "action_taken", "approval_requested", "approval_resolved", "alert"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "detail": { "type": ["string", "null"] },
+    "progress": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "risk": { "type": ["string", "null"], "enum": ["low", "medium", "high", null] },
+    "trace": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "trigger": { "type": "string" },
+        "policy": { "type": "string" },
+        "steps": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "outcome": { "type": "string" }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "href"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "href": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "correlation_id": { "type": ["string", "null"] },
+    "source": { "type": ["string", "null"], "enum": ["workflow-engine", "n8n", "mcp", "manual", null] }
+  }
+}
