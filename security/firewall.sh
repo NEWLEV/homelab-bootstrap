@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 
 readonly TAILSCALE_INTERFACE="${TAILSCALE_INTERFACE:-tailscale0}"
-readonly PUBLIC_TCP_PORTS="22,80,443"
 readonly TAILSCALE_UDP_PORT="41641"
 readonly AISHA_CHAIN="AISHA-INGRESS"
 
