@@ -132,6 +132,16 @@ validate_openclaw_consolidation() {
     fi
 }
 
+validate_homepage_shortcuts() {
+    section "Homepage shortcuts"
+
+    if "${REPO_ROOT}/tests/homepage-shortcuts.sh"; then
+        pass "Homepage shortcut contract is valid"
+    else
+        fail "Homepage shortcut contract validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -482,6 +492,7 @@ main() {
     validate_knowledge_source_contract
     validate_network_policy
     validate_openclaw_consolidation
+    validate_homepage_shortcuts
 
     if ((FAIL_COUNT > 0)); then
         print_summary

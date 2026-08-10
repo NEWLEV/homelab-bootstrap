@@ -129,13 +129,12 @@ Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
 |------|---------|
 | `/` | Homepage dashboard |
 | `/aisha` | Aisha chat gateway (OpenClaw) |
+| `/openclaw` | OpenClaw Control UI via Tailscale Serve |
 
-For direct dashboard access without Traefik, one tailnet-address port is
-published:
-
-| Port | Service |
-|------|---------|
-| `100.106.201.14:8000` | Homepage dashboard |
+The Homepage route remains available on `http://100.106.201.14:8000` for
+local dashboard access. OpenClaw itself listens on loopback and is published
+through Tailscale Serve at `https://aisha.tail4553c9.ts.net/openclaw/` so the
+browser gets a secure context for the stock Control UI.
 
 The Homepage and OpenClaw routes use Traefik IP allowlists for the Tailscale
 CGNAT and ULA ranges. OpenClaw publishes no host port and trusts proxy headers
@@ -195,13 +194,18 @@ it arrives over `tailscale0`.
 | 8088 | InfluxDB internal RPC | loopback | localhost |
 | 8090 | Local RAG | loopback | localhost |
 | 9443 | Portainer | Tailscale IPv4 | tailnet |
-| 18789 | OpenClaw container | container network only | Traefik |
+| 18789 | OpenClaw gateway | loopback | localhost |
 | 19999 | Netdata | Tailscale IPv4 | tailnet |
 | 34001 | Pironman dashboard | host wildcard, firewall-limited | tailnet pending bind remediation |
 
-Tailscale Serve must be disabled before live application because Traefik is
-the sole owner of port 443. Port 18790 is legacy live drift and must disappear
-when the repo-managed OpenClaw container is recreated.
+Tailscale Serve is the supported way to expose the stock OpenClaw Control UI
+over the tailnet. It requires the gateway to stay on loopback so the browser
+receives a secure HTTPS origin.
+
+Homepage shortcuts expose the operational landing pages that the dashboard
+should point at: Kuma on 3001, File Browser on 8080, Portainer on 9443,
+Netdata on 19999, and Pironman5 Max on 34001. Mission Control remains a
+coming-soon dashboard page until its standalone surface is implemented.
 
 OpenClaw consolidation is managed by:
 
@@ -213,9 +217,8 @@ scripts/consolidate-openclaw --verify
 
 The apply mode first proves that the container and tailnet HTTPS route are
 healthy. It then matches the native gateway by its complete argument vector,
-disables its user unit, sends only `SIGTERM`, resets stale Tailscale Serve
-state, and re-verifies tailnet access. It stops rather than escalating to a
-forced kill.
+disables its user unit, sends only `SIGTERM`, and re-verifies tailnet access.
+It stops rather than escalating to a forced kill.
 
 Verify firewall status:
 

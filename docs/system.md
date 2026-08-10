@@ -27,20 +27,24 @@ yet represented by repository state; see `drift-map.json`.
 The host has Ethernet, Wi-Fi, and Tailscale interfaces, plus globally routed
 IPv6. SSH and Traefik are expected to be the only broadly bound entry points.
 Administrative interfaces are declared tailnet-only, while OpenClaw is
-reachable only through a tailnet-filtered Traefik route. UFW is active with
-deny-by-default IPv4 and IPv6 input, but Docker forwarding currently precedes
-UFW; the repository policy therefore adds an explicit `DOCKER-USER` chain.
+reachable through the secure Tailscale Serve Control UI and through the
+same-origin Aisha chat gateway. UFW is active with deny-by-default IPv4 and
+IPv6 input, but Docker forwarding currently precedes UFW; the repository
+policy therefore adds an explicit `DOCKER-USER` chain.
 
-The highest-priority live mismatch remains the containerized OpenClaw gateway
-on host port 18790, bound to all interfaces, while a second manually launched
-native gateway owns loopback port 18789. Repository target state removes the
-container host port, makes Traefik the sole HTTPS owner, and retires the native
-gateway. Live application remains separately approval-gated.
+The currently preferred OpenClaw posture is loopback-only gateway transport
+with Tailscale Serve publishing `https://aisha.tail4553c9.ts.net/openclaw/`
+for the stock Control UI. The same appliance also serves the Aisha chat
+surface at `https://aisha.tail4553c9.ts.net/aisha/` for the Homepage
+launcher. Repository state should keep the gateway on loopback so the browser
+has a secure context and the launcher can remain same-origin.
 
-The first live cutover removed container host port 18790 and verified
-`https://aisha.tail4553c9.ts.net/aisha/api/health` through Traefik. Native
-gateway retirement remains pending and is reproducibly encoded in
-`scripts/consolidate-openclaw`.
+The current live cutover verifies the secure tailnet URL and the Aisha chat
+surface; the Homepage dashboard now also carries working shortcuts to Kuma,
+File Browser, Portainer, Netdata, and Pironman5 Max, while Mission Control
+remains explicitly marked coming soon. Any future native-gateway retirement
+work should be tracked as a separate task rather than described as the active
+state.
 
 ## Backup posture
 

@@ -139,11 +139,12 @@ services/openclaw/Dockerfile
 
 Aisha chat
 
-The gateway serves the Aisha chat UI and API at
-`https://aisha.tail4553c9.ts.net/aisha/`, same-origin with the Homepage
-dashboard. Questions are forwarded to the Local RAG `/ask/stream` endpoint
-with the bearer token held server-side, and answers stream back over SSE
-with grounded citations. Conversations persist under
+The gateway serves the secure OpenClaw Control UI at
+`https://aisha.tail4553c9.ts.net/openclaw/` via Tailscale Serve and the Aisha
+chat UI at `https://aisha.tail4553c9.ts.net/aisha/`, same-origin with the
+Homepage dashboard. Questions are forwarded to the Local RAG `/ask/stream`
+endpoint with the bearer token held server-side, and answers stream back over
+SSE with grounded citations. Conversations persist under
 `/srv/data/services/openclaw/conversations`.
 
 The dashboard launcher assets live in `configs/homepage/` and are installed
@@ -152,6 +153,14 @@ with:
 ```bash
 ./scripts/install-homepage-aisha-launcher
 ```
+
+Homepage control shortcuts
+
+The Homepage dashboard now includes a shortcut panel with working links to the
+secure OpenClaw UI, Kuma, File Browser, Portainer, Netdata, and the Aisha chat
+surface. Mission Control and Pironman5 Max are labeled `coming soon` until
+those standalone pages are fully implemented. The shortcut wiring lives in
+`configs/homepage/custom.js` and `configs/homepage/custom.css`.
 
 Configuration
 
