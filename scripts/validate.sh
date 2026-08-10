@@ -112,6 +112,16 @@ validate_knowledge_source_contract() {
     fi
 }
 
+validate_network_policy() {
+    section "Network exposure policy"
+
+    if "${REPO_ROOT}/tests/network.sh"; then
+        pass "Network exposure policy is valid"
+    else
+        fail "Network exposure policy validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -460,6 +470,7 @@ main() {
     validate_manifest
     validate_system_profile
     validate_knowledge_source_contract
+    validate_network_policy
 
     if ((FAIL_COUNT > 0)); then
         print_summary

@@ -13,6 +13,8 @@ services:
       traefik.http.routers.aisha-chat.rule: "Host(`aisha.tail4553c9.ts.net`) && PathPrefix(`/aisha`)"
       traefik.http.routers.aisha-chat.entrypoints: "websecure"
       traefik.http.routers.aisha-chat.tls: "true"
+      traefik.http.routers.aisha-chat.middlewares: "aisha-chat-tailnet@docker"
+      traefik.http.middlewares.aisha-chat-tailnet.ipallowlist.sourcerange: "100.64.0.0/10,fd7a:115c:a1e0::/48"
       traefik.http.services.aisha-chat.loadbalancer.server.port: "18789"
     build:
       context: ../../services/openclaw
@@ -27,9 +29,8 @@ services:
       OPENCLAW_SECRETS_FILE: /run/secrets/openclaw_env
       OPENCLAW_LOCAL_RAG_URL: http://local-rag-api:8080
       OPENCLAW_LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
-      # 0.0.0.0 is container-scoped; exposure happens via Traefik (/aisha on
-      # the tailnet host) and the published port below for direct dashboard
-      # access on http://<host>:8000.
+      # 0.0.0.0 is container-scoped; the gateway has no host-published port.
+      # Exposure is exclusively through the tailnet-restricted Traefik route.
       OPENCLAW_GATEWAY_BIND: 0.0.0.0
       OPENCLAW_GATEWAY_PORT: "18789"
       # Dashboard origins allowed to embed the chat and probe its health.
@@ -41,13 +42,6 @@ services:
       - /srv/data/services/openclaw:/state
       - /srv/data/services/openclaw/config:/config
       - /srv/data/services/openclaw/workspace:/work
-
-    # Published for dashboards accessed directly (not through Traefik); the
-    # same trust boundary as the dashboard's own published port.
-    ports:
-      - target: 18789
-        published: "18789"
-        protocol: tcp
 
     secrets:
       - openclaw_env

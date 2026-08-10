@@ -45,7 +45,7 @@
       "container": "filebrowser",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:8080",
+      "url": "http://100.106.201.14:8080",
       "expected_status": [200],
       "backup_paths": [
         "/srv/data/services/filebrowser/database"
@@ -58,7 +58,7 @@
       "container": "portainer",
       "required": true,
       "validation": "http",
-      "url": "https://127.0.0.1:9443",
+      "url": "https://100.106.201.14:9443",
       "expected_status": [200],
       "insecure_tls": true,
       "backup_paths": [
@@ -72,7 +72,7 @@
       "container": "netdata",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:19999/api/v1/info",
+      "url": "http://100.106.201.14:19999/api/v1/info",
       "expected_status": [200],
       "backup_paths": [
         "/srv/data/services/netdata/config",
@@ -86,7 +86,7 @@
       "container": "uptime-kuma",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:3001",
+      "url": "http://100.106.201.14:3001",
       "expected_status": [200, 302],
       "backup_paths": [
         "/srv/data/services/uptime-kuma/data"

@@ -26,12 +26,16 @@ yet represented by repository state; see `drift-map.json`.
 
 The host has Ethernet, Wi-Fi, and Tailscale interfaces, plus globally routed
 IPv6. SSH and Traefik are expected to be the only broadly bound entry points.
-Administrative interfaces should become loopback- or tailnet-only. Effective
-UFW/nftables policy, including IPv6, remains unverified.
+Administrative interfaces are declared tailnet-only, while OpenClaw is
+reachable only through a tailnet-filtered Traefik route. UFW is active with
+deny-by-default IPv4 and IPv6 input, but Docker forwarding currently precedes
+UFW; the repository policy therefore adds an explicit `DOCKER-USER` chain.
 
-The highest-priority mismatch is the containerized OpenClaw gateway on host
-port 18790, bound to all interfaces, while a second manually launched native
-gateway owns loopback port 18789.
+The highest-priority live mismatch remains the containerized OpenClaw gateway
+on host port 18790, bound to all interfaces, while a second manually launched
+native gateway owns loopback port 18789. Repository target state removes the
+container host port, makes Traefik the sole HTTPS owner, and retires the native
+gateway. Live application remains separately approval-gated.
 
 ## Backup posture
 

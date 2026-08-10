@@ -58,7 +58,11 @@ test_compose_contract() {
     assert_contains "compose mounts the local rag token secret" "local_rag_api_token" "$output"
     assert_contains "compose pins the real rag network name" "name: local-rag_rag-private" "$output"
     assert_contains "compose configures embed origins" "OPENCLAW_EMBED_ORIGINS" "$output"
-    assert_contains "compose publishes the gateway port" "published: \"18789\"" "$output"
+    if grep -Fq 'published: "18789"' <<<"$output"; then
+        fail "compose does not publish the gateway port"
+    else
+        pass "compose does not publish the gateway port"
+    fi
 }
 
 test_dockerfile_contract() {
@@ -75,7 +79,7 @@ test_launcher_contract() {
     local output
     output="$(cat "$REPO_ROOT/configs/homepage/custom.js")"
     assert_contains "launcher probes the traefik chat path first" "base: '/aisha'" "$output"
-    assert_contains "launcher falls back to the published gateway port" "GATEWAY_PORT = '18789'" "$output"
+    assert_contains "launcher uses the same-origin gateway route" "base: '/aisha'" "$output"
     assert_contains "launcher has an accessible label" "Chat with Aisha" "$output"
 
     if [[ -x "$REPO_ROOT/scripts/install-homepage-aisha-launcher" ]]; then
