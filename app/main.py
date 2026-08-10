@@ -1670,7 +1670,7 @@ def platform_web_dashboard() -> HTMLResponse:
           <a href="/platform/status">Status</a>
           <a class="secondary" href="/platform/summary">Summary</a>
           <a class="secondary" href="/platform/web-interface">Web Interface</a>
-          <a class="secondary" href="/openclaw/">OpenClaw UI</a>
+          <a class="secondary" href="https://aisha.tail4553c9.ts.net/openclaw/">OpenClaw UI</a>
         </div>
       </section>
       <section class="card" style="margin-top: 22px; border: 1px solid rgba(125,211,252,.45); background: linear-gradient(135deg, rgba(12,74,110,.92), rgba(30,41,59,.96)); box-shadow: 0 22px 50px rgba(2,132,199,.12);">
@@ -1698,7 +1698,7 @@ def platform_web_dashboard() -> HTMLResponse:
           <ul>{''.join(f'<li>{entry["name"]}</li>' for entry in personal_os['integration_layers']['integrations']['entries'])}</ul>
           <div class="controls" style="margin-top: 14px;">
             <a class="secondary" href="/platform/integration-webhooks">Integration Webhooks</a>
-            <a class="secondary" href="/openclaw/">OpenClaw Control UI</a>
+            <a class="secondary" href="https://aisha.tail4553c9.ts.net/openclaw/">OpenClaw Control UI</a>
           </div>
           <p class="muted" style="margin-top:12px;">Shared webhook exports now cover Slack, Discord, and Telegram with the same payload shape. The stock OpenClaw Control UI remains available side by side for native gateway operations.</p>
         </div>

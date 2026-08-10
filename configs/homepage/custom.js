@@ -18,20 +18,29 @@
   const UNREAD_KEY = 'aisha:unread';
   const PROBE_INTERVAL_MS = 60000;
 
-  // Where the chat gateway may live, probed in order:
-  // 1. same-origin /aisha (dashboard served through Traefik), or
-  // 2. the gateway's published port on the same host (dashboard accessed
-  //    directly, e.g. http://aisha:8000). The gateway must list this
-  //    dashboard origin in OPENCLAW_EMBED_ORIGINS for the probe to succeed.
-  const GATEWAY_PORT = '18790';
-  const isPlatformDashboard = window.location.pathname.startsWith('/platform/');
-  const CHAT_BASES = [{ base: '/aisha', origin: window.location.origin }];
-  if (!isPlatformDashboard) {
-    CHAT_BASES.push({
-      base: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
-      origin: `${window.location.protocol}//${window.location.hostname}:${GATEWAY_PORT}`,
-    });
-  }
+  const QUICK_LINKS = [
+    { label: 'OpenClaw', href: 'https://aisha.tail4553c9.ts.net/openclaw/', note: 'Control UI' },
+    { label: 'Mission Control', href: '/platform/web-dashboard#mission-control', note: 'coming soon' },
+    { label: 'Kuma', href: 'http://100.106.201.14:3001', note: 'Uptime Kuma' },
+    { label: 'File Browser', href: 'http://100.106.201.14:8080', note: 'Files' },
+    { label: 'Portainer', href: 'https://100.106.201.14:9443', note: 'Containers' },
+    { label: 'Netdata', href: 'http://100.106.201.14:19999', note: 'Metrics' },
+    { label: 'Pironman5 Max', href: '/platform/web-dashboard#pironman5', note: 'coming soon' },
+  ];
+
+  const PORT_LINKS = [
+    { label: '3001', href: 'http://100.106.201.14:3001', title: 'Kuma' },
+    { label: '8080', href: 'http://100.106.201.14:8080', title: 'File Browser' },
+    { label: '9443', href: 'https://100.106.201.14:9443', title: 'Portainer' },
+    { label: '19999', href: 'http://100.106.201.14:19999', title: 'Netdata' },
+    { label: '34001', href: '/platform/web-dashboard#pironman5', title: 'Pironman5 Max' },
+  ];
+
+  // The gateway is intentionally reachable only through the same-origin,
+  // tailnet-restricted Traefik route. It has no host-published fallback port.
+  const CHAT_BASES = [
+    { base: '/aisha', origin: window.location.origin },
+  ];
 
   let available = false;
   let chatBase = null;
@@ -64,6 +73,100 @@
   srUnread.className = 'aisha-visually-hidden';
   srUnread.textContent = '';
   button.appendChild(srUnread);
+
+
+  function createQuickLinksPanel() {
+    const panel = document.createElement('section');
+    panel.id = 'aisha-quick-links';
+    panel.setAttribute('aria-label', 'Aisha dashboard shortcuts');
+
+    const heading = document.createElement('h2');
+    heading.textContent = 'Aisha Control Center';
+    panel.appendChild(heading);
+
+    const intro = document.createElement('p');
+    intro.className = 'aisha-quick-links-intro';
+    intro.textContent = 'Open the secure OpenClaw UI, the chat surface, or the homelab tools below. Mission Control and Pi dashboard features are marked coming soon until their standalone pages are ready.';
+    panel.appendChild(intro);
+
+    const list = document.createElement('div');
+    list.className = 'aisha-quick-links-list';
+
+    for (const item of QUICK_LINKS) {
+      const link = document.createElement('a');
+      link.className = 'aisha-quick-link';
+      link.href = item.href;
+      link.target = item.href.startsWith('/') ? '_self' : '_blank';
+      link.rel = link.target === '_blank' ? 'noreferrer noopener' : '';
+
+      const title = document.createElement('span');
+      title.className = 'aisha-quick-link-title';
+      title.textContent = item.label;
+      link.appendChild(title);
+
+      const note = document.createElement('span');
+      note.className = 'aisha-quick-link-note';
+      note.textContent = item.note;
+      link.appendChild(note);
+
+      list.appendChild(link);
+    }
+
+    panel.appendChild(list);
+
+    const ports = document.createElement('section');
+    ports.className = 'aisha-port-links';
+
+    const portsHeading = document.createElement('h3');
+    portsHeading.textContent = 'Ports';
+    ports.appendChild(portsHeading);
+
+    const portsIntro = document.createElement('p');
+    portsIntro.className = 'aisha-port-links-intro';
+    portsIntro.textContent = 'Quick access to the live service ports.';
+    ports.appendChild(portsIntro);
+
+    const portsRow = document.createElement('div');
+    portsRow.className = 'aisha-port-links-row';
+
+    for (const item of PORT_LINKS) {
+      const port = document.createElement('a');
+      port.className = 'aisha-port-link';
+      port.href = item.href;
+      port.title = `${item.title} (${item.label})`;
+      port.target = item.href.startsWith('/') ? '_self' : '_blank';
+      port.rel = port.target === '_blank' ? 'noreferrer noopener' : '';
+      port.textContent = item.label;
+      portsRow.appendChild(port);
+    }
+
+    ports.appendChild(portsRow);
+    panel.appendChild(ports);
+
+    const mission = document.createElement('section');
+    mission.id = 'mission-control';
+    mission.className = 'aisha-coming-soon';
+    const missionTitle = document.createElement('h3');
+    missionTitle.textContent = 'Mission Control';
+    const missionBody = document.createElement('p');
+    missionBody.textContent = 'Coming soon: approvals, live activity, vitals, and replay will live here once the standalone page is ready.';
+    mission.appendChild(missionTitle);
+    mission.appendChild(missionBody);
+    panel.appendChild(mission);
+
+    const pironman = document.createElement('section');
+    pironman.id = 'pironman5';
+    pironman.className = 'aisha-coming-soon';
+    const pironmanTitle = document.createElement('h3');
+    pironmanTitle.textContent = 'Pironman5 Max';
+    const pironmanBody = document.createElement('p');
+    pironmanBody.textContent = 'Coming soon: hardware telemetry and control will live here after the Pi dashboard is verified live.';
+    pironman.appendChild(pironmanTitle);
+    pironman.appendChild(pironmanBody);
+    panel.appendChild(pironman);
+
+    return panel;
+  }
 
   function readState(key) {
     try {
@@ -232,6 +335,7 @@
   });
 
   function start() {
+    document.body.appendChild(createQuickLinksPanel());
     document.body.appendChild(button);
     setUnread(readState(UNREAD_KEY) === '1');
     probeAvailability().then(() => {
