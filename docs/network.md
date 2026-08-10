@@ -203,6 +203,20 @@ Tailscale Serve must be disabled before live application because Traefik is
 the sole owner of port 443. Port 18790 is legacy live drift and must disappear
 when the repo-managed OpenClaw container is recreated.
 
+OpenClaw consolidation is managed by:
+
+```bash
+scripts/consolidate-openclaw --dry-run
+scripts/consolidate-openclaw --apply
+scripts/consolidate-openclaw --verify
+```
+
+The apply mode first proves that the container and tailnet HTTPS route are
+healthy. It then matches the native gateway by its complete argument vector,
+disables its user unit, sends only `SIGTERM`, resets stale Tailscale Serve
+state, and re-verifies tailnet access. It stops rather than escalating to a
+forced kill.
+
 Verify firewall status:
 
 ```bash
