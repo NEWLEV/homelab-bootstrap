@@ -109,6 +109,17 @@ bind only to the Tailscale address, and Traefik is the sole owner of 80/443.
 All persistent service paths remain covered by `/srv/data/services` in the
 local and off-site Restic jobs; this network-only change adds no new state.
 
+Verify single-deployment ownership:
+
+```bash
+scripts/consolidate-openclaw --verify
+```
+
+Do not restore the old Tailscale Serve handler while Traefik owns wildcard
+port 443. If the container fails, restore or repair the repo-managed container
+behind Traefik; re-enabling the native gateway would restore duplicate restart
+ownership and is an emergency-only rollback requiring explicit approval.
+
 ---
 
 # Recovery checklist

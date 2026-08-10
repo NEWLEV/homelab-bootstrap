@@ -3,7 +3,7 @@
   "inventory_id": "aisha-20260809",
   "status_values": ["declared", "mismatch", "unmanaged", "unverified"],
   "containers": [
-    {"name": "openclaw", "status": "mismatch", "layer": "agents", "evidence": "live publishes 18790; compose publishes 18789"},
+    {"name": "openclaw", "status": "declared", "layer": "agents", "evidence": "live container is healthy from merged deployment worktree with no host-published ports; native duplicate retirement pending"},
     {"name": "local-rag-api", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
     {"name": "local-rag-ollama", "status": "declared", "layer": "rag", "evidence": "compose/ai/local-rag.yml"},
     {"name": "homepage", "status": "declared", "layer": "infrastructure", "evidence": "compose/core/homepage.yml"},
@@ -53,7 +53,6 @@
     {"protocol": "tcp", "port": 8090, "service": "local-rag-api", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "declared"},
     {"protocol": "tcp", "port": 9443, "service": "portainer", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
     {"protocol": "tcp", "port": 18789, "service": "native-openclaw", "bind": "loopback", "firewall": "not-applicable", "audience": "localhost", "status": "unmanaged"},
-    {"protocol": "tcp", "port": 18790, "service": "container-openclaw", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
     {"protocol": "tcp", "port": 19999, "service": "netdata", "bind": "all", "firewall": "docker-bypasses-ufw-ipv4", "audience": "tailnet", "status": "mismatch"},
     {"protocol": "tcp", "port": 34001, "service": "pironman5-dashboard", "bind": "all", "firewall": "ufw-tailnet-only", "audience": "tailnet", "status": "unmanaged"}
   ],
@@ -74,6 +73,12 @@
       "resolved_at": "2026-08-10T01:52:23Z",
       "status": "declared",
       "evidence": "Compose target binds administrative ports to 100.106.201.14, removes the OpenClaw host port, tailnet-filters sensitive Traefik routes, and defines IPv4/IPv6 DOCKER-USER policy; live application pending"
+    },
+    {
+      "id": "openclaw-18790-exposure",
+      "resolved_at": "2026-08-10T02:13:25Z",
+      "status": "declared",
+      "evidence": "Repo-managed OpenClaw container healthy with no host-published ports; tailnet HTTPS health returned ready through Traefik"
     }
   ],
   "known_repository_gaps": [

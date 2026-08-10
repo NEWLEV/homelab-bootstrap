@@ -122,6 +122,16 @@ validate_network_policy() {
     fi
 }
 
+validate_openclaw_consolidation() {
+    section "OpenClaw consolidation contract"
+
+    if "${REPO_ROOT}/tests/openclaw-consolidation.sh"; then
+        pass "OpenClaw consolidation contract is valid"
+    else
+        fail "OpenClaw consolidation contract validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -471,6 +481,7 @@ main() {
     validate_system_profile
     validate_knowledge_source_contract
     validate_network_policy
+    validate_openclaw_consolidation
 
     if ((FAIL_COUNT > 0)); then
         print_summary

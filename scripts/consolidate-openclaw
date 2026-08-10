@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly TAILNET_URL="${OPENCLAW_TAILNET_URL:-https://aisha.tail4553c9.ts.net/aisha/api/health}"
+readonly NATIVE_CLI="/home/nlc/.npm-global/bin/openclaw"
+readonly NATIVE_UNIT="openclaw-gateway.service"
+
+usage() {
+    printf 'Usage: %s --dry-run | --apply | --verify\n' "$0"
+}
+
+run() {
+    if [[ "$MODE" == "dry-run" ]]; then
+        printf '+'
+        printf ' %q' "$@"
+        printf '\n'
+    else
+        "$@"
+    fi
+}
+
+native_gateway_pids() {
+    local proc
+    local -a args
+
+    for proc in /proc/[0-9]*; do
+        [[ -r "$proc/cmdline" ]] || continue
+        args=()
+        mapfile -d '' -t args < "$proc/cmdline" || true
+
+        if ((${#args[@]} == 5)) &&
+            [[ "${args[0]##*/}" == "node" ]] &&
+            [[ "${args[1]}" == "$NATIVE_CLI" ]] &&
+            [[ "${args[2]}" == "gateway" ]] &&
+            [[ "${args[3]}" == "--tailscale" ]] &&
+            [[ "${args[4]}" == "serve" ]]; then
+            printf '%s\n' "${proc##*/}"
+        fi
+    done
+}
+
+container_is_healthy() {
+    [[ "$(docker inspect openclaw --format '{{.State.Status}} {{.State.Health.Status}}' 2>/dev/null)" == \
+        "running healthy" ]]
+}
+
+tailnet_is_ready() {
+    curl --fail --silent --show-error --max-time 10 "$TAILNET_URL" |
+        jq -e '.status == "ok" and .ready == true' >/dev/null
+}
+
+serve_is_reset() {
+    tailscale serve status --json |
+        jq -e '((.TCP // {}) | length) == 0 and ((.Web // {}) | length) == 0' >/dev/null
+}
+
+host_gateway_ports_are_closed() {
+    ! ss -ltnH | awk '{print $4}' | grep -Eq ':(18789|18790)$'
+}
+
+verify_state() {
+    local failed=0
+    local -a native_pids
+
+    mapfile -t native_pids < <(native_gateway_pids)
+
+    container_is_healthy || {
+        printf '%s\n' 'FAIL: containerized OpenClaw is not healthy.' >&2
+        failed=1
+    }
+    ((${#native_pids[@]} == 0)) || {
+        printf 'FAIL: native OpenClaw gateway remains: %s\n' "${native_pids[*]}" >&2
+        failed=1
+    }
+    host_gateway_ports_are_closed || {
+        printf '%s\n' 'FAIL: host gateway port 18789 or 18790 remains open.' >&2
+        failed=1
+    }
+    serve_is_reset || {
+        printf '%s\n' 'FAIL: Tailscale Serve configuration remains.' >&2
+        failed=1
+    }
+    tailnet_is_ready || {
+        printf '%s\n' 'FAIL: tailnet OpenClaw route is not ready.' >&2
+        failed=1
+    }
+
+    if ((failed == 0)); then
+        printf '%s\n' 'PASS: exactly one healthy, repo-managed OpenClaw deployment remains.'
+    fi
+
+    return "$failed"
+}
+
+apply_consolidation() {
+    local -a native_pids
+    local pid
+
+    container_is_healthy || {
+        printf '%s\n' 'ERROR: containerized OpenClaw must be healthy before consolidation.' >&2
+        exit 1
+    }
+    tailnet_is_ready || {
+        printf '%s\n' 'ERROR: tailnet OpenClaw route must be ready before consolidation.' >&2
+        exit 1
+    }
+
+    mapfile -t native_pids < <(native_gateway_pids)
+    if ((${#native_pids[@]} > 1)); then
+        printf 'ERROR: expected at most one exact native gateway; found %d.\n' \
+            "${#native_pids[@]}" >&2
+        exit 1
+    fi
+
+    run systemctl --user disable --now "$NATIVE_UNIT"
+
+    if ((${#native_pids[@]} == 1)); then
+        pid="${native_pids[0]}"
+        run kill -TERM "$pid"
+
+        if [[ "$MODE" != "dry-run" ]]; then
+            for _ in {1..10}; do
+                kill -0 "$pid" 2>/dev/null || break
+                sleep 1
+            done
+            if kill -0 "$pid" 2>/dev/null; then
+                printf 'ERROR: native gateway PID %s did not exit after SIGTERM.\n' "$pid" >&2
+                exit 1
+            fi
+        fi
+    fi
+
+    run tailscale serve reset
+
+    if [[ "$MODE" != "dry-run" ]]; then
+        verify_state
+    fi
+}
+
+if (($# != 1)); then
+    usage >&2
+    exit 2
+fi
+
+case "$1" in
+    --dry-run)
+        MODE="dry-run"
+        printf '+ verify healthy container and ready tailnet route at %q\n' "$TAILNET_URL"
+        printf '+ identify native gateway by exact argv: node %q gateway --tailscale serve\n' "$NATIVE_CLI"
+        run systemctl --user disable --now "$NATIVE_UNIT"
+        printf '+ kill -TERM <exact-native-gateway-pid-if-present>\n'
+        run tailscale serve reset
+        printf '+ verify container health, closed host ports, reset Serve state, and tailnet route\n'
+        ;;
+    --apply)
+        MODE="apply"
+        apply_consolidation
+        ;;
+    --verify)
+        MODE="verify"
+        verify_state
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac

@@ -37,6 +37,11 @@ native gateway owns loopback port 18789. Repository target state removes the
 container host port, makes Traefik the sole HTTPS owner, and retires the native
 gateway. Live application remains separately approval-gated.
 
+The first live cutover removed container host port 18790 and verified
+`https://aisha.tail4553c9.ts.net/aisha/api/health` through Traefik. Native
+gateway retirement remains pending and is reproducibly encoded in
+`scripts/consolidate-openclaw`.
+
 ## Backup posture
 
 The latest local and off-site encrypted Restic backup checks completed without
