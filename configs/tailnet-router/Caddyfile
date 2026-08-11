@@ -6,7 +6,8 @@
 http://:18080 {
     bind 127.0.0.1
 
-    handle_path /n8n/* {
+    # n8n is configured with N8N_PATH=/n8n/. Preserve that prefix upstream.
+    handle /n8n/* {
         reverse_proxy 127.0.0.1:5678
     }
 

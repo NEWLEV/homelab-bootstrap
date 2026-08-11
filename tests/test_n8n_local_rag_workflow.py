@@ -29,3 +29,11 @@ def test_n8n_compose_reaches_local_rag_and_has_a_healthcheck() -> None:
 
     assert "local-rag_rag-private" in compose
     assert "http://127.0.0.1:5678/healthz" in compose
+
+def test_tailnet_router_preserves_n8n_base_path() -> None:
+    router = (REPO_ROOT / "configs" / "tailnet-router" / "Caddyfile").read_text(
+        encoding="utf-8"
+    )
+
+    assert "handle /n8n/*" in router
+    assert "handle_path /n8n/*" not in router
