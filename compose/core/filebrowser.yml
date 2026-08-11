@@ -1,0 +1,20 @@
+name: filebrowser
+
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+
+    ports:
+      - "100.106.201.14:8080:80"
+
+    volumes:
+      - /srv/data:/srv
+      # Expose only the shared OpenClaw workspace, never gateway config or secrets.
+      - /home/nlc/.openclaw/workspace:/srv/openclaw-workspace:ro
+      - /srv/data/services/filebrowser/database:/database
+
+    command:
+      - --root=/srv
+      - --database=/database/filebrowser.db
