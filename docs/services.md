@@ -366,8 +366,7 @@ docker compose -f compose/automation/n8n.yml up -d
 ./scripts/verify-openclaw-integrations
 ```
 
-`n8n.env` is created under `/srv/data/services/n8n/` with a placeholder
-encryption key. Replace it with a generated secret before starting the service.
+`n8n.env` is created under `/srv/data/services/n8n/` with a generated encryption key. Keep it private and include it in the backup set.
 Import and activate the relevant workflow exports, then install the optional
 Mission Control dispatcher timer:
 
