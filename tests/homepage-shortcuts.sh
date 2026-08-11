@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,8 +18,8 @@ assert_contains() {
 assert_contains "OpenClaw shortcut points to secure Serve UI" \
     "https://aisha.tail4553c9.ts.net/openclaw/" \
     "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Mission Control shortcut anchors to dashboard section" \
-    "'/platform/web-dashboard#mission-control'" \
+assert_contains "n8n shortcut points to secure automation UI" \
+    "https://aisha.tail4553c9.ts.net/n8n/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Kuma shortcut is present" \
     "http://100.106.201.14:3001" \
@@ -33,8 +33,8 @@ assert_contains "Portainer shortcut uses the live page" \
 assert_contains "Netdata shortcut is present" \
     "http://100.106.201.14:19999" \
     "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Pironman shortcut anchors to dashboard section" \
-    "'/platform/web-dashboard#pironman5'" \
+assert_contains "Pironman shortcut points to the live dashboard" \
+    "http://aisha:34001" \
     "$REPO_ROOT/configs/homepage/custom.js"
 
 if node --check "$REPO_ROOT/configs/homepage/custom.js"; then
