@@ -1,0 +1,24 @@
+services:
+  socket-proxy:
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O - http://socket-proxy:2375/_ping | grep -qx OK
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  traefik:
+    environment:
+      TRAEFIK_PING: "true"
+    healthcheck:
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --ping
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

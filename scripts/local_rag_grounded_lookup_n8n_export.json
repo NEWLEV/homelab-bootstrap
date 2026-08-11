@@ -1,0 +1,64 @@
+{
+  "name": "local-rag-grounded-lookup",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "question",
+              "value": "How are backups configured and scheduled?"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-question",
+      "name": "Set Lookup Question",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://local-rag-api:8080/ask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { question: $json.question, debug: true, limit: 5 } }}",
+        "options": {}
+      },
+      "id": "query-local-rag",
+      "name": "Query Local RAG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [760, 300],
+      "notes": "After import, select the stored HTTP Header Auth credential named Local RAG API. It must send Authorization: Bearer <token>."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Set Lookup Question", "type": "main", "index": 0 }]]
+    },
+    "Set Lookup Question": {
+      "main": [[{ "node": "Query Local RAG", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

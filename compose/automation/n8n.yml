@@ -29,7 +29,20 @@ services:
       - /srv/data/services/n8n/data:/home/node/.n8n
     networks:
       - automation
-
+      - rag-private
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5678/healthz').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 networks:
   automation:
     name: aisha-automation
+  rag-private:
+    external: true
+    name: local-rag_rag-private
