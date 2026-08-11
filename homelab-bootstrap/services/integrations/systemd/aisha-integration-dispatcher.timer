@@ -1,0 +1,10 @@
+[Unit]
+Description=Poll Mission Control for integration notifications
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

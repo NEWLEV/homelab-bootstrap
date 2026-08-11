@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DATA_DIR="${N8N_DATA_DIR:-/srv/data/services/n8n}"
+ENV_FILE="${N8N_ENV_FILE:-$DATA_DIR/n8n.env}"
+
+install -d -m 700 "$DATA_DIR" "$DATA_DIR/data"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  umask 077
+  N8N_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+  cat > "$ENV_FILE" <<ENV
+# This value is generated at install time. Keep this file private and backed up.
+N8N_ENCRYPTION_KEY=$N8N_ENCRYPTION_KEY
+# Optional: use a tailnet HTTPS URL when n8n is exposed through a reverse proxy.
+# N8N_EDITOR_BASE_URL=https://aisha.tail4553c9.ts.net/n8n/
+# N8N_WEBHOOK_URL=https://aisha.tail4553c9.ts.net/n8n/
+ENV
+  echo "Created $ENV_FILE with a generated encryption key."
+else
+  echo "Keeping existing $ENV_FILE."
+fi
+
+echo "n8n state directory: $DATA_DIR/data"
+echo "Start with: docker compose -f compose/automation/n8n.yml up -d"

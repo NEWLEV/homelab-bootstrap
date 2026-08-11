@@ -347,3 +347,35 @@ Automatic forwarding helper:
 The dashboard also exposes an operator-facing setup page at `/platform/integration-webhooks`.
 
 Use `python scripts/seed_mission_control_demo.py` to populate Mission Control with demo events and a pending approval for UI and webhook testing.
+
+---
+
+## OpenClaw, n8n, and channels
+
+OpenClaw handles interactive agent work, skill execution, and the native Discord
+channel. n8n handles durable external delivery workflows and holds platform
+webhook credentials. This separation keeps credentials out of agent prompts and
+ensures outbound Slack, Discord, and Telegram delivery can be retried without
+granting the workflow authority to execute operational actions.
+
+Provision the local n8n instance before importing any workflow export:
+
+```bash
+./scripts/install-n8n-integration
+docker compose -f compose/automation/n8n.yml up -d
+./scripts/verify-openclaw-integrations
+```
+
+`n8n.env` is created under `/srv/data/services/n8n/` with a placeholder
+encryption key. Replace it with a generated secret before starting the service.
+Import and activate the relevant workflow exports, then install the optional
+Mission Control dispatcher timer:
+
+```bash
+./homelab-bootstrap/services/integrations/scripts/install-integration-dispatcher.sh
+systemctl --user start aisha-integration-dispatcher.timer
+```
+
+Only add a dispatcher endpoint after its matching n8n workflow is active. The
+verification command checks services and configuration but intentionally sends
+no outbound message.

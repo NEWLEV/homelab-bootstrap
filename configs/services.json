@@ -123,6 +123,20 @@
       "backup_paths": [
         "/srv/data/services/openclaw/conversations"
       ]
+    },
+    {
+      "name": "n8n",
+      "compose_file": "compose/automation/n8n.yml",
+      "compose_service": "n8n",
+      "container": "n8n",
+      "required": false,
+      "validation": "http",
+      "url": "http://127.0.0.1:5678/healthz",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/n8n/data",
+        "/srv/data/services/n8n/n8n.env"
+      ]
     }
   ],
   "systemd_units": [

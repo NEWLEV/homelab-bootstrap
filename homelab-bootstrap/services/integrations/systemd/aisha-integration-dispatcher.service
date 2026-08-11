@@ -1,0 +1,11 @@
+[Unit]
+Description=Aisha integration webhook dispatcher
+After=network-online.target aisha-mission-control.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Documents/Aisha
+EnvironmentFile=-%h/.config/aisha/integration-dispatcher.env
+Environment=INTEGRATION_DISPATCH_ONCE=true
+ExecStart=%h/.venvs/aisha/bin/python scripts/mission_control_webhook_dispatcher.py

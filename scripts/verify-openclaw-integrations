@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+N8N_ENV_FILE="${N8N_ENV_FILE:-/srv/data/services/n8n/n8n.env}"
+STATUS=0
+
+check() {
+  local label="$1"
+  shift
+  if "$@" >/dev/null 2>&1; then
+    printf 'PASS  %s\n' "$label"
+  else
+    printf 'FAIL  %s\n' "$label"
+    STATUS=1
+  fi
+}
+
+check "OpenClaw configuration validates" openclaw config validate
+check "OpenClaw gateway unit is active" systemctl --user is-active --quiet openclaw-gateway.service
+check "Discord is enabled in OpenClaw" openclaw config get channels.discord.enabled
+check "n8n compose file validates" docker compose -f "$ROOT/compose/automation/n8n.yml" config --quiet
+check "n8n environment file exists" test -f "$N8N_ENV_FILE"
+check "n8n container is running" docker inspect --format '{{.State.Running}}' n8n
+
+if [[ -f "$N8N_ENV_FILE" ]] && grep -q '^N8N_ENCRYPTION_KEY=replace-with' "$N8N_ENV_FILE"; then
+  printf 'FAIL  n8n encryption key is still the placeholder\n'
+  STATUS=1
+else
+  printf 'PASS  n8n encryption key is provisioned or n8n has not been initialized\n'
+fi
+
+printf '\nNo outbound webhook was sent by this verification.\n'
+exit "$STATUS"
