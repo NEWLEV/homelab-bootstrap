@@ -131,7 +131,7 @@
       "container": "n8n",
       "required": false,
       "validation": "http",
-      "url": "http://100.106.201.14:5678/healthz",
+      "url": "https://aisha.tail4553c9.ts.net/n8n/healthz",
       "expected_status": [200],
       "backup_paths": [
         "/srv/data/services/n8n/data",

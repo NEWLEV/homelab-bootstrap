@@ -30,6 +30,7 @@ Install the n8n runtime and dispatcher:
 ```bash
 ./scripts/install-n8n-integration
 docker compose -f compose/automation/n8n.yml up -d
+tailscale serve --https=443 --set-path=/n8n http://127.0.0.1:5678
 ./homelab-bootstrap/services/integrations/scripts/install-integration-dispatcher.sh
 ```
 

@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 N8N_ENV_FILE="${N8N_ENV_FILE:-/srv/data/services/n8n/n8n.env}"
-N8N_HEALTH_URL="${N8N_HEALTH_URL:-http://100.106.201.14:5678/healthz}"
+N8N_HEALTH_URL="${N8N_HEALTH_URL:-https://aisha.tail4553c9.ts.net/n8n/healthz}"
 STATUS=0
 
 check() {
