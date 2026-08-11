@@ -27,8 +27,8 @@ assert_contains "Kuma shortcut is present" \
 assert_contains "File Browser shortcut is present" \
     "http://100.106.201.14:8080" \
     "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Portainer shortcut uses the live page" \
-    "https://100.106.201.14:9443" \
+assert_contains "Portainer shortcut uses the live HTTP page" \
+    "http://aisha:9000" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Netdata shortcut is present" \
     "http://100.106.201.14:19999" \

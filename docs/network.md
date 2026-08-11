@@ -193,6 +193,7 @@ it arrives over `tailscale0`.
 | 8086 | InfluxDB | host wildcard, firewall-limited | tailnet pending bind remediation |
 | 8088 | InfluxDB internal RPC | loopback | localhost |
 | 8090 | Local RAG | loopback | localhost |
+| 9000 | Portainer HTTP | Tailscale IPv4 | tailnet |
 | 9443 | Portainer | Tailscale IPv4 | tailnet |
 | 18789 | OpenClaw gateway | loopback | localhost |
 | 19999 | Netdata | Tailscale IPv4 | tailnet |
@@ -203,9 +204,9 @@ over the tailnet. It requires the gateway to stay on loopback so the browser
 receives a secure HTTPS origin.
 
 Homepage shortcuts expose the operational landing pages that the dashboard
-should point at: Kuma on 3001, File Browser on 8080, Portainer on 9443,
-Netdata on 19999, and Pironman5 Max on 34001. Mission Control remains a
-coming-soon dashboard page until its standalone surface is implemented.
+should point at: Kuma on 3001, File Browser on 8080, Portainer HTTP on 9000,
+Netdata on 19999, and Pironman5 Max on 34001. Portainer TLS remains available
+on 9443 for clients that prefer it.
 
 OpenClaw consolidation is managed by:
 

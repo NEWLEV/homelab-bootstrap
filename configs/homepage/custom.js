@@ -23,7 +23,7 @@
     { label: 'n8n', href: 'https://aisha.tail4553c9.ts.net/n8n/', note: 'Automation' },
     { label: 'Kuma', href: 'http://100.106.201.14:3001', note: 'Uptime Kuma' },
     { label: 'File Browser', href: 'http://100.106.201.14:8080', note: 'Files' },
-    { label: 'Portainer', href: 'https://100.106.201.14:9443', note: 'Containers' },
+    { label: 'Portainer', href: 'http://aisha:9000', note: 'Containers' },
     { label: 'Netdata', href: 'http://100.106.201.14:19999', note: 'Metrics' },
     { label: 'Pironman5 Max', href: 'http://aisha:34001', note: 'Hardware telemetry' },
   ];
@@ -31,7 +31,7 @@
   const PORT_LINKS = [
     { label: '3001', href: 'http://100.106.201.14:3001', title: 'Kuma' },
     { label: '8080', href: 'http://100.106.201.14:8080', title: 'File Browser' },
-    { label: '9443', href: 'https://100.106.201.14:9443', title: 'Portainer' },
+    { label: '9000', href: 'http://aisha:9000', title: 'Portainer' },
     { label: '19999', href: 'http://100.106.201.14:19999', title: 'Netdata' },
     { label: '34001', href: 'http://aisha:34001', title: 'Pironman5 Max' },
   ];

@@ -30,6 +30,7 @@ assert_contains "Homepage direct port is tailnet bound" \
 
 for mapping in \
     'compose/core/filebrowser.yml:100.106.201.14:8080:80' \
+    'compose/core/portainer.yml:100.106.201.14:9000:9000' \
     'compose/core/portainer.yml:100.106.201.14:9443:9443' \
     'compose/monitoring/netdata.yml:100.106.201.14:19999:19999' \
     'compose/monitoring/uptime-kuma.yml:100.106.201.14:3001:3001'; do

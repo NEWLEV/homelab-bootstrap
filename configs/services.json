@@ -58,9 +58,8 @@
       "container": "portainer",
       "required": true,
       "validation": "http",
-      "url": "https://100.106.201.14:9443",
+      "url": "http://100.106.201.14:9000",
       "expected_status": [200],
-      "insecure_tls": true,
       "backup_paths": [
         "/srv/data/services/portainer/data"
       ]
