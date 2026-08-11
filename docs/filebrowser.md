@@ -1,22 +1,24 @@
-# File Browser
+# FileBrowser Quantum
 
-File Browser is restricted to the directories explicitly mounted by
-`compose/core/filebrowser.yml`.
+The File Browser service uses FileBrowser Quantum at port `8080`. Its service
+identity runs as the host user `nlc` (UID/GID `1000`) and presents two sources:
 
-## OpenClaw workspace
+- `/srv`: writable service and data storage.
+- `/openclaw-workspace`: read-only shared workspace containing OpenClaw
+  documents, research, memory, and skills.
 
-The shared OpenClaw workspace is exposed read-only at:
+The workspace source intentionally excludes `~/.openclaw/openclaw.json`,
+provider credentials, and agent databases.
 
-```text
-/openclaw-workspace
-```
-
-This includes workspace documents, research, memory, and installed skills. It
-intentionally does not expose `~/.openclaw/openclaw.json`, gateway credentials,
-or agent databases. Use SSH or the OpenClaw CLI for configuration changes.
-
-Apply the change with:
+## Install or update
 
 ```bash
+scripts/install-filebrowser-quantum
 docker compose -f compose/core/filebrowser.yml up -d --force-recreate filebrowser
 ```
+
+Quantum stores its own configuration and database under
+`/srv/data/services/filebrowser-quantum/data`. The old File Browser database at
+`/srv/data/services/filebrowser/database` remains untouched for rollback.
+
+On first sign-in, change the default Quantum administrator password immediately.

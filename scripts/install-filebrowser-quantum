@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+data_dir="${FILEBROWSER_QUANTUM_DATA_DIR:-/srv/data/services/filebrowser-quantum/data}"
+
+install -d -m 700 "$data_dir"
+install -m 600 "$repo_root/configs/filebrowser-quantum/config.yaml" "$data_dir/config.yaml"
+printf 'Installed FileBrowser Quantum configuration at %s\n' "$data_dir/config.yaml"
