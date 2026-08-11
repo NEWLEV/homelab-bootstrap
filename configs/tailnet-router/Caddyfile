@@ -3,7 +3,8 @@
     auto_https off
 }
 
-http://127.0.0.1:18080 {
+http://:18080 {
+    bind 127.0.0.1
     @n8n path /n8n/*
     handle @n8n {
         reverse_proxy 127.0.0.1:5678
