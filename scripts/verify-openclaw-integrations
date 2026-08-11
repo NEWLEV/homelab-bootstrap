@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 N8N_ENV_FILE="${N8N_ENV_FILE:-/srv/data/services/n8n/n8n.env}"
+N8N_HEALTH_URL="${N8N_HEALTH_URL:-http://100.106.201.14:5678/healthz}"
 STATUS=0
 
 check() {
@@ -22,6 +23,7 @@ check "Discord is enabled in OpenClaw" openclaw config get channels.discord.enab
 check "n8n compose file validates" docker compose -f "$ROOT/compose/automation/n8n.yml" config --quiet
 check "n8n environment file exists" test -f "$N8N_ENV_FILE"
 check "n8n container is running" docker inspect --format '{{.State.Running}}' n8n
+check "n8n health endpoint responds" curl --fail --silent --show-error "$N8N_HEALTH_URL"
 
 if [[ -f "$N8N_ENV_FILE" ]] && grep -q '^N8N_ENCRYPTION_KEY=replace-with' "$N8N_ENV_FILE"; then
   printf 'FAIL  n8n encryption key is still the placeholder\n'
