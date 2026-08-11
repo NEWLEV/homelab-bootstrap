@@ -42,7 +42,7 @@ The historical reference is commit `47e67ff`.
 2. Reduce network exposure, beginning with the OpenClaw gateway.
 3. Consolidate OpenClaw and scope every agent by role and trust boundary.
 4. Apply maintenance updates and make storage health observable.
-5. Prove local and off-site restores into isolated scratch paths.
+5. Prove local and off-site restores into isolated scratch paths using `docs/backup-restore.md`.
 6. Reconcile all remaining services and introduce durable recurring audits.
 
 ## Completion rules

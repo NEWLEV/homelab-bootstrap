@@ -14,6 +14,12 @@ The objective is to restore a fully functional system using:
 
 The recovery process is designed to be deterministic, repeatable, and fully documented.
 
+Canonical backup and restore reference
+
+```text
+docs/backup-restore.md
+```
+
 ---
 
 # Recovery objectives
@@ -57,7 +63,7 @@ The following items are required.
 
 # Recovery procedure
 
-## Step 1 — Install Raspberry Pi OS
+## Step 1 - Install Raspberry Pi OS
 
 Install Raspberry Pi OS onto the system drive.
 
@@ -73,7 +79,7 @@ Reboot if required.
 
 ---
 
-## Step 2 — Clone the repository
+## Step 2 - Clone the repository
 
 Clone the homelab repository.
 
@@ -87,7 +93,7 @@ Switch to the desired release if necessary.
 
 ---
 
-## Step 3 — Validate the installer
+## Step 3 - Validate the installer
 
 Confirm the installer can discover bootstrap phases.
 
@@ -103,7 +109,7 @@ Expected output:
 
 ---
 
-## Step 4 — Perform a dry run
+## Step 4 - Perform a dry run
 
 Validate the installation without making changes.
 
@@ -119,7 +125,7 @@ Expected results:
 
 ---
 
-## Step 5 — Execute the bootstrap
+## Step 5 - Execute the bootstrap
 
 Run the installer.
 
@@ -138,7 +144,7 @@ Review the output for any reboot recommendations.
 
 ---
 
-## Step 6 — Mount the recovery USB
+## Step 6 - Mount the recovery USB
 
 Unlock the encrypted recovery media.
 
@@ -159,7 +165,7 @@ findmnt /mnt/aisha-recovery
 
 ---
 
-## Step 7 — Restore runtime secrets
+## Step 7 - Restore runtime secrets
 
 Provide the AGE identity.
 
@@ -187,7 +193,7 @@ Expected output:
 
 ---
 
-## Step 8 — Remove recovery media
+## Step 8 - Remove recovery media
 
 After secrets have been restored:
 
@@ -217,7 +223,7 @@ Expected results:
 
 ---
 
-## Step 9 — Start services
+## Step 9 - Start services
 
 Start configured services.
 
@@ -237,7 +243,7 @@ depending on the component.
 
 ---
 
-## Step 10 — Verify the system
+## Step 10 - Verify the system
 
 Run:
 

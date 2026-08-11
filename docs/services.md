@@ -107,6 +107,12 @@ Configuration
 ~/.config/restic/
 ```
 
+Canonical backup and restore reference
+
+```text
+docs/backup-restore.md
+```
+
 Verify
 
 ```bash
