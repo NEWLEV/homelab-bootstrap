@@ -5,8 +5,8 @@
 
 http://:18080 {
     bind 127.0.0.1
-    @n8n path /n8n/*
-    handle_path @n8n {
+
+    handle_path /n8n/* {
         reverse_proxy 127.0.0.1:5678
     }
 
