@@ -1,5 +1,6 @@
 {
   "name": "local-rag-grounded-lookup",
+  "active": false,
   "nodes": [
     {
       "parameters": {},
