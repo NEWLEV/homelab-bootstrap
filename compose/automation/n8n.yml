@@ -13,6 +13,7 @@ services:
     environment:
       N8N_HOST: ${N8N_HOST:-aisha.tail4553c9.ts.net}
       N8N_PORT: "5678"
+      N8N_PROXY_HOPS: "1"
       N8N_PROTOCOL: https
       N8N_PATH: /n8n/
       N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-https://aisha.tail4553c9.ts.net/n8n/}
