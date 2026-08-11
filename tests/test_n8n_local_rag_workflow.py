@@ -16,6 +16,7 @@ def test_local_rag_n8n_export_keeps_credentials_out_of_source() -> None:
     request = next(node for node in workflow["nodes"] if node["id"] == "query-local-rag")
 
     assert workflow["name"] == "local-rag-grounded-lookup"
+    assert workflow["id"] == "aisha-local-rag-grounded-lookup"
     assert workflow["active"] is False
     assert request["parameters"]["url"] == "http://local-rag-api:8080/ask"
     assert request["parameters"]["authentication"] == "genericCredentialType"

@@ -1,4 +1,5 @@
 {
+  "id": "aisha-local-rag-grounded-lookup",
   "name": "local-rag-grounded-lookup",
   "active": false,
   "nodes": [
