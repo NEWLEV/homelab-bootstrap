@@ -314,7 +314,14 @@
   });
 
   function start() {
-    document.body.appendChild(createQuickLinksPanel());
+    const quickLinks = createQuickLinksPanel();
+    const dashboardHero = document.querySelector('.wrap > .hero');
+    if (dashboardHero) {
+      quickLinks.classList.add('aisha-quick-links-inline');
+      dashboardHero.insertAdjacentElement('afterend', quickLinks);
+    } else {
+      document.body.appendChild(quickLinks);
+    }
     document.body.appendChild(button);
     setUnread(readState(UNREAD_KEY) === '1');
     probeAvailability().then(() => {

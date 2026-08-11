@@ -37,6 +37,13 @@ assert_contains "Pironman shortcut points to the live dashboard" \
     "http://aisha:34001" \
     "$REPO_ROOT/configs/homepage/custom.js"
 
+assert_contains "Dashboard shortcuts are placed inline after the hero" \
+    "dashboardHero.insertAdjacentElement('afterend', quickLinks)" \
+    "$REPO_ROOT/configs/homepage/custom.js"
+assert_contains "Inline dashboard shortcuts do not cover content" \
+    "#aisha-quick-links.aisha-quick-links-inline" \
+    "$REPO_ROOT/configs/homepage/custom.css"
+
 if node --check "$REPO_ROOT/configs/homepage/custom.js"; then
     pass "homepage launcher syntax"
 else
