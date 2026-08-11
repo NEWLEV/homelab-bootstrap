@@ -1,0 +1,18 @@
+name: portainer
+
+services:
+  portainer:
+    image: portainer/portainer-ce:sts
+    container_name: portainer
+    restart: unless-stopped
+
+    ports:
+      - "100.106.201.14:9000:9000"
+      - "100.106.201.14:9443:9443"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/data/services/portainer/data:/data
+
+    security_opt:
+      - no-new-privileges:true

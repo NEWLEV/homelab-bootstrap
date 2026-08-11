@@ -45,7 +45,7 @@
       "container": "filebrowser",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:8080",
+      "url": "http://100.106.201.14:8080",
       "expected_status": [200],
       "backup_paths": [
         "/srv/data/services/filebrowser/database"
@@ -58,9 +58,8 @@
       "container": "portainer",
       "required": true,
       "validation": "http",
-      "url": "https://127.0.0.1:9443",
+      "url": "http://100.106.201.14:9000",
       "expected_status": [200],
-      "insecure_tls": true,
       "backup_paths": [
         "/srv/data/services/portainer/data"
       ]
@@ -72,7 +71,7 @@
       "container": "netdata",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:19999/api/v1/info",
+      "url": "http://100.106.201.14:19999/api/v1/info",
       "expected_status": [200],
       "backup_paths": [
         "/srv/data/services/netdata/config",
@@ -86,7 +85,7 @@
       "container": "uptime-kuma",
       "required": true,
       "validation": "http",
-      "url": "http://127.0.0.1:3001",
+      "url": "http://100.106.201.14:3001",
       "expected_status": [200, 302],
       "backup_paths": [
         "/srv/data/services/uptime-kuma/data"
@@ -122,20 +121,6 @@
       "validation": "docker-health",
       "backup_paths": [
         "/srv/data/services/openclaw/conversations"
-      ]
-    },
-    {
-      "name": "n8n",
-      "compose_file": "compose/automation/n8n.yml",
-      "compose_service": "n8n",
-      "container": "n8n",
-      "required": false,
-      "validation": "http",
-      "url": "https://aisha.tail4553c9.ts.net/n8n/healthz",
-      "expected_status": [200],
-      "backup_paths": [
-        "/srv/data/services/n8n/data",
-        "/srv/data/services/n8n/n8n.env"
       ]
     }
   ],

@@ -20,20 +20,20 @@
 
   const QUICK_LINKS = [
     { label: 'OpenClaw', href: 'https://aisha.tail4553c9.ts.net/openclaw/', note: 'Control UI' },
-    { label: 'Mission Control', href: '/platform/web-dashboard#mission-control', note: 'coming soon' },
+    { label: 'n8n', href: 'https://aisha.tail4553c9.ts.net/n8n/', note: 'Automation' },
     { label: 'Kuma', href: 'http://100.106.201.14:3001', note: 'Uptime Kuma' },
     { label: 'File Browser', href: 'http://100.106.201.14:8080', note: 'Files' },
-    { label: 'Portainer', href: 'https://100.106.201.14:9443', note: 'Containers' },
+    { label: 'Portainer', href: 'http://aisha:9000', note: 'Containers' },
     { label: 'Netdata', href: 'http://100.106.201.14:19999', note: 'Metrics' },
-    { label: 'Pironman5 Max', href: '/platform/web-dashboard#pironman5', note: 'coming soon' },
+    { label: 'Pironman5 Max', href: 'http://aisha:34001', note: 'Hardware telemetry' },
   ];
 
   const PORT_LINKS = [
     { label: '3001', href: 'http://100.106.201.14:3001', title: 'Kuma' },
     { label: '8080', href: 'http://100.106.201.14:8080', title: 'File Browser' },
-    { label: '9443', href: 'https://100.106.201.14:9443', title: 'Portainer' },
+    { label: '9000', href: 'http://aisha:9000', title: 'Portainer' },
     { label: '19999', href: 'http://100.106.201.14:19999', title: 'Netdata' },
-    { label: '34001', href: '/platform/web-dashboard#pironman5', title: 'Pironman5 Max' },
+    { label: '34001', href: 'http://aisha:34001', title: 'Pironman5 Max' },
   ];
 
   // The gateway is intentionally reachable only through the same-origin,
@@ -86,7 +86,7 @@
 
     const intro = document.createElement('p');
     intro.className = 'aisha-quick-links-intro';
-    intro.textContent = 'Open the secure OpenClaw UI, the chat surface, or the homelab tools below. Mission Control and Pi dashboard features are marked coming soon until their standalone pages are ready.';
+    intro.textContent = 'Open the secure OpenClaw UI, n8n automations, the chat surface, or the homelab tools below.';
     panel.appendChild(intro);
 
     const list = document.createElement('div');
@@ -143,27 +143,6 @@
     ports.appendChild(portsRow);
     panel.appendChild(ports);
 
-    const mission = document.createElement('section');
-    mission.id = 'mission-control';
-    mission.className = 'aisha-coming-soon';
-    const missionTitle = document.createElement('h3');
-    missionTitle.textContent = 'Mission Control';
-    const missionBody = document.createElement('p');
-    missionBody.textContent = 'Coming soon: approvals, live activity, vitals, and replay will live here once the standalone page is ready.';
-    mission.appendChild(missionTitle);
-    mission.appendChild(missionBody);
-    panel.appendChild(mission);
-
-    const pironman = document.createElement('section');
-    pironman.id = 'pironman5';
-    pironman.className = 'aisha-coming-soon';
-    const pironmanTitle = document.createElement('h3');
-    pironmanTitle.textContent = 'Pironman5 Max';
-    const pironmanBody = document.createElement('p');
-    pironmanBody.textContent = 'Coming soon: hardware telemetry and control will live here after the Pi dashboard is verified live.';
-    pironman.appendChild(pironmanTitle);
-    pironman.appendChild(pironmanBody);
-    panel.appendChild(pironman);
 
     return panel;
   }
@@ -335,14 +314,7 @@
   });
 
   function start() {
-    const quickLinks = createQuickLinksPanel();
-    const dashboardHero = document.querySelector('.wrap > .hero');
-    if (dashboardHero) {
-      quickLinks.classList.add('aisha-quick-links-inline');
-      dashboardHero.insertAdjacentElement('afterend', quickLinks);
-    } else {
-      document.body.appendChild(quickLinks);
-    }
+    document.body.appendChild(createQuickLinksPanel());
     document.body.appendChild(button);
     setUnread(readState(UNREAD_KEY) === '1');
     probeAvailability().then(() => {
