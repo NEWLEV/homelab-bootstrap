@@ -12,12 +12,10 @@ services:
   traefik:
     environment:
       TRAEFIK_PING: "true"
+      TRAEFIK_PING_ENTRYPOINT: health
+      TRAEFIK_ENTRYPOINTS_HEALTH_ADDRESS: :8082
     healthcheck:
-      test:
-        - CMD
-        - traefik
-        - healthcheck
-        - --ping
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8082/ping | grep -qx OK"]
       interval: 30s
       timeout: 5s
       retries: 3
