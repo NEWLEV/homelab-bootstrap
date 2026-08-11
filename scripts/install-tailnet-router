@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+docker compose -f "$ROOT/compose/networking/tailnet-router.yml" up -d
+echo "Tailnet router is listening on 127.0.0.1:18080."
+echo "After verifying it, switch Tailscale Serve with:"
+echo "  sudo tailscale serve reset"
+echo "  sudo tailscale serve --https=443 http://127.0.0.1:18080"

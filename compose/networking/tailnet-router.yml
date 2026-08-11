@@ -1,0 +1,10 @@
+name: tailnet-router
+
+services:
+  tailnet-router:
+    image: caddy:2-alpine
+    container_name: tailnet-router
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ../../configs/tailnet-router/Caddyfile:/etc/caddy/Caddyfile:ro
