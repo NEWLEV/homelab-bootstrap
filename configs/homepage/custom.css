@@ -141,6 +141,13 @@
   box-shadow: 0 12px 40px rgb(0 0 0 / 28%);
 }
 
+#aisha-quick-links.aisha-quick-links-inline {
+  position: static;
+  width: auto;
+  margin: 22px 0;
+  z-index: auto;
+}
+
 #aisha-quick-links h2 {
   margin: 0 0 6px;
   font: 700 14px/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -189,6 +196,11 @@
 }
 
 @media (max-width: 640px) {
+  #aisha-quick-links.aisha-quick-links-inline {
+    margin: 16px 0;
+    border-radius: 16px;
+  }
+
   #aisha-quick-links {
     left: 0;
     right: 0;
