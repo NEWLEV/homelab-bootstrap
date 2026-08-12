@@ -1,0 +1,181 @@
+﻿{
+  "id": "aisha-local-rag-grounded-lookup",
+  "name": "local-rag-grounded-lookup",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        272,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "712fcdd1-9690-4516-83b8-32b5aad77e54",
+              "name": "question",
+              "value": "What script runs the restore smoke test?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-question",
+      "name": "Set Lookup Question",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://local-rag-api:8080/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"={{$json.question}}\",\n  \"debug\": true,\n  \"limit\": 5\n}",
+        "options": {}
+      },
+      "id": "query-local-rag",
+      "name": "Query Local RAG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        768,
+        304
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "TcYsR3ZPCnGP7x7o",
+          "name": "Local RAG API"
+        }
+      },
+      "notes": "After import, select the stored HTTP Header Auth credential named Local RAG API. It must send Authorization: Bearer <token>."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "badfd2d6-486b-42cc-a51a-269e09e37a83",
+              "name": "question",
+              "value": "={{$node[\"Set Lookup Question\"].json.question}}",
+              "type": "string"
+            },
+            {
+              "id": "1743b273-bad9-4afd-b2b0-288d0287e795",
+              "name": "answer",
+              "value": "={{(() => { const results = $json.results || []; const top = results[0]; if (!top) return \"The indexed repository does not contain enough information to answer this question.\"; const snippet = String(top.snippet || \"\"); const match = snippet.match(/Script:\\s*`([^`]+)`/i) || snippet.match(/scripts\\/[A-Za-z0-9_.-]+/i); if (match) return `The restore smoke test script is ${match[1] || match[0]}.`; return `The best matching source is ${top.path}:${top.line_start}-${top.line_end}.`; })()}}",
+              "type": "string"
+            },
+            {
+              "id": "c3f05f99-8842-4a4a-9b5e-9cbfeaaf3cc8",
+              "name": "grounded",
+              "value": "={{!!($json.results && $json.results.length)}}",
+              "type": "boolean"
+            },
+            {
+              "id": "8da75545-f41f-479a-b74d-ca1e7e626ee5",
+              "name": "citations",
+              "value": "={{($json.results || []).slice(0, 3).map(r => `${r.path}:${r.line_start}-${r.line_end}`)}}",
+              "type": "array"
+            },
+            {
+              "id": "9d6c5113-9909-4285-b2c2-4ae7f654e7a2",
+              "name": "confidence",
+              "value": "={{Math.max(0, Math.min(1, 1 - ((($json.results && $json.results[0] && $json.results[0].distance) ?? 1))))}}",
+              "type": "number"
+            },
+            {
+              "id": "3aced81e-77f0-4217-ba13-ad59bad44f82",
+              "name": "citation_completeness",
+              "value": "={{($json.results && $json.results.length) ? 1 : 0}}",
+              "type": "number"
+            },
+            {
+              "id": "ed90e3b1-bfbd-4642-8003-39ac4d5c981b",
+              "name": "confidence_reasons",
+              "value": "={{($json.results && $json.results.length) ? [\"search_snippet_selected\", \"top_result_retrieved\"] : [\"no_results\"]}}",
+              "type": "array"
+            },
+            {
+              "id": "6f77759c-f242-4966-8d95-df6472de5646",
+              "name": "retrieval_debug",
+              "value": "={{$json.results || []}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "finalize-answer",
+      "name": "Finalize Answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Lookup Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Lookup Question": {
+      "main": [
+        [
+          {
+            "node": "Query Local RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Local RAG": {
+      "main": [
+        [
+          {
+            "node": "Finalize Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": {},
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "description": null,
+  "updatedAt": "2026-08-12T05:53:22+00:00",
+  "createdAt": "2026-08-11 18:35:24.303"
+}
