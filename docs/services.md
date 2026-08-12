@@ -306,6 +306,22 @@ Restore runtime secrets:
 
 ---
 
+## n8n and Ollama
+
+For direct Ollama calls from n8n, use the Docker-network hostname:
+
+```text
+http://local-rag-ollama:11434
+```
+
+Avoid `http://aisha:11434`, `::1:11434`, `127.0.0.1:11434`, and the Tailscale IP
+from inside n8n containers. See:
+
+- [n8n Ollama notes](./n8n-ollama-fix.md)
+- [Ollama connectivity test workflow](./ollama-connectivity-test.workflow.json)
+
+---
+
 ## Bootstrap validation fails
 
 Run:

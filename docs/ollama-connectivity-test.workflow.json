@@ -1,0 +1,100 @@
+{
+  "name": "ollama-connectivity-test",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        272,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://local-rag-ollama:11434/api/version",
+        "authentication": "none",
+        "sendBody": false,
+        "options": {}
+      },
+      "id": "check-ollama-version",
+      "name": "Check Ollama Version",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        560,
+        304
+      ],
+      "notes": "Read-only connectivity check for the Ollama container on the private Docker network."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac0a47ca-8f13-430b-abec-26e4261f3ccb",
+              "name": "ok",
+              "value": "={{$json.version ? true : false}}",
+              "type": "boolean"
+            },
+            {
+              "id": "f3f4933d-307f-41e7-a1aa-95405c179513",
+              "name": "version",
+              "value": "={{$json.version || ''}}",
+              "type": "string"
+            },
+            {
+              "id": "f7753ed9-8897-4703-a98f-ace0afa45974",
+              "name": "url",
+              "value": "http://local-rag-ollama:11434/api/version",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "summarize-result",
+      "name": "Summarize Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        304
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Ollama Version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ollama Version": {
+      "main": [
+        [
+          {
+            "node": "Summarize Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": {},
+  "pinData": {},
+  "meta": {},
+  "nodeGroups": [],
+  "description": "Read-only Ollama connectivity check for the corrected Docker-network URL."
+}
