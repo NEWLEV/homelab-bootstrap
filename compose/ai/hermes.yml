@@ -1,0 +1,56 @@
+name: hermes
+
+# Hermes is a separate assistant runtime beside OpenClaw.
+# Keep it isolated so it can reuse approved infrastructure without sharing
+# OpenClaw state or browser-facing secrets.
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+
+    environment:
+      HOME: /home/hermes
+      HERMES_DATA_DIR: /data
+      # Hermes can point at the existing private infrastructure rather than
+      # duplicating Local RAG or MCP services.
+      LOCAL_RAG_URL: http://local-rag-api:8080
+      LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
+      # Optional gateway/API surface if enabled later.
+      API_SERVER_ENABLED: "false"
+
+    volumes:
+      - /srv/data/services/hermes/home:/home/hermes
+      - /srv/data/services/hermes/data:/data
+
+    secrets:
+      - local_rag_api_token
+
+    networks:
+      - hermes-private
+      - rag-private
+
+    security_opt:
+      - no-new-privileges=true
+
+    healthcheck:
+      test:
+        - CMD
+        - /bin/sh
+        - -lc
+        - test -d /home/hermes && test -d /data
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  hermes-private:
+    driver: bridge
+  rag-private:
+    external: true
+    name: local-rag_rag-private
+
+secrets:
+  local_rag_api_token:
+    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}

@@ -199,9 +199,11 @@ it arrives over `tailscale0`.
 | 19999 | Netdata | Tailscale IPv4 | tailnet |
 | 34001 | Pironman dashboard | host wildcard, firewall-limited | tailnet pending bind remediation |
 
-Tailscale Serve is the supported way to expose the stock OpenClaw Control UI
-over the tailnet. It requires the gateway to stay on loopback so the browser
-receives a secure HTTPS origin.
+The Homepage launcher is the supported way to reach the OpenClaw Control UI
+in a stable same-origin browser context. The gateway stays on loopback so the
+launcher can continue talking to `/aisha/` without exposing credentials to
+the browser. Hermes, if enabled later, should publish its own route or
+gateway rather than sharing the OpenClaw control path.
 
 Homepage shortcuts expose the operational landing pages that the dashboard
 should point at: Kuma on 3001, File Browser on 8080, Portainer HTTP on 9000,

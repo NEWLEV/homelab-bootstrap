@@ -142,6 +142,16 @@ validate_homepage_shortcuts() {
     fi
 }
 
+validate_hermes() {
+    section "Hermes blueprint"
+
+    if "${REPO_ROOT}/tests/hermes.sh"; then
+        pass "Hermes blueprint contract is valid"
+    else
+        fail "Hermes blueprint contract validation failed"
+    fi
+}
+
 validate_storage() {
     section "Storage"
 
@@ -493,6 +503,7 @@ main() {
     validate_network_policy
     validate_openclaw_consolidation
     validate_homepage_shortcuts
+    validate_hermes
 
     if ((FAIL_COUNT > 0)); then
         print_summary

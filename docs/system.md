@@ -34,15 +34,14 @@ policy therefore adds an explicit `DOCKER-USER` chain.
 
 The currently preferred OpenClaw posture is loopback-only gateway transport
 with Tailscale Serve publishing `https://aisha.tail4553c9.ts.net/openclaw/`
-for the stock Control UI. The same appliance also serves the Aisha chat
-surface at `https://aisha.tail4553c9.ts.net/aisha/` for the Homepage
-launcher. Repository state should keep the gateway on loopback so the browser
-has a secure context and the launcher can remain same-origin.
+for the stock Control UI. Repository state should keep the gateway on loopback
+so the browser receives a secure HTTPS origin.
 
-The current live cutover verifies the secure tailnet URL and the Aisha chat
-surface; the Homepage dashboard now also carries working shortcuts to Kuma,
-File Browser, Portainer, Netdata, and Pironman5 Max, while Mission Control
-remains explicitly marked coming soon. Any future native-gateway retirement
+The current live cutover verifies the same-origin launcher path. The
+Hermes runtime, when deployed, should remain separate and reuse shared
+infrastructure only through approved integrations such as Local RAG and MCP.
+The Homepage dashboard now also carries working shortcuts to Kuma, File
+Browser, Portainer, Netdata, and Pironman5 Max. Any future native-gateway retirement
 work should be tracked as a separate task rather than described as the active
 state.
 

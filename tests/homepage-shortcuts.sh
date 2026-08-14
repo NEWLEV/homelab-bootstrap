@@ -12,10 +12,14 @@ fail() { printf '[FAIL] %s\n' "$1" >&2; ((FAIL_COUNT += 1)); }
 
 assert_contains() {
     local name="$1" expected="$2" file="$3"
-    if grep -Fq -- "$expected" "$file"; then pass "$name"; else fail "$name"; fi
+    if grep -Fq -- "$expected" "$file"; then
+        pass "$name"
+    else
+        fail "$name"
+    fi
 }
 
-assert_contains "OpenClaw shortcut points to secure Serve UI" \
+assert_contains "OpenClaw shortcut points to the tailnet Control UI" \
     "https://aisha.tail4553c9.ts.net/openclaw/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "n8n shortcut points to secure automation UI" \
@@ -36,6 +40,13 @@ assert_contains "Netdata shortcut is present" \
 assert_contains "Pironman shortcut points to the live dashboard" \
     "http://aisha:34001" \
     "$REPO_ROOT/configs/homepage/custom.js"
+
+assert_contains "Hermes dashboard card is present" \
+    "Planned second runtime blueprint, not live yet" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "Hermes dashboard card links to its blueprint" \
+    "https://github.com/NousResearch/hermes-agent" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
 
 assert_contains "Dashboard shortcuts are placed inline after the hero" \
     "dashboardHero.insertAdjacentElement('afterend', quickLinks)" \
@@ -58,3 +69,5 @@ fi
 
 printf '\nPassed: %d\nFailed: %d\n' "$PASS_COUNT" "$FAIL_COUNT"
 ((FAIL_COUNT == 0))
+
+

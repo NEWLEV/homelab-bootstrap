@@ -57,5 +57,6 @@ install_file() {
 
 install_file custom.js
 install_file custom.css
+install_file services.yaml
 
 printf 'Aisha launcher assets are installed. Reload the dashboard to load them.\n'

@@ -122,6 +122,18 @@
       "backup_paths": [
         "/srv/data/services/openclaw/conversations"
       ]
+    },
+    {
+      "name": "hermes",
+      "compose_file": "compose/ai/hermes.yml",
+      "compose_service": "hermes",
+      "container": "hermes",
+      "required": false,
+      "deferred": true,
+      "validation": "none",
+      "backup_paths": [
+        "/srv/data/services/hermes"
+      ]
     }
   ],
   "systemd_units": [

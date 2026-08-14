@@ -162,11 +162,13 @@ with:
 
 Homepage control shortcuts
 
-The Homepage dashboard now includes a shortcut panel with working links to the
-secure OpenClaw UI, Kuma, File Browser, Portainer, Netdata, and the Aisha chat
-surface. Mission Control and Pironman5 Max are labeled `coming soon` until
-those standalone pages are fully implemented. The shortcut wiring lives in
-`configs/homepage/custom.js` and `configs/homepage/custom.css`.
+The Homepage dashboard now includes a shortcut panel with working links to
+the secure OpenClaw UI, Kuma, File Browser, Portainer, Netdata, and the Aisha
+chat surface. Mission Control remains `coming soon` until a standalone page is
+implemented. The shortcut wiring lives in `configs/homepage/custom.js` and
+`configs/homepage/custom.css`. The main dashboard cards live in
+`configs/homepage/services.yaml`, which now includes a Hermes blueprint card
+that points at the Hermes project page until a live runtime URL exists.
 
 Configuration
 
@@ -188,6 +190,36 @@ Verify
 ./install.sh --validate-manifest
 ./tests/openclaw.sh
 ./tests/aisha-chat.sh
+```
+
+---
+
+## Hermes
+
+Purpose
+
+Second assistant runtime for experiments and alternate workflows.
+
+Implementation
+
+```
+compose/ai/hermes.yml
+services/hermes/
+docs/hermes.md
+```
+
+Hermes is intentionally separate from OpenClaw. It is expected to reuse the
+approved homelab services such as Local RAG and selected MCP servers, while
+keeping its own memory, skills, sessions, and config under `~/.hermes/`.
+
+Hermes should not share OpenClaw secrets or browser-delivered code. If a
+gateway or portal is enabled later, it should be documented and validated as
+its own runtime surface.
+
+Verify
+
+```bash
+docker compose -f compose/ai/hermes.yml config --quiet
 ```
 
 ---
@@ -333,3 +365,4 @@ Run:
 ```
 
 Resolve all reported validation errors before applying changes.
+

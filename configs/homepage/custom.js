@@ -28,6 +28,10 @@
     { label: 'Pironman5 Max', href: 'http://aisha:34001', note: 'Hardware telemetry' },
   ];
 
+  const PLANNED_LINKS = [
+    { label: 'Hermes', note: 'Second runtime blueprint', detail: 'Planned runtime, no live URL yet' },
+  ];
+
   const PORT_LINKS = [
     { label: '3001', href: 'http://100.106.201.14:3001', title: 'Kuma' },
     { label: '8080', href: 'http://100.106.201.14:8080', title: 'File Browser' },

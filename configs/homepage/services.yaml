@@ -1,0 +1,39 @@
+- Assistant Runtimes:
+    - OpenClaw:
+        icon: mdi-robot
+        href: https://aisha.tail4553c9.ts.net/openclaw/
+        description: Secure control UI for the current assistant runtime
+    - Hermes:
+        icon: mdi-brain
+        href: https://github.com/NousResearch/hermes-agent
+        description: Planned second runtime blueprint, not live yet
+        target: _blank
+
+- Automation:
+    - n8n:
+        icon: n8n
+        href: https://aisha.tail4553c9.ts.net/n8n/home/workflows
+        description: Workflow automation and orchestration
+        target: _blank
+
+- Homelab:
+    - Kuma:
+        icon: uptime-kuma
+        href: http://100.106.201.14:3001
+        description: Uptime monitoring
+    - File Browser:
+        icon: filebrowser
+        href: http://100.106.201.14:8080
+        description: File access
+    - Portainer:
+        icon: portainer
+        href: http://100.106.201.14:9000
+        description: Container management
+    - Netdata:
+        icon: netdata
+        href: http://100.106.201.14:19999
+        description: Metrics and health
+    - Pironman5 Max:
+        icon: mdi-server
+        href: http://aisha:34001
+        description: Hardware telemetry
