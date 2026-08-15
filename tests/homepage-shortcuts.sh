@@ -22,6 +22,9 @@ assert_contains() {
 assert_contains "OpenClaw shortcut points to the tailnet Control UI" \
     "https://aisha.tail4553c9.ts.net/openclaw/" \
     "$REPO_ROOT/configs/homepage/custom.js"
+assert_contains "Hermes shortcut is present" \
+    "https://github.com/NousResearch/hermes-agent" \
+    "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "n8n shortcut points to secure automation UI" \
     "https://aisha.tail4553c9.ts.net/n8n/" \
     "$REPO_ROOT/configs/homepage/custom.js"
