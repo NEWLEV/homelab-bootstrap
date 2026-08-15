@@ -5,9 +5,8 @@
         description: Secure control UI for the current assistant runtime
     - Hermes:
         icon: mdi-brain
-        href: https://github.com/NousResearch/hermes-agent
-        description: Planned second runtime blueprint, not live yet
-        target: _blank
+        href: http://aisha:9119/
+        description: Live Hermes dashboard
 
 - Automation:
     - n8n:

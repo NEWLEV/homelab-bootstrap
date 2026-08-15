@@ -1,6 +1,6 @@
-# Hermes Runtime Blueprint
+# Hermes Runtime
 
-Hermes is a second assistant runtime that can live beside OpenClaw without
+Hermes is a second assistant runtime that lives beside OpenClaw without
 replacing it.
 
 ## What Hermes is for
@@ -9,7 +9,8 @@ replacing it.
   parallel capability growth.
 - Independent memory, skills, sessions, and MCP configuration under
   `~/.hermes/`.
-- Optional API gateway for external integrations and portal-style access.
+- Optional API gateway and dashboard for external integrations and portal-style
+  access.
 
 ## Why keep Hermes separate from OpenClaw
 
@@ -56,10 +57,11 @@ replacing it.
 2. Hermes can reach Local RAG over the private Docker network.
 3. Hermes can load approved MCP servers.
 4. Hermes memory and skills paths are writable.
-5. OpenClaw still serves the control UI at
+5. Hermes dashboard responds at `http://aisha:9119/`.
+6. OpenClaw still serves the control UI at
    `https://aisha.tail4553c9.ts.net/openclaw/`.
 
 ## Notes
 
-This repository now treats Hermes as a planned second runtime, not as an
+This repository now treats Hermes as a live second runtime, not as an
 implicit replacement for OpenClaw.

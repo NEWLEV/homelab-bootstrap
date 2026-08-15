@@ -143,12 +143,12 @@ validate_homepage_shortcuts() {
 }
 
 validate_hermes() {
-    section "Hermes blueprint"
+    section "Hermes runtime"
 
     if "${REPO_ROOT}/tests/hermes.sh"; then
-        pass "Hermes blueprint contract is valid"
+        pass "Hermes runtime contract is valid"
     else
-        fail "Hermes blueprint contract validation failed"
+        fail "Hermes runtime contract validation failed"
     fi
 }
 

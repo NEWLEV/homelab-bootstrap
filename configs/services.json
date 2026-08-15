@@ -129,8 +129,8 @@
       "compose_service": "hermes",
       "container": "hermes",
       "required": false,
-      "deferred": true,
-      "validation": "none",
+      "deferred": false,
+      "validation": "docker-health",
       "backup_paths": [
         "/srv/data/services/hermes"
       ]

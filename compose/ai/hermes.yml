@@ -1,30 +1,46 @@
 name: hermes
 
-# Hermes is a separate assistant runtime beside OpenClaw.
-# Keep it isolated so it can reuse approved infrastructure without sharing
-# OpenClaw state or browser-facing secrets.
+# Hermes is a separate assistant runtime beside OpenClaw. It keeps its own
+# state directory and dashboard while reusing approved infrastructure such as
+# Local RAG on the private Docker network.
 services:
   hermes:
     image: nousresearch/hermes-agent:latest
     container_name: hermes
     restart: unless-stopped
+    command:
+      - gateway
+      - run
+
+    env_file:
+      - ${HERMES_ENV_FILE}
 
     environment:
-      HOME: /home/hermes
-      HERMES_DATA_DIR: /data
-      # Hermes can point at the existing private infrastructure rather than
-      # duplicating Local RAG or MCP services.
+      HOME: /opt/data
+      HERMES_HOME: /opt/data
       LOCAL_RAG_URL: http://local-rag-api:8080
       LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
-      # Optional gateway/API surface if enabled later.
-      API_SERVER_ENABLED: "false"
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_PORT: "8642"
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: 0.0.0.0
+      HERMES_DASHBOARD_PORT: "9119"
+      API_SERVER_CORS_ORIGINS: "http://aisha:8000,http://100.106.201.14:8000,https://aisha.tail4553c9.ts.net"
 
     volumes:
-      - /srv/data/services/hermes/home:/home/hermes
-      - /srv/data/services/hermes/data:/data
+      - /srv/data/services/hermes:/opt/data
 
     secrets:
       - local_rag_api_token
+
+    ports:
+      - target: 9119
+        published: "9119"
+        protocol: tcp
+      - target: 8642
+        published: "8642"
+        protocol: tcp
 
     networks:
       - hermes-private
@@ -35,14 +51,15 @@ services:
 
     healthcheck:
       test:
-        - CMD
-        - /bin/sh
-        - -lc
-        - test -d /home/hermes && test -d /data
+        - CMD-SHELL
+        - >
+          node -e "const http=require('http');
+          const req=http.get('http://127.0.0.1:9119', res => process.exit(res.statusCode && res.statusCode < 500 ? 0 : 1));
+          req.on('error', () => process.exit(1));"
       interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
 networks:
   hermes-private:
@@ -53,4 +70,4 @@ networks:
 
 secrets:
   local_rag_api_token:
-    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}
+    file: ${LOCAL_RAG_API_TOKEN_FILE}

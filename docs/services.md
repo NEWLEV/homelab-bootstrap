@@ -163,12 +163,12 @@ with:
 Homepage control shortcuts
 
 The Homepage dashboard now includes a shortcut panel with working links to
-the secure OpenClaw UI, Kuma, File Browser, Portainer, Netdata, and the Aisha
-chat surface. Mission Control remains `coming soon` until a standalone page is
-implemented. The shortcut wiring lives in `configs/homepage/custom.js` and
-`configs/homepage/custom.css`. The main dashboard cards live in
-`configs/homepage/services.yaml`, which now includes a Hermes blueprint card
-that points at the Hermes project page until a live runtime URL exists.
+the secure OpenClaw UI, Hermes, Kuma, File Browser, Portainer, Netdata, and
+the Aisha chat surface. Mission Control remains `coming soon` until a
+standalone page is implemented. The shortcut wiring lives in
+`configs/homepage/custom.js` and `configs/homepage/custom.css`. The main
+dashboard cards live in `configs/homepage/services.yaml`, which now includes a
+live Hermes card that points at the Hermes dashboard.
 
 Configuration
 
@@ -208,18 +208,32 @@ services/hermes/
 docs/hermes.md
 ```
 
-Hermes is intentionally separate from OpenClaw. It is expected to reuse the
-approved homelab services such as Local RAG and selected MCP servers, while
-keeping its own memory, skills, sessions, and config under `~/.hermes/`.
+Hermes is intentionally separate from OpenClaw. It reuses approved homelab
+services such as Local RAG and selected MCP servers while keeping its own
+memory, skills, sessions, config, and dashboard under `~/.hermes/` or the
+host runtime directory under `/srv/data/services/hermes/`.
 
-Hermes should not share OpenClaw secrets or browser-delivered code. If a
-gateway or portal is enabled later, it should be documented and validated as
-its own runtime surface.
+Hermes does not share OpenClaw secrets or browser-delivered code. The live
+runtime is installed with:
+
+```bash
+bash scripts/install-hermes-service.sh
+```
+
+The dashboard is exposed on `http://aisha:9119/`, and the API server listens
+on `http://aisha:8642/` once the runtime is started.
 
 Verify
 
 ```bash
 docker compose -f compose/ai/hermes.yml config --quiet
+```
+
+After the service is installed, verify the runtime with:
+
+```bash
+docker compose -f compose/ai/hermes.yml ps
+curl -I http://aisha:9119/
 ```
 
 ---

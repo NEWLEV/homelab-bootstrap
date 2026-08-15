@@ -23,7 +23,7 @@ assert_contains "OpenClaw shortcut points to the tailnet Control UI" \
     "https://aisha.tail4553c9.ts.net/openclaw/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Hermes shortcut is present" \
-    "https://github.com/NousResearch/hermes-agent" \
+    "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "n8n shortcut points to secure automation UI" \
     "https://aisha.tail4553c9.ts.net/n8n/" \
@@ -45,10 +45,10 @@ assert_contains "Pironman shortcut points to the live dashboard" \
     "$REPO_ROOT/configs/homepage/custom.js"
 
 assert_contains "Hermes dashboard card is present" \
-    "Planned second runtime blueprint, not live yet" \
+    "Live Hermes dashboard" \
     "$REPO_ROOT/configs/homepage/services.yaml"
-assert_contains "Hermes dashboard card links to its blueprint" \
-    "https://github.com/NousResearch/hermes-agent" \
+assert_contains "Hermes dashboard card links to the live runtime" \
+    "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 
 assert_contains "Dashboard shortcuts are placed inline after the hero" \

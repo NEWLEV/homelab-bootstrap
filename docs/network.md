@@ -202,8 +202,8 @@ it arrives over `tailscale0`.
 The Homepage launcher is the supported way to reach the OpenClaw Control UI
 in a stable same-origin browser context. The gateway stays on loopback so the
 launcher can continue talking to `/aisha/` without exposing credentials to
-the browser. Hermes, if enabled later, should publish its own route or
-gateway rather than sharing the OpenClaw control path.
+the browser. Hermes publishes its own dashboard and API ports rather than
+sharing the OpenClaw control path.
 
 Homepage shortcuts expose the operational landing pages that the dashboard
 should point at: Kuma on 3001, File Browser on 8080, Portainer HTTP on 9000,

@@ -20,7 +20,7 @@
 
   const QUICK_LINKS = [
     { label: 'OpenClaw', href: 'https://aisha.tail4553c9.ts.net/openclaw/', note: 'Control UI' },
-    { label: 'Hermes', href: 'https://github.com/NousResearch/hermes-agent', note: 'Blueprint' },
+    { label: 'Hermes', href: 'http://aisha:9119/', note: 'Assistant runtime' },
     { label: 'n8n', href: 'https://aisha.tail4553c9.ts.net/n8n/', note: 'Automation' },
     { label: 'Kuma', href: 'http://100.106.201.14:3001', note: 'Uptime Kuma' },
     { label: 'File Browser', href: 'http://100.106.201.14:8080', note: 'Files' },

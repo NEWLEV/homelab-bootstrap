@@ -1,6 +1,6 @@
 # Hermes Deployment Plan
 
-Hermes will be added as a second assistant runtime beside OpenClaw.
+Hermes runs as a second assistant runtime beside OpenClaw.
 
 ## Goal
 
@@ -14,8 +14,8 @@ infrastructure such as Local RAG, MCP, and selected messaging integrations.
 3. Point Hermes at the existing Local RAG API for grounded retrieval.
 4. Register only approved MCP servers.
 5. Enable skills and memory under Hermes-specific paths.
-6. Add an optional API gateway only after the runtime is healthy.
-7. Publish a dashboard shortcut once a stable Hermes URL exists.
+6. Run the dashboard and API gateway only after the runtime is healthy.
+7. Publish a dashboard shortcut that points at the live Hermes URL.
 
 ## Recommended service shape
 
@@ -33,5 +33,5 @@ infrastructure such as Local RAG, MCP, and selected messaging integrations.
 
 ## Dashboard note
 
-Until Hermes has a live URL, the Homepage dashboard should show a clear
-Hermes blueprint entry instead of a broken shortcut.
+The Homepage dashboard now points Hermes at the live dashboard URL instead of
+the GitHub repository.

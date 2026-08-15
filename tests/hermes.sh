@@ -43,14 +43,27 @@ test_hermes_compose_contract() {
     local output
     output="$(cat "$REPO_ROOT/compose/ai/hermes.yml")"
     assert_contains "hermes compose names service" "name: hermes" "$output"
-    assert_contains "hermes compose uses isolated state" "/srv/data/services/hermes/home:/home/hermes" "$output"
+    assert_contains "hermes compose uses isolated state" "/srv/data/services/hermes:/opt/data" "$output"
     assert_contains "hermes compose references local rag" "LOCAL_RAG_URL: http://local-rag-api:8080" "$output"
-    assert_contains "hermes compose keeps api disabled by default" 'API_SERVER_ENABLED: "false"' "$output"
+    assert_contains "hermes compose enables api server" 'API_SERVER_ENABLED: "true"' "$output"
+    assert_contains "hermes compose enables dashboard" 'HERMES_DASHBOARD: "1"' "$output"
+    assert_contains "hermes compose publishes dashboard port" 'published: "9119"' "$output"
+    assert_contains "hermes compose publishes api port" 'published: "8642"' "$output"
+    assert_contains "hermes compose loads env file" 'HERMES_ENV_FILE' "$output"
+}
+
+test_hermes_installer_exists() {
+    if [[ -x "$REPO_ROOT/scripts/install-hermes-service.sh" ]] || [[ -s "$REPO_ROOT/scripts/install-hermes-service.sh" ]]; then
+        pass "hermes installer exists"
+    else
+        fail "hermes installer exists"
+    fi
 }
 
 test_hermes_docs_exist
 test_hermes_readme_exists
 test_hermes_compose_contract
+test_hermes_installer_exists
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
 printf 'Failed: %d\n' "$FAIL_COUNT"
