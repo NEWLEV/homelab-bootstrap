@@ -51,7 +51,7 @@ export HERMES_ENV_FILE="$env_file"
 export LOCAL_RAG_API_TOKEN_FILE="$local_rag_token_file"
 
 docker compose -f "$compose_file" config --quiet
-docker compose -f "$compose_file" up -d
+docker compose -f "$compose_file" up -d --force-recreate --remove-orphans
 
 printf 'Hermes runtime is ready.\n'
 printf 'Dashboard: http://aisha:9119/\n'

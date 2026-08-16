@@ -38,6 +38,9 @@ replacing it.
 - **MCP**: register only approved servers in `~/.hermes/config.yaml`.
 - **Local RAG**: point Hermes at the existing Local RAG API rather than
   duplicating an index.
+- **OpenClaw repo access**: Hermes can inspect the OpenClaw checkout from the
+  read-only mount at `/workspace/openclaw` when the compose service includes
+  the host repo bind mount.
 - **Skills**: keep Hermes skills in `~/.hermes/skills/` so they do not drift
   from OpenClaw prompts or the dashboard launcher.
 - **Messaging**: enable Slack or Discord only after the gateway is validated
@@ -57,8 +60,9 @@ replacing it.
 2. Hermes can reach Local RAG over the private Docker network.
 3. Hermes can load approved MCP servers.
 4. Hermes memory and skills paths are writable.
-5. Hermes dashboard responds at `http://aisha:9119/`.
-6. OpenClaw still serves the control UI at
+5. Hermes can inspect the OpenClaw repo at `/workspace/openclaw`.
+6. Hermes dashboard responds at `http://aisha:9119/`.
+7. OpenClaw still serves the control UI at
    `https://aisha.tail4553c9.ts.net/openclaw/`.
 
 ## Notes

@@ -19,6 +19,7 @@ dashboard, and lifecycle.
 - Hermes config: `~/.hermes/config.yaml`.
 - Hermes environment: `~/.hermes/.env`.
 - Hermes host runtime: `/srv/data/services/hermes/`.
+- OpenClaw checkout mount: `/workspace/openclaw` inside the Hermes container.
 
 ## Suggested dependencies
 
@@ -32,7 +33,10 @@ dashboard, and lifecycle.
 - Hermes starts cleanly.
 - Hermes can reach Local RAG.
 - Hermes can load approved skills and MCP servers.
+- Hermes can read the OpenClaw checkout from `/workspace/openclaw`.
 - OpenClaw still remains available at its own routes.
 
 Use `bash scripts/install-hermes-service.sh` to create the host runtime,
 generate the local secrets file, and start the container.
+The installer now forces a container recreate so compose mount changes, such
+as the OpenClaw repo bind, actually apply to the live Hermes runtime.

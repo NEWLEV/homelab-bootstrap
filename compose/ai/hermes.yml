@@ -18,6 +18,7 @@ services:
     environment:
       HOME: /opt/data
       HERMES_HOME: /opt/data
+      OPENCLAW_REPO_PATH: /workspace/openclaw
       LOCAL_RAG_URL: http://local-rag-api:8080
       LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
       API_SERVER_ENABLED: "true"
@@ -30,6 +31,7 @@ services:
 
     volumes:
       - /srv/data/services/hermes:/opt/data
+      - /srv/data/git/homelab-bootstrap/workspaces/development/repo:/workspace/openclaw:ro
 
     secrets:
       - local_rag_api_token
