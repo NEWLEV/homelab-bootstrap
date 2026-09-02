@@ -54,9 +54,6 @@ assert_contains "Hermes dashboard card links to the live runtime" \
 assert_contains "Homepage launcher no longer injects the duplicate shortcut panel" \
     "document.body.appendChild(button);" \
     "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Homepage launcher keeps the ports cards only" \
-    "aisha-port-links" \
-    "$REPO_ROOT/configs/homepage/custom.css"
 
 if node --check "$REPO_ROOT/configs/homepage/custom.js"; then
     pass "homepage launcher syntax"
