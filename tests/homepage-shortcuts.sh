@@ -51,21 +51,12 @@ assert_contains "Hermes dashboard card links to the live runtime" \
     "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 
-assert_contains "Dashboard shortcuts are placed inline after the hero" \
-    "dashboardRoot.prepend(quickLinks)" \
+assert_contains "Homepage launcher no longer injects the duplicate shortcut panel" \
+    "document.body.appendChild(button);" \
     "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Inline dashboard shortcuts do not cover content" \
-    "#aisha-quick-links.aisha-quick-links-inline" \
+assert_contains "Homepage launcher keeps the ports cards only" \
+    "aisha-port-links" \
     "$REPO_ROOT/configs/homepage/custom.css"
-assert_contains "Homepage shortcuts use grouped cards" \
-    "aisha-quick-links-card" \
-    "$REPO_ROOT/configs/homepage/custom.css"
-assert_contains "Homepage shortcuts include assistant runtimes heading" \
-    "Assistant Runtimes" \
-    "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "Homepage shortcuts include automation heading" \
-    "Automation & Ops" \
-    "$REPO_ROOT/configs/homepage/custom.js"
 
 if node --check "$REPO_ROOT/configs/homepage/custom.js"; then
     pass "homepage launcher syntax"
