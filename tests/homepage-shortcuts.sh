@@ -26,7 +26,7 @@ assert_contains "Hermes shortcut is present" \
     "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "n8n shortcut points to secure automation UI" \
-    "https://aisha.tail4553c9.ts.net/n8n/" \
+    "https://aisha.tail4553c9.ts.net/n8n/home/workflows" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Kuma shortcut is present" \
     "http://100.106.201.14:3001" \
@@ -52,11 +52,20 @@ assert_contains "Hermes dashboard card links to the live runtime" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 
 assert_contains "Dashboard shortcuts are placed inline after the hero" \
-    "dashboardHero.insertAdjacentElement('afterend', quickLinks)" \
+    "dashboardRoot.prepend(quickLinks)" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Inline dashboard shortcuts do not cover content" \
     "#aisha-quick-links.aisha-quick-links-inline" \
     "$REPO_ROOT/configs/homepage/custom.css"
+assert_contains "Homepage shortcuts use grouped cards" \
+    "aisha-quick-links-card" \
+    "$REPO_ROOT/configs/homepage/custom.css"
+assert_contains "Homepage shortcuts include assistant runtimes heading" \
+    "Assistant Runtimes" \
+    "$REPO_ROOT/configs/homepage/custom.js"
+assert_contains "Homepage shortcuts include automation heading" \
+    "Automation & Ops" \
+    "$REPO_ROOT/configs/homepage/custom.js"
 
 if node --check "$REPO_ROOT/configs/homepage/custom.js"; then
     pass "homepage launcher syntax"
