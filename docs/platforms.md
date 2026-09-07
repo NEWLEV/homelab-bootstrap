@@ -58,9 +58,9 @@ state as a portability fix.
 Start from `configs/host.env.example` when preparing a new host profile.
 
 Optional service profiles should stay opt-in. The baseline install should run
-the smallest useful service graph for a new host. For example, the NLC/OpenClaw
-Local RAG collection is enabled with the `nlc` Compose profile only on hosts
-that have the curated source checkout available.
+the smallest useful service graph for a new host. For example, the
+Aisha/OpenClaw operations Local RAG collection is enabled with the `ops` Compose
+profile only on hosts that have the curated source checkout available.
 
 ## Health Checks
 

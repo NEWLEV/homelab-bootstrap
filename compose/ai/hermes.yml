@@ -20,7 +20,7 @@ services:
       HERMES_HOME: /opt/data
       OPENCLAW_REPO_PATH: /workspace/openclaw
       LOCAL_RAG_URL: http://local-rag-api:8080
-      NLC_RAG_URL: ${HERMES_NLC_RAG_URL:-}
+      OPS_RAG_URL: ${HERMES_OPS_RAG_URL:-}
       LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: 0.0.0.0

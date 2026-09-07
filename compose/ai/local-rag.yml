@@ -98,15 +98,15 @@ services:
     security_opt:
       - no-new-privileges=true
 
-  nlc-api:
+  ops-api:
     profiles:
-      - nlc
+      - ops
 
     build:
       context: ../../services/local-rag
       dockerfile: Dockerfile
 
-    container_name: local-rag-nlc-api
+    container_name: local-rag-ops-api
     restart: unless-stopped
 
     depends_on:
@@ -117,9 +117,9 @@ services:
       OLLAMA_URL: http://ollama:11434
       EMBEDDING_MODEL: nomic-embed-text
       CHROMA_PATH: /data/chroma
-      SOURCE_ROOT: /sources/nlc-core
-      COLLECTION_NAME: nlc_core
-      COLLECTION_DESCRIPTION: Curated NLC operating knowledge
+      SOURCE_ROOT: /sources/ops-core
+      COLLECTION_NAME: ops_core
+      COLLECTION_DESCRIPTION: Curated Aisha operating knowledge
       GENERATION_MODEL: llama3.2:3b
       PYTHONPATH: /app
       CONFIDENCE_MIN_SCORE: "0.45"
@@ -137,8 +137,8 @@ services:
       MAX_REQUEST_BODY_BYTES: "65536"
 
     volumes:
-      - /srv/data/services/local-rag/nlc-chroma:/data/chroma
-      - ${AISHA_NLC_SOURCE:-/home/nlc/.openclaw/workspace}:/sources/nlc-core:ro
+      - /srv/data/services/local-rag/ops-chroma:/data/chroma
+      - ${AISHA_OPS_SOURCE:-/home/nlc/.openclaw/workspace}:/sources/ops-core:ro
       - /srv/data/services/local-rag/models:/models
 
     secrets:

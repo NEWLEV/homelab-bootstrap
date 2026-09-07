@@ -49,10 +49,10 @@ The default Compose project runs one required RAG API container:
 - `local-rag-api` serves the canonical homelab repository knowledge source on
   loopback port `8090`.
 
-The optional `nlc` Compose profile adds `local-rag-nlc-api`, which serves
-curated NLC/OpenClaw operating knowledge on loopback port `8091`. The optional
+The optional `ops` Compose profile adds `local-rag-ops-api`, which serves
+curated Aisha/OpenClaw operating knowledge on loopback port `8091`. The optional
 API shares the local Ollama runtime and bearer-token secret, but uses a separate
-Chroma store so the general homelab index and NLC operating index can be rebuilt
+Chroma store so the general homelab index and operations index can be rebuilt
 independently.
 
 Configuration
@@ -67,22 +67,23 @@ Knowledge source
 /srv/data/git/homelab-bootstrap-index
 ```
 
-NLC knowledge source
+Operations knowledge source
 
 ```text
-${AISHA_NLC_SOURCE:-/home/nlc/.openclaw/workspace}
+${AISHA_OPS_SOURCE:-/home/nlc/.openclaw/workspace}
 ```
 
-Enable the optional NLC collection only on hosts that have the source checkout:
+Enable the optional operations collection only on hosts that have the source
+checkout:
 
 ```bash
-docker compose -f compose/ai/local-rag.yml --profile nlc up -d
+docker compose -f compose/ai/local-rag.yml --profile ops up -d
 ```
 
 When Hermes should use this optional collection, set:
 
 ```text
-HERMES_NLC_RAG_URL=http://local-rag-nlc-api:8080
+HERMES_OPS_RAG_URL=http://local-rag-ops-api:8080
 ```
 
 Prepare an exact reviewed revision before deploying or indexing:
