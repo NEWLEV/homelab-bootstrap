@@ -40,11 +40,11 @@ services:
     ports:
       - target: 9119
         published: "9119"
-        host_ip: 100.106.201.14
+        host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
         protocol: tcp
       - target: 8642
         published: "8642"
-        host_ip: 100.106.201.14
+        host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
         protocol: tcp
 
     networks:

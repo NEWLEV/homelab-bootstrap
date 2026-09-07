@@ -1,6 +1,9 @@
 # Aisha Homelab Bootstrap
 
-This repository manages a reproducible Raspberry Pi 5 homelab appliance named Aisha.
+This repository manages a reproducible Linux homelab appliance named Aisha. The
+current reference deployment is a Raspberry Pi 5, but GitHub-hosted source,
+tests, and documentation should stay portable across supported Linux hosts
+unless a file is explicitly documenting the live Aisha machine.
 
 Before starting any task:
 
@@ -8,7 +11,7 @@ Before starting any task:
 2. Read `LEARNINGS.md` for durable rules and prior decisions that apply to the task.
 3. Inspect the current branch and working tree before editing.
 
-The long-term recovery objective is:
+The long-term recovery objective for the reference Aisha appliance is:
 
 1. Install a fresh Raspberry Pi OS image.
 2. Clone this repository.
@@ -20,8 +23,11 @@ Do not claim that one-command recovery is complete unless it has been implemente
 ## Authoritative Environment
 
 - Host: `aisha`
-- Hardware: Raspberry Pi 5
-- Operating system: Raspberry Pi OS Lite 64-bit
+- Hardware: Raspberry Pi 5 reference deployment; other Debian-family amd64 and
+  arm64 Linux hosts are supported bootstrap targets where hardware-specific
+  services are not required.
+- Operating system: Raspberry Pi OS Lite 64-bit reference deployment; portable
+  bootstrap work should target Debian-family Linux.
 - Repository root: `/srv/data/git/homelab-bootstrap`
 - Knowledge index source: `/srv/data/git/homelab-bootstrap-index`
 - Runtime service data root: `/srv/data/services`

@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "100.106.201.14:8080:80"
+      - "${TAILNET_BIND_IP:-100.106.201.14}:8080:80"
 
     volumes:
       - /srv/data:/srv

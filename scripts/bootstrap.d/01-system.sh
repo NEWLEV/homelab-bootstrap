@@ -119,8 +119,13 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 ARCH="$(dpkg --print-architecture)"
 readonly ARCH
 
-[[ "$ARCH" == "arm64" ]] ||
-    die "Expected arm64 architecture; detected ${ARCH}."
+case "$ARCH" in
+    amd64|arm64)
+        ;;
+    *)
+        die "Unsupported Debian architecture: ${ARCH}. Supported: amd64 and arm64."
+        ;;
+esac
 
 # shellcheck source=/dev/null
 source /etc/os-release

@@ -46,6 +46,26 @@ Scripts should:
 - exit with a non-zero status on failure
 - contain valid Bash syntax
 - perform one well-defined task
+- avoid hardware-specific assumptions unless the script or phase is explicitly
+  scoped to a hardware profile
+
+## Supported Platforms
+
+The bootstrap installer currently targets Debian-family Linux hosts. The
+supported Debian package architectures are:
+
+- `amd64`
+- `arm64`
+
+The live Aisha appliance is the Raspberry Pi 5 reference deployment, but
+repository code should not require Raspberry Pi hardware unless it is working
+on hardware telemetry, storage recovery, or another explicitly Pi-specific
+feature.
+
+Runtime paths under `/srv/data` remain the default durable-data layout. New
+hosts may use the same path for repeatability, or override documented Compose
+variables such as `TAILNET_BIND_IP`, `TRAEFIK_LAN_IP`, and
+`HOMELAB_HOSTNAME` where host-specific addressing differs.
 
 ## Adding a New Bootstrap Phase
 

@@ -512,6 +512,11 @@ main() {
     validate_knowledge_source_contract
     validate_network_policy
     validate_tailscale_ingress
+    if "${REPO_ROOT}/tests/platform-portability.sh"; then
+        pass "Platform portability contract is valid"
+    else
+        fail "Platform portability contract validation failed"
+    fi
     validate_openclaw_consolidation
     validate_homepage_shortcuts
     validate_hermes

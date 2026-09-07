@@ -37,5 +37,8 @@ Add language- or service-specific tests only when they matter to the change.
 
 ## Recovery objective
 
-This project exists to make a fresh Raspberry Pi OS install clone, bootstrap, and restore reliably.
-Do not claim one-command recovery until it has been validated from a clean OS installation.
+This project exists to make a fresh Debian-family Linux install clone,
+bootstrap, and restore reliably. The live Aisha reference host is a Raspberry
+Pi 5, but new repository work should keep amd64 and arm64 Linux portability in
+view. Do not claim one-command recovery until it has been validated from a
+clean OS installation.

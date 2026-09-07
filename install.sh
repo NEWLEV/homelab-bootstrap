@@ -61,7 +61,8 @@ Examples:
 Safety:
   The installer must run as a normal user, not root.
   Individual phases may request sudo access.
-  The installer refuses to continue unless /srv/data is mounted.
+  The installer currently targets Debian-family Linux hosts.
+  By default it uses /srv/data for durable service data.
 EOF
 }
 
@@ -198,14 +199,14 @@ preflight() {
     architecture="$(uname -m)"
 
     if [[ "$INSTALLER_TEST_MODE" == true ]]; then
-        info "Test mode: skipping ARM64 architecture requirement"
+        info "Test mode: skipping architecture support check"
     else
         case "$architecture" in
-            aarch64|arm64)
+            x86_64|amd64|aarch64|arm64)
                 success "Architecture: ${architecture}"
                 ;;
             *)
-                die "Expected ARM64 architecture; detected ${architecture}."
+                die "Unsupported architecture: ${architecture}. Supported: amd64/x86_64 and arm64/aarch64."
                 ;;
         esac
     fi

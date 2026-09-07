@@ -35,16 +35,16 @@ assert_contains "OpenClaw uses the private tailnet entrypoint" \
 assert_not_contains "OpenClaw has no host-published gateway port" \
     'published: "18789"' "$REPO_ROOT/compose/ai/openclaw.yml"
 assert_contains "Homepage direct port is tailnet bound" \
-    'host_ip: 100.106.201.14' "$REPO_ROOT/compose/core/homepage.yml"
+    'host_ip: ${TAILNET_BIND_IP:-100.106.201.14}' "$REPO_ROOT/compose/core/homepage.yml"
 assert_contains "Homepage allows the tailnet hostname" \
     'aisha.tail4553c9.ts.net' "$REPO_ROOT/compose/core/homepage.yml"
 
 for mapping in \
-    'compose/core/filebrowser.yml:100.106.201.14:8080:80' \
-    'compose/core/portainer.yml:100.106.201.14:9000:9000' \
-    'compose/core/portainer.yml:100.106.201.14:9443:9443' \
-    'compose/monitoring/netdata.yml:100.106.201.14:19999:19999' \
-    'compose/monitoring/uptime-kuma.yml:100.106.201.14:3001:3001'; do
+    'compose/core/filebrowser.yml:${TAILNET_BIND_IP:-100.106.201.14}:8080:80' \
+    'compose/core/portainer.yml:${TAILNET_BIND_IP:-100.106.201.14}:9000:9000' \
+    'compose/core/portainer.yml:${TAILNET_BIND_IP:-100.106.201.14}:9443:9443' \
+    'compose/monitoring/netdata.yml:${TAILNET_BIND_IP:-100.106.201.14}:19999:19999' \
+    'compose/monitoring/uptime-kuma.yml:${TAILNET_BIND_IP:-100.106.201.14}:3001:3001'; do
     file="${mapping%%:*}"
     expected="${mapping#*:}"
     assert_contains "${file} is tailnet bound" "$expected" "$REPO_ROOT/$file"

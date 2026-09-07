@@ -4,11 +4,11 @@ services:
   netdata:
     image: netdata/netdata:stable
     container_name: netdata
-    hostname: aisha
+    hostname: ${HOMELAB_HOSTNAME:-aisha}
     restart: unless-stopped
 
     ports:
-      - "100.106.201.14:19999:19999"
+      - "${TAILNET_BIND_IP:-100.106.201.14}:19999:19999"
 
     cap_add:
       - SYS_PTRACE

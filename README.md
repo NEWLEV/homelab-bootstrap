@@ -1,6 +1,6 @@
 # Aisha Homelab Bootstrap
 
-Aisha is an infrastructure-as-code project for provisioning, operating, and maintaining a reproducible Raspberry Pi homelab.
+Aisha is an infrastructure-as-code project for provisioning, operating, and maintaining a reproducible Linux homelab. The live reference appliance is a Raspberry Pi 5, but the GitHub repository is intended to work on supported Debian-family Linux hosts, including `amd64` and `arm64` systems.
 
 The repository contains:
 
@@ -21,6 +21,7 @@ The project is designed around declarative configuration, repeatable automation,
 - Idempotent bootstrap phases
 - Docker Compose infrastructure
 - Local AI services
+- Portable Debian-family Linux bootstrap with Aisha reference defaults
 - Encrypted runtime secrets (SOPS + Age)
 - Disaster recovery procedures
 - Automated validation with GitHub Actions
@@ -64,6 +65,9 @@ Validate the installer.
 ./install.sh --dry-run
 ```
 
+For a non-Aisha host, review `docs/platforms.md` and start from
+`configs/host.env.example` before running Compose services.
+
 Apply the bootstrap.
 
 ```bash
@@ -86,6 +90,7 @@ export SOPS_AGE_KEY_FILE=/mnt/aisha-recovery/age/aisha.agekey
 |----------|-------------|
 | `docs/architecture.md` | System architecture |
 | `docs/bootstrap.md` | Bootstrap process |
+| `docs/platforms.md` | Supported host platforms and portability rules |
 | `docs/storage.md` | Storage layout |
 | `docs/network.md` | Network architecture |
 | `docs/services.md` | Managed services |
