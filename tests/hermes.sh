@@ -51,6 +51,7 @@ test_hermes_compose_contract() {
     assert_contains "hermes compose uses isolated state" "/srv/data/services/hermes:/opt/data" "$output"
     assert_contains "hermes compose exposes openclaw repo" "/srv/data/git/homelab-bootstrap/workspaces/development/repo:/workspace/openclaw:ro" "$output"
     assert_contains "hermes compose references local rag" "LOCAL_RAG_URL: http://local-rag-api:8080" "$output"
+    assert_contains "hermes compose references nlc rag" "NLC_RAG_URL: http://local-rag-nlc-api:8080" "$output"
     assert_contains "hermes compose exposes openclaw repo path" 'OPENCLAW_REPO_PATH: /workspace/openclaw' "$output"
     assert_contains "hermes compose enables api server" 'API_SERVER_ENABLED: "true"' "$output"
     assert_contains "hermes compose enables dashboard" 'HERMES_DASHBOARD: "1"' "$output"

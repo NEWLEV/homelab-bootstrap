@@ -28,6 +28,21 @@
       ]
     },
     {
+      "name": "local-rag-nlc-api",
+      "compose_file": "compose/ai/local-rag.yml",
+      "compose_service": "nlc-api",
+      "container": "local-rag-nlc-api",
+      "required": true,
+      "validation": "http",
+      "url": "http://127.0.0.1:8091/health",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/local-rag/nlc-chroma",
+        "/srv/data/services/local-rag/models",
+        "/srv/data/services/local-rag/secrets"
+      ]
+    },
+    {
       "name": "homepage",
       "compose_file": "compose/core/homepage.yml",
       "compose_service": "homepage",

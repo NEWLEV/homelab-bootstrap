@@ -44,6 +44,17 @@ Purpose
 
 Provides local document indexing and retrieval.
 
+The Compose project runs two RAG API containers:
+
+- `local-rag-api` serves the canonical homelab repository knowledge source on
+  loopback port `8090`.
+- `local-rag-nlc-api` serves curated NLC/OpenClaw operating knowledge on
+  loopback port `8091`.
+
+Both APIs share the local Ollama runtime and bearer-token secret, but they use
+separate Chroma stores so the general homelab index and NLC operating index can
+be rebuilt independently.
+
 Configuration
 
 ```
@@ -54,6 +65,12 @@ Knowledge source
 
 ```text
 /srv/data/git/homelab-bootstrap-index
+```
+
+NLC knowledge source
+
+```text
+${AISHA_NLC_SOURCE:-/home/nlc/.openclaw/workspace}
 ```
 
 Prepare an exact reviewed revision before deploying or indexing:
