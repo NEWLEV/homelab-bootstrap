@@ -17,6 +17,7 @@ LIST_ONLY=false
 VALIDATE_MANIFEST=false
 VERBOSE=false
 RESTORE_SECRETS=false
+RECOMMEND=false
 CURRENT_PHASE="preflight"
 SELECTED_PHASE_ID=""
 WITH_DEPENDENCIES=false
@@ -50,6 +51,7 @@ Options:
                        Requires --phase.
   --verbose            Enable Bash command tracing.
   --restore-secrets    Restore runtime secrets from the encrypted SOPS bundle.
+  --recommend          Inspect this host and print suggested bootstrap settings.
   -h, --help           Show this help message.
 
 Examples:
@@ -61,7 +63,8 @@ Examples:
 Safety:
   The installer must run as a normal user, not root.
   Individual phases may request sudo access.
-  The installer currently targets Debian-family Linux hosts.
+  The installer currently applies changes on Debian-family Linux hosts.
+  MacBooks are supported as development/control machines.
   By default it uses /srv/data for durable service data.
 EOF
 }
@@ -131,6 +134,9 @@ parse_arguments() {
                 RESTORE_SECRETS=true
                 DRY_RUN=false
                 ;;
+            --recommend)
+                RECOMMEND=true
+                ;;
             --phase)
                 shift
 
@@ -175,6 +181,20 @@ parse_arguments() {
             die "--validate-manifest cannot be combined with --list."
         fi
     fi
+
+    if [[ "$RECOMMEND" == true ]]; then
+        if [[ -n "$SELECTED_PHASE_ID" ]]; then
+            die "--recommend cannot be combined with --phase."
+        fi
+
+        if [[ "$WITH_DEPENDENCIES" == true ]]; then
+            die "--recommend cannot be combined with --with-dependencies."
+        fi
+
+        if [[ "$RESTORE_SECRETS" == true ]]; then
+            die "--recommend cannot be combined with --restore-secrets."
+        fi
+    fi
 }
 
 require_command() {
@@ -182,6 +202,249 @@ require_command() {
 
     command -v "$command_name" >/dev/null 2>&1 ||
         die "Required command is unavailable: ${command_name}"
+}
+
+detect_os_pretty_name() {
+    if [[ -n "${AISHA_DETECT_OS_PRETTY_NAME:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_OS_PRETTY_NAME"
+        return
+    fi
+
+    if [[ -r /etc/os-release ]]; then
+        (
+            # shellcheck source=/dev/null
+            source /etc/os-release
+            printf '%s\n' "${PRETTY_NAME:-Linux}"
+        )
+        return
+    fi
+
+    uname -s
+}
+
+detect_debian_codename() {
+    if [[ -n "${AISHA_DETECT_CODENAME:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_CODENAME"
+        return
+    fi
+
+    if [[ -r /etc/os-release ]]; then
+        (
+            # shellcheck source=/dev/null
+            source /etc/os-release
+            printf '%s\n' "${VERSION_CODENAME:-unknown}"
+        )
+        return
+    fi
+
+    printf '%s\n' unknown
+}
+
+detect_architecture() {
+    if [[ -n "${AISHA_DETECT_ARCH:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_ARCH"
+        return
+    fi
+
+    uname -m
+}
+
+normalize_architecture() {
+    case "$1" in
+        x86_64|amd64)
+            printf '%s\n' amd64
+            ;;
+        aarch64|arm64)
+            printf '%s\n' arm64
+            ;;
+        *)
+            printf '%s\n' unsupported
+            ;;
+    esac
+}
+
+detect_memory_gib() {
+    if [[ -n "${AISHA_DETECT_MEMORY_GIB:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_MEMORY_GIB"
+        return
+    fi
+
+    if [[ -r /proc/meminfo ]]; then
+        awk '/MemTotal/ { printf "%.0f\n", $2 / 1024 / 1024 }' /proc/meminfo
+        return
+    fi
+
+    if command -v sysctl >/dev/null 2>&1; then
+        sysctl -n hw.memsize 2>/dev/null |
+            awk '{ printf "%.0f\n", $1 / 1024 / 1024 / 1024 }' &&
+            return
+    fi
+
+    printf '%s\n' 0
+}
+
+detect_data_mount_state() {
+    if [[ -n "${AISHA_DETECT_DATA_MOUNTED:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_DATA_MOUNTED"
+        return
+    fi
+
+    if command -v mountpoint >/dev/null 2>&1 && mountpoint -q /srv/data 2>/dev/null; then
+        printf '%s\n' yes
+    else
+        printf '%s\n' no
+    fi
+}
+
+detect_tailnet_ip() {
+    if [[ -n "${AISHA_DETECT_TAILNET_IP:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_TAILNET_IP"
+        return
+    fi
+
+    if command -v tailscale >/dev/null 2>&1; then
+        tailscale ip -4 2>/dev/null | head -n 1 || true
+    fi
+}
+
+detect_lan_ip() {
+    if [[ -n "${AISHA_DETECT_LAN_IP:-}" ]]; then
+        printf '%s\n' "$AISHA_DETECT_LAN_IP"
+        return
+    fi
+
+    local lan_ip
+
+    if command -v hostname >/dev/null 2>&1; then
+        lan_ip="$(
+            hostname -I 2>/dev/null |
+            tr ' ' '\n' |
+            grep -Ev '^(127\.|100\.)' |
+                head -n 1
+        )"
+
+        if [[ -n "$lan_ip" ]]; then
+            printf '%s\n' "$lan_ip"
+            return
+        fi
+    fi
+
+    if command -v ipconfig >/dev/null 2>&1; then
+        for interface in en0 en1; do
+            lan_ip="$(ipconfig getifaddr "$interface" 2>/dev/null || true)"
+            if [[ -n "$lan_ip" ]]; then
+                printf '%s\n' "$lan_ip"
+                return
+            fi
+        done
+    fi
+
+    true
+}
+
+recommend_models() {
+    local memory_gib="$1"
+
+    if ((memory_gib >= 12)); then
+        printf '%s\n' 'llama3.2:3b qwen3:4b'
+    elif ((memory_gib >= 8)); then
+        printf '%s\n' 'llama3.2:3b'
+    else
+        printf '%s\n' 'llama3.2:1b'
+    fi
+}
+
+print_recommendations() {
+    CURRENT_PHASE="recommendations"
+
+    local os_name
+    local codename
+    local raw_arch
+    local normalized_arch
+    local memory_gib
+    local data_mounted
+    local tailnet_ip
+    local lan_ip
+    local hostname_value
+    local model_choices
+
+    os_name="$(detect_os_pretty_name)"
+    codename="$(detect_debian_codename)"
+    local kernel_name
+    kernel_name="${AISHA_DETECT_KERNEL:-$(uname -s)}"
+
+    raw_arch="$(detect_architecture)"
+    normalized_arch="$(normalize_architecture "$raw_arch")"
+    memory_gib="$(detect_memory_gib)"
+    data_mounted="$(detect_data_mount_state)"
+    tailnet_ip="$(detect_tailnet_ip)"
+    lan_ip="$(detect_lan_ip)"
+    hostname_value="${AISHA_DETECT_HOSTNAME:-$(hostname 2>/dev/null || printf 'homelab')}"
+    model_choices="$(recommend_models "$memory_gib")"
+
+    printf 'Aisha host recommendations\n\n'
+    printf 'Detected system:\n'
+    printf '  OS: %s\n' "$os_name"
+    printf '  Kernel: %s\n' "$kernel_name"
+    printf '  Debian codename: %s\n' "$codename"
+    printf '  Architecture: %s (%s)\n' "$raw_arch" "$normalized_arch"
+    printf '  Memory: %s GiB\n' "$memory_gib"
+    printf '  /srv/data mounted: %s\n' "$data_mounted"
+    printf '  Tailnet IP: %s\n' "${tailnet_ip:-not detected}"
+    printf '  LAN IP: %s\n' "${lan_ip:-not detected}"
+    printf '  Hostname: %s\n\n' "$hostname_value"
+
+    printf 'Suggested profile:\n'
+    if [[ "$kernel_name" == Darwin ]]; then
+        printf '  Platform: MacBook development/control machine\n'
+        printf '  Bootstrap: use SSH or a VM to apply changes to a Debian-family Linux target\n'
+    else
+        case "$normalized_arch" in
+            amd64)
+                printf '  Platform: general amd64 Linux server or VM\n'
+                ;;
+            arm64)
+                printf '  Platform: arm64 Linux appliance; Raspberry Pi 5 is the reference profile\n'
+                ;;
+            *)
+                printf '  Platform: unsupported until bootstrap scripts are reviewed for this architecture\n'
+                ;;
+        esac
+    fi
+
+    if ((memory_gib >= 12)); then
+        printf '  AI models: install baseline chat models (%s)\n' "$model_choices"
+    elif ((memory_gib >= 8)); then
+        printf '  AI models: keep the lighter default chat model (%s)\n' "$model_choices"
+    else
+        printf '  AI models: use the smallest chat model profile (%s)\n' "$model_choices"
+    fi
+
+    if [[ "$kernel_name" == Darwin ]]; then
+        printf '  Storage: keep runtime data on the Linux target, not the MacBook checkout\n'
+    elif [[ "$data_mounted" == yes ]]; then
+        printf '  Storage: use existing /srv/data durable-data layout\n'
+    else
+        printf '  Storage: create or mount /srv/data before running --apply\n'
+    fi
+
+    printf '\nSuggested host env values:\n'
+    printf '  TAILNET_BIND_IP=%s\n' "${tailnet_ip:-<tailnet-ip>}"
+    printf '  TAILSCALE_SERVE_HOST=%s\n' "${AISHA_DETECT_TAILSCALE_HOST:-${hostname_value}.<tailnet>.ts.net}"
+    printf '  TRAEFIK_LAN_IP=%s\n' "${lan_ip:-<lan-ip>}"
+    printf '  HOMELAB_HOSTNAME=%s\n' "$hostname_value"
+    printf '  AISHA_OLLAMA_CHAT_MODELS="%s"\n' "$model_choices"
+
+    printf '\nNext steps:\n'
+    if [[ "$kernel_name" == Darwin ]]; then
+        printf '  1. Use this checkout for editing, docs, tests, and GitHub updates.\n'
+        printf '  2. Use Docker Desktop for local Compose rendering when needed.\n'
+        printf '  3. Apply bootstrap phases from a Debian-family Linux host or VM.\n'
+    else
+        printf '  1. Copy configs/host.env.example to a local, untracked host env file.\n'
+        printf '  2. Replace the Aisha defaults with the suggested values for this host.\n'
+        printf '  3. Run ./%s --dry-run before ./%s --apply.\n' "$SCRIPT_NAME" "$SCRIPT_NAME"
+    fi
 }
 
 preflight() {
@@ -193,7 +456,7 @@ preflight() {
         die "Run this installer as your normal user, not with sudo."
 
     [[ "$(uname -s)" == "Linux" ]] ||
-        die "This installer requires Linux."
+        die "This installer applies changes on Linux hosts. On macOS, use --recommend and run the bootstrap on a Linux target."
 
     local architecture
     architecture="$(uname -m)"
@@ -696,6 +959,11 @@ main() {
     if [[ "$VALIDATE_MANIFEST" == true ]]; then
         discover_phases
         printf '\nManifest validation completed successfully.\n'
+        exit 0
+    fi
+
+    if [[ "$RECOMMEND" == true ]]; then
+        print_recommendations
         exit 0
     fi
 

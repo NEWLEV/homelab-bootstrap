@@ -27,6 +27,17 @@ The project should not introduce new Raspberry Pi-only checks in shared
 bootstrap code. Hardware-specific behavior belongs in clearly named scripts,
 docs, or service profiles.
 
+## System Recommendations
+
+Run the read-only recommendation command before applying a new host:
+
+```bash
+./install.sh --recommend
+```
+
+The command inspects the current system and suggests platform profile,
+storage readiness, host-specific Compose values, and a local Ollama model set.
+
 ## Host-Specific Configuration
 
 The checked-in Compose files use Aisha defaults, but common host values are
@@ -45,3 +56,13 @@ overrides. Do not commit private host addresses, secrets, or one-off runtime
 state as a portability fix.
 
 Start from `configs/host.env.example` when preparing a new host profile.
+
+## MacBooks
+
+MacBooks are supported as development and control machines. They are the right
+place to edit the repository, review GitHub changes, run portable checks, and
+control remote Linux hosts over SSH.
+
+The bootstrap installer does not apply host changes directly on macOS. Use
+`./install.sh --recommend` for local guidance, then apply bootstrap phases from
+a Debian-family Linux host, Linux VM, or the target homelab machine.

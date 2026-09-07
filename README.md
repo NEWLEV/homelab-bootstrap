@@ -1,6 +1,6 @@
 # Aisha Homelab Bootstrap
 
-Aisha is an infrastructure-as-code project for provisioning, operating, and maintaining a reproducible Linux homelab. The live reference appliance is a Raspberry Pi 5, but the GitHub repository is intended to work on supported Debian-family Linux hosts, including `amd64` and `arm64` systems.
+Aisha is an infrastructure-as-code project for provisioning, operating, and maintaining a reproducible Linux homelab. The live reference appliance is a Raspberry Pi 5, but the GitHub repository is intended to work on supported Debian-family Linux hosts, including `amd64` and `arm64` systems. MacBooks are supported as development and control machines.
 
 The repository contains:
 
@@ -62,11 +62,15 @@ Validate the installer.
 ```bash
 ./install.sh --list
 
+./install.sh --recommend
+
 ./install.sh --dry-run
 ```
 
 For a non-Aisha host, review `docs/platforms.md` and start from
-`configs/host.env.example` before running Compose services.
+`configs/host.env.example` before running Compose services. On a MacBook, use
+`./install.sh --recommend` for guidance, then run `--apply` on a Linux target
+or VM.
 
 Apply the bootstrap.
 

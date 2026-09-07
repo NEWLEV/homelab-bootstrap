@@ -67,6 +67,11 @@ hosts may use the same path for repeatability, or override documented Compose
 variables such as `TAILNET_BIND_IP`, `TRAEFIK_LAN_IP`, and
 `HOMELAB_HOSTNAME` where host-specific addressing differs.
 
+MacBooks are supported as development and control machines. Use
+`./install.sh --recommend` on macOS to inspect the machine and get suggested
+next steps, but run `./install.sh --apply` only on a Debian-family Linux host
+or VM.
+
 ## Adding a New Bootstrap Phase
 
 1. Create a new script in `scripts/bootstrap.d/`.
