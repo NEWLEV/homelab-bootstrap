@@ -1,15 +1,12 @@
 # Hermes Service
 
-Hermes is the second assistant runtime for this appliance. It is kept
-separate from OpenClaw so each runtime has its own config, memory, skills,
-dashboard, and lifecycle.
+Hermes is the second assistant runtime for this appliance.
 
 ## Responsibilities
 
-- Run Hermes as an isolated assistant runtime.
+- Run Hermes as an isolated assistant runtime with its own state.
 - Reuse Local RAG, MCP, and approved infrastructure services.
-- Keep Hermes state under `~/.hermes/` or the dedicated host volume under
-  `/srv/data/services/hermes/`.
+- Keep Hermes state under `~/.hermes/` or `/srv/data/services/hermes/`.
 - Avoid sharing OpenClaw secrets or browser-facing code paths.
 
 ## Recommended runtime boundaries
@@ -34,9 +31,8 @@ dashboard, and lifecycle.
 - Hermes can reach Local RAG.
 - Hermes can load approved skills and MCP servers.
 - Hermes can read the OpenClaw checkout from `/workspace/openclaw`.
+- Hermes state is kept in `/srv/data/services/hermes/`, so the normal service-data backup and restore flow applies.
 - OpenClaw still remains available at its own routes.
 
 Use `bash scripts/install-hermes-service.sh` to create the host runtime,
 generate the local secrets file, and start the container.
-The installer now forces a container recreate so compose mount changes, such
-as the OpenClaw repo bind, actually apply to the live Hermes runtime.

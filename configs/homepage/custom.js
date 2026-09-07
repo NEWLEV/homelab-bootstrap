@@ -4,7 +4,7 @@
  *
  * Installed at /srv/data/services/homepage/config/custom.js (see
  * scripts/install-homepage-aisha-launcher). The chat itself is served
- * same-origin by the OpenClaw gateway under /aisha/ and proxied to the
+ * same-origin by the Aisha gateway under /aisha/ and proxied to the
  * Local RAG service; no credentials ever reach this file or the browser.
  */
 
@@ -18,11 +18,10 @@
   const UNREAD_KEY = 'aisha:unread';
   const PROBE_INTERVAL_MS = 60000;
 
-  // The gateway is intentionally reachable only through the same-origin,
-  // tailnet-restricted Traefik route at /aisha. It has no host-published
-  // fallback port.
+  // The native OpenClaw Control UI at /openclaw is not a chat API and must not
+  // be used as a launcher fallback.
   const CHAT_BASES = [
-    { base: '/aisha', origin: window.location.origin },
+    { base: 'https://aisha.tail4553c9.ts.net/aisha', origin: 'https://aisha.tail4553c9.ts.net' },
   ];
 
   let available = false;
@@ -141,6 +140,8 @@
     }
     panel = document.createElement('div');
     panel.id = 'aisha-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Chat with Aisha');
     panel.hidden = true;
 
     iframe = document.createElement('iframe');

@@ -13,13 +13,14 @@ services:
       - run
 
     env_file:
-      - ${HERMES_ENV_FILE}
+      - ${HERMES_ENV_FILE:-/srv/data/services/hermes/hermes.env}
 
     environment:
       HOME: /opt/data
       HERMES_HOME: /opt/data
       OPENCLAW_REPO_PATH: /workspace/openclaw
       LOCAL_RAG_URL: http://local-rag-api:8080
+      NLC_RAG_URL: http://local-rag-nlc-api:8080
       LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: 0.0.0.0
@@ -39,9 +40,11 @@ services:
     ports:
       - target: 9119
         published: "9119"
+        host_ip: 100.106.201.14
         protocol: tcp
       - target: 8642
         published: "8642"
+        host_ip: 100.106.201.14
         protocol: tcp
 
     networks:
@@ -57,6 +60,7 @@ services:
         - >
           node -e "const http=require('http');
           const req=http.get('http://127.0.0.1:9119', res => process.exit(res.statusCode && res.statusCode < 500 ? 0 : 1));
+          req.setTimeout(5000, () => { req.destroy(); process.exit(1); });
           req.on('error', () => process.exit(1));"
       interval: 30s
       timeout: 10s
@@ -72,4 +76,4 @@ networks:
 
 secrets:
   local_rag_api_token:
-    file: ${LOCAL_RAG_API_TOKEN_FILE}
+    file: ${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}

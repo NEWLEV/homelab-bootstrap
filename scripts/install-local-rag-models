@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
+
+compose_file="${LOCAL_RAG_COMPOSE_FILE:-$repo_root/compose/ai/local-rag.yml}"
+ollama_container="${LOCAL_RAG_OLLAMA_CONTAINER:-local-rag-ollama}"
+embedding_model="${EMBEDDING_MODEL:-nomic-embed-text}"
+chat_models_text="${AISHA_OLLAMA_CHAT_MODELS:-llama3.2:3b qwen3:4b}"
+
+if [[ ! -s "$compose_file" ]]; then
+    printf 'Local RAG compose file is missing: %s\n' "$compose_file" >&2
+    exit 1
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+    printf 'docker is required to install Ollama models.\n' >&2
+    exit 1
+fi
+
+docker compose -f "$compose_file" up -d ollama
+
+if ! docker inspect "$ollama_container" >/dev/null 2>&1; then
+    printf 'Ollama container is unavailable: %s\n' "$ollama_container" >&2
+    exit 1
+fi
+
+read -r -a chat_models <<<"$chat_models_text"
+models=("$embedding_model" "${chat_models[@]}")
+
+for model in "${models[@]}"; do
+    if [[ -z "$model" ]]; then
+        continue
+    fi
+    printf 'Installing Ollama model: %s\n' "$model"
+    docker exec "$ollama_container" ollama pull "$model"
+done
+
+printf 'Local RAG Ollama models are ready.\n'

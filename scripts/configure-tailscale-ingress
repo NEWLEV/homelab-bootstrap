@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Keep TLS termination in Tailscale Serve and send plain HTTP only to the
+# loopback-only Traefik entrypoint. This avoids both double TLS and redirects.
+readonly SERVE_PORT="${TAILSCALE_SERVE_PORT:-443}"
+readonly TRAEFIK_BACKEND="${TAILSCALE_SERVE_BACKEND:-http://127.0.0.1:18080}"
+readonly TRAEFIK_HOST="${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}"
+readonly N8N_BACKEND="${TAILSCALE_N8N_BACKEND:-http://127.0.0.1:5678}"
+readonly OPENCLAW_BACKEND="${TAILSCALE_OPENCLAW_BACKEND:-http://127.0.0.1:18789}"
+
+if ((EUID != 0)); then
+    printf 'Run as root: sudo bash %s\n' "$0" >&2
+    exit 1
+fi
+
+command -v tailscale >/dev/null 2>&1 || {
+    printf 'tailscale is required.\n' >&2
+    exit 1
+}
+command -v curl >/dev/null 2>&1 || {
+    printf 'curl is required.\n' >&2
+    exit 1
+}
+
+curl --fail --silent --show-error --max-time 5 \
+    -H "Host: $TRAEFIK_HOST" \
+    "$TRAEFIK_BACKEND/" >/dev/null || {
+        printf 'Traefik is not ready at %s. Start it before configuring Serve.\n' \
+            "$TRAEFIK_BACKEND"
+        exit 1
+}
+
+curl --fail --silent --show-error --max-time 5 \
+    "$OPENCLAW_BACKEND/openclaw/" >/dev/null || {
+        printf 'Native OpenClaw is not ready at %s/openclaw/.\n' \
+            "$OPENCLAW_BACKEND" >&2
+        exit 1
+    }
+
+# Replace the managed Serve configuration so stale path handlers cannot keep
+# sending traffic to old container IPs. The --bg flag makes the result
+# persistent across shell exit, Tailscale restart, and host reboot.
+tailscale serve reset
+tailscale serve --yes --bg --https="$SERVE_PORT" "$TRAEFIK_BACKEND"
+
+# Keep the existing n8n shortcut working when the optional local service is
+# installed. A later run will add it after n8n is started.
+if curl --fail --silent --show-error --max-time 3 "$N8N_BACKEND/" >/dev/null 2>&1; then
+    tailscale serve --yes --bg --https="$SERVE_PORT" \
+        --set-path=/n8n "$N8N_BACKEND"
+    printf 'Preserved n8n at /n8n via %s.\n' "$N8N_BACKEND"
+else
+    printf 'n8n backend not detected at %s; /n8n was not configured.\n' \
+        "$N8N_BACKEND"
+fi
+
+# The native gateway owns this path. Its loopback bind keeps the Control UI off
+# the LAN while Tailscale Serve supplies the tailnet-only HTTPS boundary.
+tailscale serve --yes --bg --https="$SERVE_PORT" \
+    --set-path=/openclaw "$OPENCLAW_BACKEND/openclaw"
+printf 'Published native OpenClaw at /openclaw via %s.\n' "$OPENCLAW_BACKEND"
+
+printf 'Tailscale Serve now terminates HTTPS on port %s and proxies to %s.\n' \
+    "$SERVE_PORT" "$TRAEFIK_BACKEND"
+tailscale serve status

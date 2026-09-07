@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 from pathlib import Path
-from time import perf_counter
+from time import monotonic, perf_counter
 from typing import Any, Literal
 
 import chromadb
@@ -101,7 +101,10 @@ async def require_api_authentication(
     )
 
 
-CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", "/data/chroma"))
+DEFAULT_CHROMA_PATH = (
+    Path.home() / ".local" / "share" / "aisha" / "chroma"
+)
+CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", str(DEFAULT_CHROMA_PATH)))
 INDEX_STATUS_PATH = Path(
     os.environ.get(
         "INDEX_STATUS_PATH",
@@ -117,6 +120,7 @@ GENERATION_MODEL = os.environ.get(
     "GENERATION_MODEL",
     "llama3.2:3b",
 )
+MODEL_DISCOVERY_TTL_SECONDS = 60.0
 CONFIDENCE_MIN_SCORE = float(
     os.environ.get("CONFIDENCE_MIN_SCORE", "0.45")
 )
@@ -194,6 +198,7 @@ class AskRequest(BaseModel):
     )
     directory: str | None = Field(default=None, max_length=1024)
     extension: str | None = Field(default=None, max_length=64)
+    model: str | None = Field(default=None, max_length=128)
 
 
 class Citation(BaseModel):
@@ -228,6 +233,75 @@ class AskResponse(BaseModel):
     citation_completeness: float | None = None
     confidence_reasons: list[str] | None = None
     retrieval_debug: list[RetrievalDiagnostic] | None = None
+
+
+_available_models_cache: tuple[float, list[str]] | None = None
+
+
+def _extract_model_name(entry: Any) -> str | None:
+    if not isinstance(entry, dict):
+        return None
+    for key in ("name", "model", "model_name"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _is_generation_model(model_name: str) -> bool:
+    """Keep embedding-only models out of the chat model selector."""
+    model_base = model_name.split(":", 1)[0]
+    embedding_base = EMBEDDING_MODEL.strip().split(":", 1)[0]
+    return model_base != embedding_base
+
+
+def discover_available_models() -> list[str]:
+    global _available_models_cache
+
+    now = monotonic()
+    if _available_models_cache:
+        cached_at, cached_models = _available_models_cache
+        if now - cached_at < MODEL_DISCOVERY_TTL_SECONDS:
+            return list(cached_models)
+
+    models = [GENERATION_MODEL]
+    try:
+        response = httpx.get(f"{OLLAMA_URL}/api/tags", timeout=10)
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise RuntimeError("Unexpected model inventory payload.")
+        for entry in payload.get("models", []):
+            model_name = _extract_model_name(entry)
+            if (
+                model_name
+                and _is_generation_model(model_name)
+                and model_name not in models
+            ):
+                models.append(model_name)
+    except Exception:
+        pass
+
+    _available_models_cache = (now, models)
+    return list(models)
+
+
+def resolve_generation_model(requested_model: str | None) -> str:
+    candidate = (requested_model or "").strip() or GENERATION_MODEL
+    available = discover_available_models()
+    if candidate not in available:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Model '{candidate}' is not available. "
+                f"Available models: {', '.join(available)}."
+            ),
+    )
+    return candidate
+
+
+def list_model_choices() -> list[str]:
+    return discover_available_models()
 
 
 def embed_text(text: str) -> list[float]:
@@ -496,13 +570,13 @@ Answer:
 """
 
 
-def generate_answer(prompt: str) -> str:
+def generate_answer(prompt: str, *, model: str) -> str:
     with metrics.time("generation"):
         try:
             response = httpx.post(
                 f"{OLLAMA_URL}/api/generate",
                 json={
-                    "model": GENERATION_MODEL,
+                    "model": model,
                     "prompt": prompt,
                     "stream": False,
                     "options": {
@@ -614,6 +688,7 @@ def health() -> dict[str, Any]:
         "chunks": collection.count(),
         "embedding_model": EMBEDDING_MODEL,
         "generation_model": GENERATION_MODEL,
+        "available_models": discover_available_models(),
         "reranker_enabled": reranker.enabled,
         "reranker_model": reranker.model_name,
         "reranker_threads": reranker.threads,
@@ -774,8 +849,10 @@ def ask(request: AskRequest) -> AskResponse:
         request.history,
     )
 
+    generation_model = resolve_generation_model(request.model)
+
     try:
-        answer = generate_answer(prompt)
+        answer = generate_answer(prompt, model=generation_model)
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=502,
@@ -929,6 +1006,8 @@ async def ask_stream(
             response.model_dump(exclude_none=True),
         )
 
+    generation_model = resolve_generation_model(body.model)
+
     async def events():
         if not confidence.sufficient:
             metrics.increment("refused_answers")
@@ -956,7 +1035,7 @@ async def ask_stream(
         try:
             async for token in stream_ollama_answer(
                 ollama_url=OLLAMA_URL,
-                model=GENERATION_MODEL,
+                model=generation_model,
                 prompt=prompt,
                 is_disconnected=request.is_disconnected,
             ):

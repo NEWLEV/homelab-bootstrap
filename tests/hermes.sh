@@ -24,19 +24,24 @@ assert_contains() {
 }
 
 test_hermes_docs_exist() {
-    if [[ -s "$REPO_ROOT/docs/hermes.md" ]]; then
-        pass "hermes docs exist"
-    else
-        fail "hermes docs exist"
-    fi
+    local file
+    for file in "$REPO_ROOT/docs/hermes.md" "$REPO_ROOT/services/hermes/README.md"; do
+        if [[ -s "$file" ]]; then
+            pass "$(basename "$file") exists"
+        else
+            fail "$(basename "$file") exists"
+        fi
+    done
 }
 
-test_hermes_readme_exists() {
-    if [[ -s "$REPO_ROOT/services/hermes/README.md" ]]; then
-        pass "hermes service readme exists"
-    else
-        fail "hermes service readme exists"
-    fi
+test_hermes_docs_contract() {
+    local docs readme
+    docs="$(cat "$REPO_ROOT/docs/hermes.md")"
+    readme="$(cat "$REPO_ROOT/services/hermes/README.md")"
+    assert_contains "hermes docs mention openclaw mount" '/workspace/openclaw' "$docs"
+    assert_contains "hermes docs mention local rag" 'Local RAG' "$docs"
+    assert_contains "hermes docs mention skills" 'skills and approved MCP servers' "$docs"
+    assert_contains "hermes readme mentions backups" 'normal service-data backup and restore flow applies' "$readme"
 }
 
 test_hermes_compose_contract() {
@@ -50,8 +55,10 @@ test_hermes_compose_contract() {
     assert_contains "hermes compose enables api server" 'API_SERVER_ENABLED: "true"' "$output"
     assert_contains "hermes compose enables dashboard" 'HERMES_DASHBOARD: "1"' "$output"
     assert_contains "hermes compose publishes dashboard port" 'published: "9119"' "$output"
+    assert_contains "hermes dashboard binds to tailnet" 'host_ip: 100.106.201.14' "$output"
     assert_contains "hermes compose publishes api port" 'published: "8642"' "$output"
     assert_contains "hermes compose loads env file" 'HERMES_ENV_FILE' "$output"
+    assert_contains "hermes healthcheck has a request timeout" 'req.setTimeout(5000' "$output"
 }
 
 test_hermes_installer_exists() {
@@ -62,10 +69,17 @@ test_hermes_installer_exists() {
     fi
 }
 
+test_hermes_installer_forces_recreate() {
+    local output
+    output="$(cat "$REPO_ROOT/scripts/install-hermes-service.sh")"
+    assert_contains "hermes installer forces recreate" '--force-recreate --remove-orphans' "$output"
+}
+
 test_hermes_docs_exist
-test_hermes_readme_exists
+test_hermes_docs_contract
 test_hermes_compose_contract
 test_hermes_installer_exists
+test_hermes_installer_forces_recreate
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
 printf 'Failed: %d\n' "$FAIL_COUNT"

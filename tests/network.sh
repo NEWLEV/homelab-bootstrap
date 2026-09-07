@@ -20,13 +20,24 @@ assert_not_contains() {
     if grep -Fq -- "$rejected" "$file"; then fail "$name"; else pass "$name"; fi
 }
 
-assert_contains "OpenClaw route is tailnet restricted" \
-    'aisha-chat-tailnet.ipallowlist.sourcerange' \
+assert_contains "Traefik has a private tailnet entrypoint" \
+    '--entrypoints.tailnet.address=:18080' \
+    "$REPO_ROOT/compose/networking/traefik.yml"
+assert_contains "Traefik tailnet entrypoint is loopback bound" \
+    '127.0.0.1:18080:18080' \
+    "$REPO_ROOT/compose/networking/traefik.yml"
+assert_contains "Traefik LAN HTTPS avoids the Tailscale bind" \
+    'TRAEFIK_LAN_IP:-192.168.1.97' \
+    "$REPO_ROOT/compose/networking/traefik.yml"
+assert_contains "OpenClaw uses the private tailnet entrypoint" \
+    'traefik.http.routers.aisha-chat.entrypoints: "tailnet"' \
     "$REPO_ROOT/compose/ai/openclaw.yml"
 assert_not_contains "OpenClaw has no host-published gateway port" \
     'published: "18789"' "$REPO_ROOT/compose/ai/openclaw.yml"
 assert_contains "Homepage direct port is tailnet bound" \
     'host_ip: 100.106.201.14' "$REPO_ROOT/compose/core/homepage.yml"
+assert_contains "Homepage allows the tailnet hostname" \
+    'aisha.tail4553c9.ts.net' "$REPO_ROOT/compose/core/homepage.yml"
 
 for mapping in \
     'compose/core/filebrowser.yml:100.106.201.14:8080:80' \

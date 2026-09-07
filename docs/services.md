@@ -121,12 +121,13 @@ restic snapshots
 
 ---
 
-## OpenClaw
+## OpenClaw and Aisha
 
 Purpose
 
-Gateway for the local assistant runtime. Hosts the Aisha chat interface
-and conversation API used by the dashboard.
+Native OpenClaw provides the Control UI. The repository-managed Aisha
+container provides the chat interface and conversation API used by the
+dashboard.
 
 Implementation
 
@@ -145,13 +146,13 @@ services/openclaw/Dockerfile
 
 Aisha chat
 
-The gateway serves the secure OpenClaw Control UI at
-`https://aisha.tail4553c9.ts.net/openclaw/` via Tailscale Serve and the Aisha
-chat UI at `https://aisha.tail4553c9.ts.net/aisha/`, same-origin with the
-Homepage dashboard. Questions are forwarded to the Local RAG `/ask/stream`
-endpoint with the bearer token held server-side, and answers stream back over
-SSE with grounded citations. Conversations persist under
-`/srv/data/services/openclaw/conversations`.
+The native OpenClaw Control UI is served at
+`https://aisha.tail4553c9.ts.net/openclaw/` by Tailscale Serve directly to
+the host gateway on `127.0.0.1:18789`. The Aisha container is served at
+`https://aisha.tail4553c9.ts.net/aisha/` through Traefik. Questions are
+forwarded to the Local RAG `/ask/stream` endpoint with the bearer token held
+server-side, and answers stream back over SSE with grounded citations.
+Conversations persist under `/srv/data/services/openclaw/conversations`.
 
 The dashboard launcher assets live in `configs/homepage/` and are installed
 with:
@@ -163,9 +164,9 @@ with:
 Homepage control shortcuts
 
 The Homepage dashboard now includes a shortcut panel with working links to
-the secure OpenClaw UI, Hermes, Kuma, File Browser, Portainer, Netdata, and
-the Aisha chat surface. Mission Control remains `coming soon` until a
-standalone page is implemented. The shortcut wiring lives in
+the secure OpenClaw UI at `/openclaw/`, Hermes, Kuma, File Browser, Portainer,
+Netdata, and the Aisha chat surface. Mission Control remains `coming soon`
+until a standalone page is implemented. The shortcut wiring lives in
 `configs/homepage/custom.js` and `configs/homepage/custom.css`. The main
 dashboard cards live in `configs/homepage/services.yaml`, which now includes a
 live Hermes card that points at the Hermes dashboard.
@@ -213,6 +214,14 @@ services such as Local RAG and selected MCP servers while keeping its own
 memory, skills, sessions, config, and dashboard under `~/.hermes/` or the
 host runtime directory under `/srv/data/services/hermes/`.
 
+Hermes can also inspect the OpenClaw checkout through the read-only mount at
+`/workspace/openclaw`, which keeps the two runtimes coordinated without
+sharing write access.
+
+Hermes state lives under `/srv/data/services/hermes/`, so the normal
+service-data backup and restore flow applies to it alongside the rest of the
+appliance.
+
 Hermes does not share OpenClaw secrets or browser-delivered code. The live
 runtime is installed with:
 
@@ -221,12 +230,26 @@ bash scripts/install-hermes-service.sh
 ```
 
 The dashboard is exposed on `http://aisha:9119/`, and the API server listens
-on `http://aisha:8642/` once the runtime is started.
+on `http://aisha:8642/` once the runtime is started. Both ports bind only to
+the Tailscale IPv4 address.
 
 Verify
 
 ```bash
 docker compose -f compose/ai/hermes.yml config --quiet
+```
+
+The HTTPS ingress is configured separately and persistently with:
+
+```bash
+sudo bash scripts/configure-tailscale-ingress
+```
+
+For a complete AI ingress reconciliation, including service recreation and
+health verification, use:
+
+```bash
+sudo bash scripts/reconfigure-ai-ingress
 ```
 
 After the service is installed, verify the runtime with:

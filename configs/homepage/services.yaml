@@ -2,7 +2,7 @@
     - OpenClaw:
         icon: mdi-robot
         href: https://aisha.tail4553c9.ts.net/openclaw/
-        description: Secure control UI for the current assistant runtime
+        description: Secure native OpenClaw Control UI
     - Hermes:
         icon: mdi-brain
         href: http://aisha:9119/

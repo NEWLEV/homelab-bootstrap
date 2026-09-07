@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-REPO="/srv/data/git/homelab-bootstrap"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO
 
 declare -A STACKS=(
   [homepage]="$REPO/compose/core/homepage.yml"
@@ -10,6 +11,8 @@ declare -A STACKS=(
   [uptime-kuma]="$REPO/compose/monitoring/uptime-kuma.yml"
   [netdata]="$REPO/compose/monitoring/netdata.yml"
   [traefik]="$REPO/compose/networking/traefik.yml"
+  [openclaw]="$REPO/compose/ai/openclaw.yml"
+  [hermes]="$REPO/compose/ai/hermes.yml"
 )
 
 usage() {
@@ -21,6 +24,7 @@ Usage:
   aisha-service down <service|all>
   aisha-service restart <service|all>
   aisha-service update <service|all>
+  sudo aisha-service ingress
   aisha-service logs <service>
 HELP
 }
@@ -62,6 +66,10 @@ update)
 
 logs)
     compose "$2" logs -f --tail=100
+    ;;
+
+ingress)
+    bash "$REPO/scripts/reconfigure-ai-ingress"
     ;;
 
 *)

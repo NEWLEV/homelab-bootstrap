@@ -1,12 +1,12 @@
-# OpenClaw Service — Aisha Chat Gateway
+# Aisha Chat Gateway
 
-This directory implements the OpenClaw runtime boundary and the Aisha chat
-gateway that runs inside it.
+This directory implements the repository-managed Aisha chat gateway. It is
+separate from the native OpenClaw installation on the host: the native
+OpenClaw Control UI is served at `/openclaw/`, while this container serves
+Aisha at `/aisha/`.
 
-OpenClaw is the internal gateway service for the local assistant runtime.
-Aisha is the user-facing assistant identity; every user-visible surface of
-this service is branded Aisha, while OpenClaw remains the internal service
-and container name.
+The container and Compose service retain the `openclaw` name for operational
+compatibility. Aisha is the user-facing assistant identity for this service.
 
 ## What the gateway does
 
@@ -30,18 +30,40 @@ and container name.
 - Aborts the upstream generation when the browser cancels, and stores a
   clearly labeled `stopped` partial answer.
 
+### Model selection
+
+The chat model selector is populated from the generation models currently
+installed in Ollama. Embedding-only models are intentionally omitted. To add
+another generation model, pull it into the Ollama container and reload the
+chat:
+
+```bash
+docker exec local-rag-ollama ollama pull <model>
+```
+
+The repository-managed local model installer keeps the appliance baseline at
+`llama3.2:3b` plus `qwen3:4b`, with `nomic-embed-text` for embeddings:
+
+```bash
+scripts/install-local-rag-models
+```
+
+The selected model is remembered per conversation and sent through the Aisha
+gateway to Local RAG. The default remains `GENERATION_MODEL` (normally
+`llama3.2:3b`) unless `OPENCLAW_DEFAULT_MODEL` is set.
+
 ## Exposure and trust boundary
 
 Two access paths are supported:
 
-1. **Tailscale Serve control UI** - `https://aisha.tail4553c9.ts.net/openclaw/`
-   exposes the stock OpenClaw Control UI in a secure browser context. The
-   gateway listens on loopback and Tailscale Serve provides the HTTPS
-   transport, which keeps the browser secure-context requirements intact.
-2. **Aisha chat gateway** - `https://aisha.tail4553c9.ts.net/aisha/`
-   serves the chat surface used by the Homepage launcher. That path remains
-   same-origin with the dashboard host so the embedded panel can talk to the
-   gateway without exposing credentials to the browser.
+ 1. **Native OpenClaw Control UI** - `https://aisha.tail4553c9.ts.net/openclaw/`
+    is served directly by Tailscale Serve to the host gateway at
+    `http://127.0.0.1:18789`. The loopback bind keeps the native gateway off
+    the LAN while the tailnet-only HTTPS boundary provides a secure browser
+    context.
+ 2. **Aisha chat gateway** - `https://aisha.tail4553c9.ts.net/aisha/`
+    serves the chat surface used by the Homepage launcher through the
+    repository-managed container and Traefik.
 
 When Homepage is used at `http://aisha:8000` or
 `http://100.106.201.14:8000`, the launcher opens the same Aisha chat surface

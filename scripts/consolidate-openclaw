@@ -1,138 +1,94 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-readonly TAILNET_URL="${OPENCLAW_TAILNET_URL:-https://aisha.tail4553c9.ts.net/openclaw/api/health}"
-readonly NATIVE_CLI="/home/nlc/.npm-global/bin/openclaw"
+# Compatibility wrapper for the old consolidation command. The native
+# gateway and the repository-managed Aisha gateway are intentionally separate.
+readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly NATIVE_UNIT="openclaw-gateway.service"
+readonly NATIVE_UI_URL="${OPENCLAW_UI_URL:-https://aisha.tail4553c9.ts.net/openclaw/}"
+readonly AISHA_HEALTH_URL="${AISHA_HEALTH_URL:-https://aisha.tail4553c9.ts.net/aisha/api/health}"
 
 usage() {
     printf 'Usage: %s --dry-run | --apply | --verify\n' "$0"
 }
 
-run() {
-    if [[ "$MODE" == "dry-run" ]]; then
-        printf '+'
-        printf ' %q' "$@"
-        printf '\n'
-    else
-        "$@"
+native_service_is_active() {
+    local service_user="${SUDO_USER:-$(id -un)}"
+    local service_uid
+    service_uid="$(id -u "$service_user")"
+    if [[ "$service_user" == "$(id -un)" ]]; then
+        systemctl --user is-enabled --quiet "$NATIVE_UNIT" &&
+            systemctl --user is-active --quiet "$NATIVE_UNIT"
+        return
     fi
-}
-
-native_gateway_pids() {
-    local proc
-    local -a args
-
-    for proc in /proc/[0-9]*; do
-        [[ -r "$proc/cmdline" ]] || continue
-        args=()
-        mapfile -d '' -t args < "$proc/cmdline" || true
-
-        if ((${#args[@]} == 5)) &&
-            [[ "${args[0]##*/}" == "node" ]] &&
-            [[ "${args[1]}" == "$NATIVE_CLI" ]] &&
-            [[ "${args[2]}" == "gateway" ]] &&
-            [[ "${args[3]}" == "--tailscale" ]] &&
-            [[ "${args[4]}" == "serve" ]]; then
-            printf '%s\n' "${proc##*/}"
-        fi
-    done
+    sudo -n -u "$service_user" env XDG_RUNTIME_DIR="/run/user/$service_uid" \
+        systemctl --user is-enabled --quiet "$NATIVE_UNIT" &&
+        sudo -n -u "$service_user" env XDG_RUNTIME_DIR="/run/user/$service_uid" \
+            systemctl --user is-active --quiet "$NATIVE_UNIT"
 }
 
 container_is_healthy() {
     [[ "$(docker inspect openclaw --format '{{.State.Status}} {{.State.Health.Status}}' 2>/dev/null)" == \
-        "running healthy" ]]
+        'running healthy' ]]
 }
 
-tailnet_is_ready() {
-    curl --fail --silent --show-error --max-time 10 "$TAILNET_URL" |
-        jq -e '.status == "ok" and .ready == true' >/dev/null
+native_ui_is_ready() {
+    curl --fail --silent --show-error --max-time 10 "$NATIVE_UI_URL" |
+        grep -Fq 'data-openclaw-control-ui-base-path="/openclaw"'
+}
+
+aisha_chat_is_ready() {
+    curl --fail --silent --show-error --max-time 10 "$AISHA_HEALTH_URL" |
+        jq -e '.ready == true' >/dev/null
 }
 
 serve_is_ready() {
-    tailscale serve status --json |
-        jq -e '((.TCP // {}) | length) > 0 or ((.Web // {}) | length) > 0' >/dev/null
+    local status
+    status="$(tailscale serve status 2>/dev/null)"
+    grep -Eq '^\|-- /[[:space:]]+proxy http://127.0.0.1:18080$' <<<"$status" &&
+        grep -Eq '^\|-- /openclaw[[:space:]]+proxy http://127.0.0.1:18789/openclaw$' <<<"$status"
 }
 
-host_gateway_ports_are_closed() {
-    ! ss -ltnH | awk '{print $4}' | grep -Eq ':(18789|18790)$'
+gateway_ports_are_loopback_only() {
+    local listeners
+    listeners="$(ss -ltnH | awk '$4 ~ /:(18789|18790)$/ { print $4 }')"
+    [[ -n "$listeners" ]] || return 1
+    ! grep -Evq '^(127\.0\.0\.1:(18789|18790)|\[::1\]:(18789|18790))$' <<<"$listeners"
 }
 
 verify_state() {
     local failed=0
-    local -a native_pids
 
-    mapfile -t native_pids < <(native_gateway_pids)
-
+    native_service_is_active || {
+        printf '%s\n' 'FAIL: native OpenClaw user service is not enabled and active.' >&2
+        failed=1
+    }
     container_is_healthy || {
-        printf '%s\n' 'FAIL: containerized OpenClaw is not healthy.' >&2
+        printf '%s\n' 'FAIL: repository-managed Aisha container is not healthy.' >&2
         failed=1
     }
-    ((${#native_pids[@]} == 0)) || {
-        printf 'FAIL: native OpenClaw gateway remains: %s\n' "${native_pids[*]}" >&2
-        failed=1
-    }
-    host_gateway_ports_are_closed || {
-        printf '%s\n' 'FAIL: host gateway port 18789 or 18790 remains open.' >&2
+    gateway_ports_are_loopback_only || {
+        printf '%s\n' 'FAIL: native OpenClaw gateway is not loopback-only.' >&2
         failed=1
     }
     serve_is_ready || {
-        printf '%s\n' 'FAIL: Tailscale Serve route is not ready.' >&2
+        printf '%s\n' 'FAIL: Tailscale Serve does not own the expected routes.' >&2
         failed=1
     }
-    tailnet_is_ready || {
-        printf '%s\n' 'FAIL: tailnet OpenClaw route is not ready.' >&2
+    native_ui_is_ready || {
+        printf '%s\n' 'FAIL: native OpenClaw Control UI route is not ready.' >&2
+        failed=1
+    }
+    aisha_chat_is_ready || {
+        printf '%s\n' 'FAIL: Aisha chat route is not ready.' >&2
         failed=1
     }
 
     if ((failed == 0)); then
-        printf '%s\n' 'PASS: exactly one healthy, repo-managed OpenClaw deployment remains.'
+        printf '%s\n' 'PASS: native OpenClaw and Aisha have separate healthy routes.'
     fi
 
     return "$failed"
-}
-
-apply_consolidation() {
-    local -a native_pids
-    local pid
-
-    container_is_healthy || {
-        printf '%s\n' 'ERROR: containerized OpenClaw must be healthy before consolidation.' >&2
-        exit 1
-    }
-    tailnet_is_ready || {
-        printf '%s\n' 'ERROR: tailnet OpenClaw route must be ready before consolidation.' >&2
-        exit 1
-    }
-
-    mapfile -t native_pids < <(native_gateway_pids)
-    if ((${#native_pids[@]} > 1)); then
-        printf 'ERROR: expected at most one exact native gateway; found %d.\n' \
-            "${#native_pids[@]}" >&2
-        exit 1
-    fi
-
-    run systemctl --user disable --now "$NATIVE_UNIT"
-
-    if ((${#native_pids[@]} == 1)); then
-        pid="${native_pids[0]}"
-        run kill -TERM "$pid"
-
-        if [[ "$MODE" != "dry-run" ]]; then
-            for _ in {1..10}; do
-                kill -0 "$pid" 2>/dev/null || break
-                sleep 1
-            done
-            if kill -0 "$pid" 2>/dev/null; then
-                printf 'ERROR: native gateway PID %s did not exit after SIGTERM.\n' "$pid" >&2
-                exit 1
-            fi
-        fi
-    fi
-
-    if [[ "$MODE" != "dry-run" ]]; then
-        verify_state
-    fi
 }
 
 if (($# != 1)); then
@@ -142,19 +98,18 @@ fi
 
 case "$1" in
     --dry-run)
-        MODE="dry-run"
-        printf '+ verify healthy container and ready tailnet route at %q\n' "$TAILNET_URL"
-        printf '+ identify native gateway by exact argv: node %q gateway --tailscale serve\n' "$NATIVE_CLI"
-        run systemctl --user disable --now "$NATIVE_UNIT"
-        printf '+ kill -TERM <exact-native-gateway-pid-if-present>\n'
-        printf '+ verify container health, closed host ports, and tailnet route\n'
+        printf '+ verify native unit, loopback gateway, Serve routes, and Aisha health\n'
+        printf '+ no runtime changes are made by this compatibility command\n'
         ;;
     --apply)
-        MODE="apply"
-        apply_consolidation
+        if ((EUID != 0)); then
+            printf 'Run as root: sudo bash %s --apply\n' "$0" >&2
+            exit 1
+        fi
+        printf '%s\n' 'The old consolidation action is retired; reconciling the canonical ingress instead.'
+        exec bash "$REPO_ROOT/scripts/reconfigure-ai-ingress"
         ;;
     --verify)
-        MODE="verify"
         verify_state
         ;;
     *)

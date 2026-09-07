@@ -347,13 +347,13 @@
       "id": "openclaw-secure-tailnet-ui",
       "resolved_at": "2026-08-10T23:00:00Z",
       "status": "declared",
-      "evidence": "OpenClaw Control UI is reachable at https://aisha.tail4553c9.ts.net/openclaw/ through Tailscale Serve while the gateway stays on loopback"
+      "evidence": "Native OpenClaw Control UI is reachable at /openclaw/ through tailnet-only Tailscale Serve while the gateway stays on loopback; Aisha chat remains at /aisha/"
     },
     {
       "id": "openclaw-chat-same-origin",
       "resolved_at": "2026-08-10T23:00:00Z",
       "status": "declared",
-      "evidence": "Aisha chat remains available at https://aisha.tail4553c9.ts.net/aisha/ with same-origin dashboard embedding"
+      "evidence": "Aisha chat remains available at http://aisha:8000/aisha/ with same-origin dashboard embedding"
     }
   ],
   "known_repository_gaps": [

@@ -88,8 +88,9 @@ def test_ask_rewrites_follow_up_and_separates_history(
         captured["query"] = query
         return [confident_match()]
 
-    def fake_generate(prompt: str) -> str:
+    def fake_generate(prompt: str, *, model: str) -> str:
         captured["prompt"] = prompt
+        captured["model"] = model
         return (
             "Offsite backups run Saturdays. "
             "[configs/systemd/aisha-backup-offsite.timer:1-11]"
@@ -122,6 +123,7 @@ def test_ask_rewrites_follow_up_and_separates_history(
     ]
     assert "ASSISTANT: Backups run nightly." in captured["prompt"]
     assert "Question:\nWhat about offsite?" in captured["prompt"]
+    assert captured["model"] == main.GENERATION_MODEL
 
 
 def test_history_never_bypasses_retrieval_confidence(monkeypatch) -> None:
@@ -136,7 +138,7 @@ def test_history_never_bypasses_retrieval_confidence(monkeypatch) -> None:
         lambda query, limit, **kwargs: [match],
     )
 
-    def fail_generation(prompt: str) -> str:
+    def fail_generation(prompt: str, *, model: str) -> str:
         raise AssertionError("history must not bypass retrieval")
 
     monkeypatch.setattr(main, "generate_answer", fail_generation)
@@ -167,6 +169,7 @@ def test_stream_rewrites_follow_up(monkeypatch) -> None:
 
     async def fake_stream(**kwargs):
         captured["prompt"] = kwargs["prompt"]
+        captured["model"] = kwargs["model"]
         yield (
             "Offsite backups run Saturdays. "
             "[configs/systemd/aisha-backup-offsite.timer:1-11]"
@@ -196,6 +199,67 @@ def test_stream_rewrites_follow_up(monkeypatch) -> None:
     assert "ASSISTANT: Backups run nightly." in captured["prompt"]
     assert "event: result" in response.text
     assert '"grounded":true' in response.text
+    assert captured["model"] == main.GENERATION_MODEL
+
+
+def test_ask_honors_selected_model(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_retrieve(query, limit, **kwargs):
+        return [confident_match()]
+
+    def fake_generate(prompt: str, *, model: str) -> str:
+        captured["model"] = model
+        return "Offsite backups run Saturdays. [configs/systemd/aisha-backup-offsite.timer:1-11]"
+
+    monkeypatch.setattr(main, "retrieve_chunks", fake_retrieve)
+    monkeypatch.setattr(main, "generate_answer", fake_generate)
+    monkeypatch.setattr(
+        main,
+        "discover_available_models",
+        lambda: [main.GENERATION_MODEL, "openai/gpt-5.5"],
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What about offsite?",
+            "model": "openai/gpt-5.5",
+        },
+    )
+
+    assert response.status_code == 200
+    assert captured["model"] == "openai/gpt-5.5"
+
+
+def test_stream_honors_selected_model(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_retrieve(query, limit, **kwargs):
+        return [confident_match()]
+
+    async def fake_stream(**kwargs):
+        captured["model"] = kwargs["model"]
+        yield "Offsite backups run Saturdays. [configs/systemd/aisha-backup-offsite.timer:1-11]"
+
+    monkeypatch.setattr(main, "retrieve_chunks", fake_retrieve)
+    monkeypatch.setattr(main, "stream_ollama_answer", fake_stream)
+    monkeypatch.setattr(
+        main,
+        "discover_available_models",
+        lambda: [main.GENERATION_MODEL, "openai/gpt-5.5"],
+    )
+
+    response = client.post(
+        "/ask/stream",
+        json={
+            "question": "What about offsite?",
+            "model": "openai/gpt-5.5",
+        },
+    )
+
+    assert response.status_code == 200
+    assert captured["model"] == "openai/gpt-5.5"
 
 
 def test_history_is_bounded_and_roles_are_validated() -> None:

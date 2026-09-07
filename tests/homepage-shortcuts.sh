@@ -19,15 +19,26 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local name="$1" rejected="$2" file="$3"
+    if grep -Fq -- "$rejected" "$file"; then fail "$name"; else pass "$name"; fi
+}
+
 assert_contains "OpenClaw shortcut points to the tailnet Control UI" \
     "https://aisha.tail4553c9.ts.net/openclaw/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "Aisha launcher points to the tailnet chat gateway" \
+    "https://aisha.tail4553c9.ts.net/aisha" \
+    "$REPO_ROOT/configs/homepage/custom.js"
+assert_not_contains "Aisha launcher does not treat native OpenClaw as chat" \
+    "https://aisha.tail4553c9.ts.net/openclaw" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Hermes shortcut is present" \
     "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "n8n shortcut points to secure automation UI" \
-    "https://aisha.tail4553c9.ts.net/n8n/home/workflows" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "https://aisha.tail4553c9.ts.net/n8n/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Kuma shortcut is present" \
     "http://100.106.201.14:3001" \
     "$REPO_ROOT/configs/homepage/custom.js"

@@ -123,23 +123,40 @@ Configuration:
 compose/networking/traefik.yml
 ```
 
+Configure the tailnet HTTPS boundary after Traefik is running:
+
+```bash
+sudo bash scripts/configure-tailscale-ingress
+tailscale serve status
+```
+
+To reconcile Traefik, Homepage, OpenClaw, Hermes, and Serve together after a
+fresh install or configuration change, run:
+
+```bash
+sudo bash scripts/reconfigure-ai-ingress
+```
+
 Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
 
 | Path | Service |
 |------|---------|
 | `/` | Homepage dashboard |
-| `/aisha` | Aisha chat gateway (OpenClaw) |
-| `/openclaw` | OpenClaw Control UI via Tailscale Serve |
+| `/openclaw` | Native OpenClaw Control UI (`127.0.0.1:18789`) |
+| `/aisha` | Aisha chat gateway (container via Traefik) |
+| `/n8n` | n8n workflow automation, when installed |
 
 The Homepage route remains available on `http://100.106.201.14:8000` for
-local dashboard access. OpenClaw itself listens on loopback and is published
-through Tailscale Serve at `https://aisha.tail4553c9.ts.net/openclaw/` so the
-browser gets a secure context for the stock Control UI.
+local dashboard access. The native OpenClaw gateway listens on loopback and
+is published directly by Tailscale Serve at
+`https://aisha.tail4553c9.ts.net/openclaw/`. The root Serve handler sends the
+Homepage and `/aisha/` traffic to Traefik's private loopback entrypoint;
+Traefik then routes `/aisha/` to the repository-managed Aisha container.
 
-The Homepage and OpenClaw routes use Traefik IP allowlists for the Tailscale
-CGNAT and ULA ranges. OpenClaw publishes no host port and trusts proxy headers
-only from the declared Traefik network. Local RAG credentials remain inside
-the gateway container.
+The Homepage and OpenClaw routes are reachable through the tailnet-only
+Tailscale Serve listener and a loopback-only Traefik entrypoint. OpenClaw
+publishes no host port and trusts proxy headers only from the declared Traefik
+network. Local RAG credentials remain inside the gateway container.
 
 Verify:
 
@@ -175,7 +192,8 @@ sudo security/firewall.sh --apply
 sudo security/firewall.sh --verify
 ```
 
-The policy keeps SSH and Traefik ports 80/443 broadly reachable, permits
+The policy keeps SSH and Traefik port 80 broadly reachable, keeps LAN HTTPS on
+the configured LAN address, permits
 Tailscale transport and tailnet input, and installs IPv4 and IPv6
 `DOCKER-USER` rules. All other forwarded container traffic is dropped unless
 it arrives over `tailscale0`.
@@ -185,7 +203,8 @@ it arrives over `tailscale0`.
 | Port | Service | Declared bind | Intended audience |
 |------|---------|---------------|-------------------|
 | 22 | SSH | all IPv4/IPv6 | approved administrative clients |
-| 80, 443 | Traefik | all IPv4/IPv6 | HTTP(S) ingress; sensitive routes tailnet-filtered |
+| 80 | Traefik | all IPv4/IPv6 | HTTP ingress; sensitive routes tailnet-filtered |
+| 443 | Traefik | LAN address (`TRAEFIK_LAN_IP`) | LAN HTTPS; tailnet HTTPS is handled by Serve |
 | 3001 | Uptime Kuma | Tailscale IPv4 | tailnet |
 | 8000 | Homepage direct access | Tailscale IPv4 | tailnet |
 | 8020 | Mission Control | loopback | localhost |
@@ -199,29 +218,29 @@ it arrives over `tailscale0`.
 | 19999 | Netdata | Tailscale IPv4 | tailnet |
 | 34001 | Pironman dashboard | host wildcard, firewall-limited | tailnet pending bind remediation |
 
-The Homepage launcher is the supported way to reach the OpenClaw Control UI
-in a stable same-origin browser context. The gateway stays on loopback so the
-launcher can continue talking to `/aisha/` without exposing credentials to
-the browser. Hermes publishes its own dashboard and API ports rather than
-sharing the OpenClaw control path.
+Tailscale Serve is the only HTTPS terminator. It proxies the tailnet-only
+hostname to Traefik's loopback-only HTTP entrypoint on `127.0.0.1:18080`.
+The Homepage launcher is the supported way to reach the OpenClaw UI in a
+stable same-origin browser context. The gateway has no host-published port;
+Traefik reaches it only over the private Docker network. Hermes publishes its
+own Tailscale-bound dashboard and API ports rather than sharing the OpenClaw
+control path.
 
 Homepage shortcuts expose the operational landing pages that the dashboard
 should point at: Kuma on 3001, File Browser on 8080, Portainer HTTP on 9000,
 Netdata on 19999, and Pironman5 Max on 34001. Portainer TLS remains available
 on 9443 for clients that prefer it.
 
-OpenClaw consolidation is managed by:
+OpenClaw ingress reconciliation is managed by:
 
 ```bash
-scripts/consolidate-openclaw --dry-run
-scripts/consolidate-openclaw --apply
 scripts/consolidate-openclaw --verify
 ```
 
-The apply mode first proves that the container and tailnet HTTPS route are
-healthy. It then matches the native gateway by its complete argument vector,
-disables its user unit, sends only `SIGTERM`, and re-verifies tailnet access.
-It stops rather than escalating to a forced kill.
+The native gateway is intentionally retained as the owner of `/openclaw/`.
+The verification command checks that the native user service and the
+repository-managed Aisha container are both healthy; it never disables or
+terminates either runtime.
 
 Verify firewall status:
 

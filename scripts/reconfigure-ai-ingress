@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Reconcile the AI ingress from the repository: one local Traefik HTTP
+# boundary, one tailnet HTTPS terminator, and the two assistant runtimes.
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly repo_root
+readonly traefik_compose="$repo_root/compose/networking/traefik.yml"
+readonly homepage_compose="$repo_root/compose/core/homepage.yml"
+readonly openclaw_compose="$repo_root/compose/ai/openclaw.yml"
+readonly hermes_compose="$repo_root/compose/ai/hermes.yml"
+
+if ((EUID != 0)); then
+    printf 'Run as root: sudo bash %s\n' "$0" >&2
+    exit 1
+fi
+
+for file in "$traefik_compose" "$homepage_compose" "$openclaw_compose" "$hermes_compose"; do
+    if [[ ! -s "$file" ]]; then
+        printf 'Required Compose file is missing: %s\n' "$file" >&2
+        exit 1
+    fi
+done
+
+for file in "$traefik_compose" "$homepage_compose" "$openclaw_compose" "$hermes_compose"; do
+    docker compose -f "$file" config --quiet
+done
+
+docker compose -f "$traefik_compose" up -d --force-recreate
+docker compose -f "$homepage_compose" up -d --force-recreate
+docker compose -f "$openclaw_compose" up -d --build --force-recreate
+docker compose -f "$hermes_compose" up -d --force-recreate
+
+bash "$repo_root/scripts/configure-tailscale-ingress"
+
+printf 'Waiting for service health...\n'
+for _ in {1..30}; do
+    openclaw_health="$(docker inspect openclaw --format '{{.State.Health.Status}}' 2>/dev/null || true)"
+    hermes_health="$(docker inspect hermes --format '{{.State.Health.Status}}' 2>/dev/null || true)"
+    if [[ "$openclaw_health" == healthy && "$hermes_health" == healthy ]]; then
+        break
+    fi
+    sleep 2
+done
+
+[[ "$(docker inspect openclaw --format '{{.State.Health.Status}}')" == healthy ]]
+[[ "$(docker inspect hermes --format '{{.State.Health.Status}}')" == healthy ]]
+
+hermes_tailnet_ip="$(tailscale ip -4 | head -n 1)"
+[[ -n "$hermes_tailnet_ip" ]]
+
+native_openclaw_ui="$(curl --fail --silent --show-error --max-time 10 \
+    "https://aisha.tail4553c9.ts.net/openclaw/")"
+grep -Fq 'data-openclaw-control-ui-base-path="/openclaw"' <<<"$native_openclaw_ui"
+aisha_health="$(curl --fail --silent --show-error --max-time 10 \
+    "https://aisha.tail4553c9.ts.net/aisha/api/health")"
+grep -Fq '"ready":true' <<<"$aisha_health"
+curl --fail --silent --show-error --max-time 10 \
+    "http://${hermes_tailnet_ip}:9119/" >/dev/null
+
+printf 'AI ingress and assistant runtimes are healthy.\n'

@@ -188,7 +188,7 @@ def test_ask_passes_filters_and_preserves_citation_metadata(
     monkeypatch.setattr(
         main,
         "generate_answer",
-        lambda prompt: (
+        lambda prompt, *, model: (
             "The service is local-rag-api. "
             "[compose/ai/local-rag.yml:10-20]"
         ),
@@ -269,7 +269,7 @@ def test_ask_debug_exposes_typed_retrieval_diagnostics(
     monkeypatch.setattr(
         main,
         "generate_answer",
-        lambda prompt: (
+        lambda prompt, *, model: (
             "The service is local-rag-api. "
             "[compose/ai/local-rag.yml:10-20]"
         ),
@@ -375,7 +375,11 @@ def test_ask_refuses_incomplete_or_invalid_citations(
         "retrieve_chunks",
         lambda query, limit, **kwargs: [confident_match()],
     )
-    monkeypatch.setattr(main, "generate_answer", lambda prompt: answer)
+    monkeypatch.setattr(
+        main,
+        "generate_answer",
+        lambda prompt, *, model: answer,
+    )
 
     response = client.post(
         "/ask",
@@ -398,7 +402,7 @@ def test_ask_grounded_response_reports_confidence(monkeypatch) -> None:
     monkeypatch.setattr(
         main,
         "generate_answer",
-        lambda prompt: (
+        lambda prompt, *, model: (
             "Backups run nightly. "
             "[compose/ai/local-rag.yml:10-20]"
         ),

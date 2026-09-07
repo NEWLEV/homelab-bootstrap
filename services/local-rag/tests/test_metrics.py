@@ -114,7 +114,7 @@ def test_generation_success_records_latency(monkeypatch) -> None:
         lambda *args, **kwargs: FakeResponse(),
     )
 
-    answer = main.generate_answer("prompt")
+    answer = main.generate_answer("prompt", model=main.GENERATION_MODEL)
 
     after = metrics.snapshot()
     assert answer == "Grounded answer."
@@ -154,7 +154,7 @@ def test_ask_records_grounded_and_refused_outcomes(monkeypatch) -> None:
     monkeypatch.setattr(
         main,
         "generate_answer",
-        lambda prompt: next(answers),
+        lambda prompt, *, model: next(answers),
     )
     before = metrics.snapshot()["counters"]
 

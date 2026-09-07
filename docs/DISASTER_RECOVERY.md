@@ -104,21 +104,20 @@ OpenClaw
 
 Local RAG
 
-Confirm that OpenClaw has no host-published port, administrative containers
-bind only to the Tailscale address, and Traefik is the sole owner of 80/443.
+Confirm that the Aisha container has no host-published gateway port, the
+native OpenClaw gateway binds only to loopback, administrative containers bind
+only to the Tailscale address, and Traefik is the sole owner of LAN 80/443.
 All persistent service paths remain covered by `/srv/data/services` in the
 local and off-site Restic jobs; this network-only change adds no new state.
 
-Verify single-deployment ownership:
+Verify the two intentionally separate OpenClaw runtimes and their ingress:
 
 ```bash
 scripts/consolidate-openclaw --verify
 ```
 
-Do not restore the old Tailscale Serve handler while Traefik owns wildcard
-port 443. If the container fails, restore or repair the repo-managed container
-behind Traefik; re-enabling the native gateway would restore duplicate restart
-ownership and is an emergency-only rollback requiring explicit approval.
+Do not route `/openclaw/` to the Aisha container. The native gateway owns that
+path, while the repo-managed container owns `/aisha/`.
 
 ---
 

@@ -21,17 +21,20 @@ assert_not_contains() {
     if grep -Fq -- "$rejected" "$SCRIPT"; then fail "$name"; else pass "$name"; fi
 }
 
-assert_contains "requires a healthy container" 'container_is_healthy ||'
-assert_contains "requires a ready tailnet route" 'tailnet_is_ready ||'
-assert_contains "matches the native CLI exactly" '[[ "${args[1]}" == "$NATIVE_CLI" ]]'
-assert_contains "uses graceful termination" 'kill -TERM "$pid"'
-assert_contains "disables native restart ownership" 'systemctl --user disable --now'
+assert_contains "requires the native user service" 'native_service_is_active ||'
+assert_contains "requires a healthy Aisha container" 'container_is_healthy ||'
+assert_contains "verifies loopback gateway ports" 'gateway_ports_are_loopback_only'
+assert_contains "verifies separate Serve routes" '/openclaw[[:space:]]+proxy http://127.0.0.1:18789/openclaw'
+assert_contains "verifies the native Control UI" 'data-openclaw-control-ui-base-path="/openclaw"'
+assert_contains "verifies Aisha chat health" 'aisha_chat_is_ready'
+assert_not_contains "does not disable native restart ownership" 'systemctl --user disable --now'
 assert_not_contains "does not reset healthy Tailscale Serve" 'tailscale serve reset'
-assert_contains "verifies closed legacy host ports" 'host_gateway_ports_are_closed'
-assert_contains "verifies tailnet after retirement" 'serve_is_ready'
+assert_not_contains "does not terminate the native gateway" 'kill -TERM'
 assert_not_contains "does not force-kill the gateway" 'kill -KILL'
 assert_not_contains "does not publish the legacy gateway port" 'published: "18789"'
-assert_contains "uses secure OpenClaw serve URL" 'https://aisha.tail4553c9.ts.net/openclaw/api/health'
+assert_contains "uses the native Control UI URL" 'https://aisha.tail4553c9.ts.net/openclaw/'
+assert_contains "uses the secure Aisha health URL" 'https://aisha.tail4553c9.ts.net/aisha/api/health'
+assert_contains "apply delegates to canonical ingress" 'reconfigure-ai-ingress'
 
 if bash -n "$SCRIPT"; then pass "script syntax"; else fail "script syntax"; fi
 if "$SCRIPT" --dry-run >/dev/null; then pass "dry-run is side-effect free"; else fail "dry-run"; fi

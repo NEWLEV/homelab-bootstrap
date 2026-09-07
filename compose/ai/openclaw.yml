@@ -7,14 +7,12 @@ services:
       com.newlev.service: openclaw
       com.newlev.layer: deployment
       com.newlev.boundary: runtime
-      # Aisha chat surface: same host as the dashboard, path-scoped, tailnet-gated.
+      # Aisha chat surface: same host as the dashboard, path-scoped. Tailscale
+      # Serve provides the tailnet-only HTTPS boundary before this entrypoint.
       traefik.enable: "true"
       traefik.docker.network: "proxy"
       traefik.http.routers.aisha-chat.rule: "Host(`aisha.tail4553c9.ts.net`) && PathPrefix(`/aisha`)"
-      traefik.http.routers.aisha-chat.entrypoints: "websecure"
-      traefik.http.routers.aisha-chat.tls: "true"
-      traefik.http.routers.aisha-chat.middlewares: "aisha-chat-tailnet@docker"
-      traefik.http.middlewares.aisha-chat-tailnet.ipallowlist.sourcerange: "100.64.0.0/10,fd7a:115c:a1e0::/48"
+      traefik.http.routers.aisha-chat.entrypoints: "tailnet"
       traefik.http.services.aisha-chat.loadbalancer.server.port: "18789"
     build:
       context: ../../services/openclaw
@@ -33,6 +31,7 @@ services:
       # Exposure is exclusively through the tailnet-restricted Traefik route.
       OPENCLAW_GATEWAY_BIND: 0.0.0.0
       OPENCLAW_GATEWAY_PORT: "18789"
+      OPENCLAW_DEFAULT_MODEL: "${GENERATION_MODEL:-llama3.2:3b}"
       # Dashboard origins allowed to embed the chat and probe its health.
       OPENCLAW_EMBED_ORIGINS: "http://aisha:8000,http://100.106.201.14:8000"
       NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache

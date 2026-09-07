@@ -49,6 +49,7 @@ const MAX_MESSAGES_PER_CONVERSATION = 400;
 const CONVERSATION_LIST_LIMIT = 50;
 const UPSTREAM_HEALTH_TIMEOUT_MS = 5000;
 const UPSTREAM_STREAM_TIMEOUT_MS = 300000;
+const DEFAULT_CHAT_MODEL = process.env.OPENCLAW_DEFAULT_MODEL || 'llama3.2:3b';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -112,6 +113,14 @@ function isValidUuid(value) {
   return typeof value === 'string' && UUID_PATTERN.test(value);
 }
 
+function normalizeModelName(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
 function conversationPath(conversationId) {
   return path.join(conversationsDir, `${conversationId}.json`);
 }
@@ -125,6 +134,9 @@ async function readConversation(conversationId) {
     }
     if (!Array.isArray(conversation.messages)) {
       conversation.messages = [];
+    }
+    if (!conversation.model) {
+      conversation.model = DEFAULT_CHAT_MODEL;
     }
     return conversation;
   } catch {
@@ -150,6 +162,7 @@ function conversationSummary(conversation) {
     title: conversation.title,
     created_at: conversation.created_at,
     updated_at: conversation.updated_at,
+    model: conversation.model || DEFAULT_CHAT_MODEL,
     message_count: conversation.messages.length,
   };
 }
@@ -291,6 +304,9 @@ async function fetchUpstreamHealth() {
       chunks: payload.chunks,
       embedding_model: payload.embedding_model,
       generation_model: payload.generation_model,
+      available_models: Array.isArray(payload.available_models)
+        ? payload.available_models.filter((entry) => typeof entry === 'string' && entry)
+        : [],
       index_status: payload.index_status,
       authentication_enabled: Boolean(payload.authentication_enabled),
       rate_limiting_enabled: Boolean(payload.rate_limiting_enabled),
@@ -339,7 +355,7 @@ async function handleListConversations(res) {
   sendJson(res, 200, { conversations });
 }
 
-async function handleCreateConversation(res) {
+async function handleCreateConversation(res, body = {}) {
   const total = await countConversations();
   if (total >= MAX_CONVERSATIONS) {
     sendJson(res, 507, {
@@ -349,12 +365,15 @@ async function handleCreateConversation(res) {
     return;
   }
 
+  const requestedModel = normalizeModelName(body.model);
+  const model = requestedModel || DEFAULT_CHAT_MODEL;
   const now = new Date().toISOString();
   const conversation = {
     id: crypto.randomUUID(),
     title: 'New conversation',
     created_at: now,
     updated_at: now,
+    model,
     messages: [],
   };
 
@@ -481,6 +500,7 @@ async function handleSendMessage(req, res, conversationId, body) {
   const question =
     typeof body.question === 'string' ? body.question.trim() : '';
   const clientMessageId = body.client_message_id;
+  const generationModel = normalizeModelName(body.model) || DEFAULT_CHAT_MODEL;
 
   if (!question) {
     sendJson(res, 422, { detail: 'Question must not be empty.' });
@@ -570,6 +590,7 @@ async function handleSendMessage(req, res, conversationId, body) {
       }
     }
 
+    conversation.model = generationModel;
     conversation.updated_at = new Date().toISOString();
     history = buildHistory(conversation, userMessage.id);
     await writeConversation(conversation);
@@ -598,6 +619,7 @@ async function handleSendMessage(req, res, conversationId, body) {
         grounded: Boolean(replayReply.reply.grounded),
         citations: replayReply.reply.citations || [],
         confidence: replayReply.reply.confidence ?? 0,
+        model: replayReply.reply.model || replayReply.conversation.model,
       }),
     );
     res.end();
@@ -649,6 +671,7 @@ async function handleSendMessage(req, res, conversationId, body) {
         status: 'stopped',
         grounded: false,
         citations: [],
+        model: generationModel,
       });
     }
   };
@@ -670,7 +693,7 @@ async function handleSendMessage(req, res, conversationId, body) {
           'content-type': 'application/json',
           accept: 'text/event-stream',
         },
-        body: JSON.stringify({ question, history, limit: 5 }),
+        body: JSON.stringify({ question, history, limit: 5, model: generationModel }),
         signal: upstreamController.signal,
       });
     } catch {
@@ -783,6 +806,7 @@ async function handleSendMessage(req, res, conversationId, body) {
       citations: Array.isArray(finalResult.citations) ? finalResult.citations : [],
       confidence:
         typeof finalResult.confidence === 'number' ? finalResult.confidence : 0,
+      model: generationModel,
     };
     await persistReply(reply);
 
@@ -796,6 +820,7 @@ async function handleSendMessage(req, res, conversationId, body) {
           grounded: reply.grounded,
           citations: reply.citations,
           confidence: reply.confidence,
+          model: reply.model,
         }),
       );
       res.end();
@@ -838,10 +863,13 @@ async function route(req, res) {
   const url = new URL(req.url, 'http://gateway.internal');
   let pathname = url.pathname;
 
-  // Traefik routes the dashboard-facing surface under /aisha without stripping.
-  const prefixed = pathname === '/aisha' || pathname.startsWith('/aisha/');
-  if (prefixed) {
-    pathname = pathname.slice('/aisha'.length) || '/';
+  // Traefik routes the dashboard-facing surface under either supported prefix.
+  const prefix = ['/aisha', '/openclaw'].find(
+    (value) => pathname === value || pathname.startsWith(`${value}/`),
+  );
+  const prefixed = Boolean(prefix);
+  if (prefix) {
+    pathname = pathname.slice(prefix.length) || '/';
   }
 
   if (!prefixed && pathname === '/health') {
@@ -883,7 +911,12 @@ async function route(req, res) {
       return;
     }
     if (req.method === 'POST') {
-      await handleCreateConversation(res);
+      const raw = await readRequestBody(req, res);
+      const body = parseJsonBody(raw, res);
+      if (body === undefined) {
+        return;
+      }
+      await handleCreateConversation(res, body);
       return;
     }
     sendJson(res, 405, { detail: 'Method not allowed.' });

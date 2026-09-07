@@ -21,7 +21,7 @@ def test_ask_returns_insufficient_context(monkeypatch):
 
     monkeypatch.setattr(
         "app.main.generate_answer",
-        lambda prompt: (
+        lambda prompt, *, model: (
             "The encrypted backups are not explicitly configured "
             "and might be handled elsewhere."
         ),
@@ -65,7 +65,7 @@ def test_ask_returns_grounded_answer(monkeypatch):
 
     monkeypatch.setattr(
         "app.main.generate_answer",
-        lambda prompt: (
+        lambda prompt, *, model: (
             "Backups run nightly. "
             "[docs.md:10-20]"
         ),

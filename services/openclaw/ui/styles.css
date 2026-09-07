@@ -164,9 +164,27 @@ body:not(.embedded) .embedded-only {
 /* Conversation picker */
 
 .conversation-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  gap: 8px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+
+.select-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.select-field label {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 #conversation-picker {
@@ -178,6 +196,23 @@ body:not(.embedded) .embedded-only {
   background: var(--surface-alt);
   color: var(--text);
   font: inherit;
+}
+
+#model-picker {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  color: var(--text);
+  font: inherit;
+}
+
+@media (max-width: 640px) {
+  .conversation-bar {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Notices */

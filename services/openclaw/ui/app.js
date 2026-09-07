@@ -8,9 +8,11 @@
  */
 
 (() => {
-  const API_BASE = window.location.pathname.startsWith('/aisha')
-    ? '/aisha/api'
-    : '/api';
+  const API_BASE = window.location.pathname.startsWith('/openclaw')
+    ? '/openclaw/api'
+    : window.location.pathname.startsWith('/aisha')
+      ? '/aisha/api'
+      : '/api';
 
   const MAX_QUESTION_LENGTH = 2000;
   const HEALTH_BACKOFF_MS = [5000, 10000, 30000];
@@ -22,6 +24,7 @@
     statusLine: document.getElementById('aisha-status-text'),
     statusLabel: document.getElementById('status-label'),
     picker: document.getElementById('conversation-picker'),
+    modelPicker: document.getElementById('model-picker'),
     newConversation: document.getElementById('new-conversation'),
     deleteConversation: document.getElementById('delete-conversation'),
     minimize: document.getElementById('minimize-chat'),
@@ -47,6 +50,9 @@
   const state = {
     conversationId: null,
     conversations: [],
+    models: [],
+    model: null,
+    defaultModel: null,
     sending: false,
     abortController: null,
     health: null,
@@ -68,6 +74,10 @@
 
   function draftKey() {
     return `aisha:draft:${state.conversationId || 'new'}`;
+  }
+
+  function modelKey() {
+    return `aisha:model:${state.conversationId || 'new'}`;
   }
 
   function saveDraft() {
@@ -98,6 +108,36 @@
     } catch {
       /* ignore */
     }
+  }
+
+  function saveModel() {
+    try {
+      if (state.model) {
+        window.localStorage.setItem(modelKey(), state.model);
+      } else {
+        window.localStorage.removeItem(modelKey());
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function restoreModel() {
+    let stored = null;
+    try {
+      stored = window.localStorage.getItem(modelKey());
+    } catch {
+      stored = null;
+    }
+
+    const available = state.models.length > 0
+      ? state.models
+      : [state.defaultModel].filter(Boolean);
+    const fallback = available[0] || state.defaultModel || null;
+    const candidate = stored || state.model || state.defaultModel || fallback;
+    state.model = available.includes(candidate) ? candidate : fallback;
+    saveModel();
+    populateModelPicker();
   }
 
   function isNearBottom() {
@@ -280,6 +320,9 @@
     const { wrapper, meta, bubble } = messageElement('assistant');
     renderRichText(bubble, message.content, true);
 
+    if (message.model) {
+      addBadge(meta, 'model', message.model);
+    }
     if (message.status === 'stopped') {
       addBadge(meta, 'stopped', 'Stopped');
     } else if (message.grounded) {
@@ -331,6 +374,16 @@
     updateSendState();
   }
 
+  function currentModel() {
+    if (state.model) {
+      return state.model;
+    }
+    if (state.defaultModel) {
+      return state.defaultModel;
+    }
+    return state.models[0] || null;
+  }
+
   function serviceAvailable() {
     return Boolean(state.health && state.health.ready) && navigator.onLine;
   }
@@ -338,8 +391,10 @@
   function updateSendState() {
     const hasText = el.input.value.trim().length > 0;
     const rateLimited = Boolean(state.rateLimitTimer);
+    const hasModels = state.models.length > 0 || Boolean(state.defaultModel);
     el.send.disabled =
       !hasText || state.sending || rateLimited || !serviceAvailable();
+    el.modelPicker.disabled = state.sending || !hasModels;
   }
 
   function describeHealth(health) {
@@ -385,6 +440,21 @@
         allowedParentOrigins.add(origin);
       }
     }
+
+    const upstream = health && health.knowledge_service
+      ? health.knowledge_service
+      : {};
+    state.defaultModel =
+      typeof upstream.generation_model === 'string'
+        ? upstream.generation_model
+        : null;
+    state.models = Array.isArray(upstream.available_models)
+      ? upstream.available_models.filter((entry) => typeof entry === 'string' && entry)
+      : [];
+    if (state.defaultModel && !state.models.includes(state.defaultModel)) {
+      state.models.unshift(state.defaultModel);
+    }
+    restoreModel();
 
     const previouslyReady = Boolean(state.health && state.health.ready);
     state.health = health;
@@ -498,6 +568,32 @@
     }
   }
 
+  function populateModelPicker() {
+    el.modelPicker.textContent = '';
+    const models = state.models.length > 0
+      ? state.models
+      : [state.defaultModel].filter(Boolean);
+    if (models.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No models available';
+      el.modelPicker.appendChild(option);
+      el.modelPicker.disabled = true;
+      return;
+    }
+
+    el.modelPicker.disabled = state.sending;
+    for (const model of models) {
+      const option = document.createElement('option');
+      option.value = model;
+      option.textContent = model;
+      if (model === state.model) {
+        option.selected = true;
+      }
+      el.modelPicker.appendChild(option);
+    }
+  }
+
   async function refreshConversations() {
     try {
       const { response, payload } = await apiJson('/conversations');
@@ -512,12 +608,14 @@
 
   async function loadConversation(conversationId) {
     saveDraft();
+    saveModel();
     state.conversationId = conversationId;
     hideNotice();
 
     if (!conversationId) {
       renderConversation([]);
       restoreDraft();
+      restoreModel();
       return;
     }
 
@@ -525,10 +623,17 @@
       const { response, payload } = await apiJson(`/conversations/${conversationId}`);
       if (response.ok && payload) {
         renderConversation(payload.messages || []);
+        state.model =
+          (typeof payload.model === 'string' && payload.model) ||
+          state.model ||
+          currentModel();
+        saveModel();
+        populateModelPicker();
       } else {
         state.conversationId = null;
         renderConversation([]);
         showNotice('error', 'That conversation could not be loaded.', null);
+        restoreModel();
       }
     } catch {
       showNotice(
@@ -536,6 +641,7 @@
         'Could not load the conversation history. Check the connection and retry.',
         () => loadConversation(conversationId),
       );
+      restoreModel();
     }
     restoreDraft();
   }
@@ -547,7 +653,7 @@
     const { response, payload } = await apiJson('/conversations', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify({ model: currentModel() }),
     });
     if (!response.ok || !payload || !payload.id) {
       throw new Error(
@@ -715,6 +821,7 @@
           body: JSON.stringify({
             question,
             client_message_id: clientMessageId,
+            model: currentModel(),
           }),
           signal: controller.signal,
         },
@@ -905,9 +1012,11 @@
       return;
     }
     saveDraft();
+    saveModel();
     state.conversationId = null;
     renderConversation([]);
     restoreDraft();
+    restoreModel();
     populatePicker();
     el.input.focus();
   });
@@ -920,6 +1029,17 @@
       return;
     }
     loadConversation(el.picker.value || null);
+  });
+
+  el.modelPicker.addEventListener('change', () => {
+    if (state.sending) {
+      populateModelPicker();
+      return;
+    }
+    state.model = el.modelPicker.value || currentModel();
+    saveModel();
+    populateModelPicker();
+    announce(`Model changed to ${state.model}.`);
   });
 
   el.jumpLatest.addEventListener('click', () => {

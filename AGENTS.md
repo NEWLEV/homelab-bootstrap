@@ -2,6 +2,12 @@
 
 This repository manages a reproducible Raspberry Pi 5 homelab appliance named Aisha.
 
+Before starting any task:
+
+1. Check the most recent daily memory note under `workspaces/development/MEMORY.md` for relevant context.
+2. Read `LEARNINGS.md` for durable rules and prior decisions that apply to the task.
+3. Inspect the current branch and working tree before editing.
+
 The long-term recovery objective is:
 
 1. Install a fresh Raspberry Pi OS image.

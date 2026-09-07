@@ -29,7 +29,9 @@ infrastructure such as Local RAG, MCP, and selected messaging integrations.
 - Hermes can reach Local RAG.
 - Hermes can load MCP servers.
 - Hermes memory and skills directories are writable.
-- OpenClaw still serves the control UI at `https://aisha.tail4553c9.ts.net/openclaw/`.
+- OpenClaw still serves the control UI at
+  `https://aisha.tail4553c9.ts.net/openclaw/`; Aisha chat remains at
+  `https://aisha.tail4553c9.ts.net/aisha/`.
 
 ## Dashboard note
 

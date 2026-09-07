@@ -1,5 +1,14 @@
 name: local-rag
 
+x-aisha-ollama-models:
+  # Install or refresh this durable model set with:
+  #   scripts/install-local-rag-models
+  chat:
+    - llama3.2:3b
+    - qwen3:4b
+  embeddings:
+    - nomic-embed-text
+
 services:
   ollama:
     image: ollama/ollama:0.32.3

@@ -3,24 +3,7 @@
 Hermes is a second assistant runtime that lives beside OpenClaw without
 replacing it.
 
-## What Hermes is for
-
-- Separate assistant runtime for experiments, alternate workflows, and
-  parallel capability growth.
-- Independent memory, skills, sessions, and MCP configuration under
-  `~/.hermes/`.
-- Optional API gateway and dashboard for external integrations and portal-style
-  access.
-
-## Why keep Hermes separate from OpenClaw
-
-- OpenClaw remains the hosted Aisha runtime and dashboard-facing assistant.
-- Hermes can be tested, tuned, or replaced without disturbing the current
-  OpenClaw control UI or chat gateway.
-- The two runtimes can share infrastructure services such as Local RAG and
-  approved MCP servers while keeping separate state and policy files.
-
-## Recommended layout
+## Purpose
 
 ```text
 ~/.hermes/
@@ -33,26 +16,23 @@ replacing it.
   cron/
 ```
 
-## Suggested integration points
+Hermes keeps its own state, skills, sessions, and MCP config under
+`~/.hermes/` while reusing approved infrastructure such as Local RAG.
 
-- **MCP**: register only approved servers in `~/.hermes/config.yaml`.
-- **Local RAG**: point Hermes at the existing Local RAG API rather than
-  duplicating an index.
-- **OpenClaw repo access**: Hermes can inspect the OpenClaw checkout from the
-  read-only mount at `/workspace/openclaw` when the compose service includes
-  the host repo bind mount.
-- **Skills**: keep Hermes skills in `~/.hermes/skills/` so they do not drift
-  from OpenClaw prompts or the dashboard launcher.
-- **Messaging**: enable Slack or Discord only after the gateway is validated
-  against the same tailnet and secrets boundary used by the other services.
+Hermes state lives under `/srv/data/services/hermes/`, so it follows the
+normal service-data backup and restore flow used by the rest of Aisha.
 
-## Default operating posture
+## Access and boundaries
 
-- Use a separate service or container for Hermes.
-- Keep secrets out of browser-delivered code.
-- Keep OpenClaw and Hermes on distinct state directories and configs.
-- Reuse the existing local infrastructure instead of creating a second copy
-  of Local RAG or the dashboard stack.
+- OpenClaw is mounted read-only at `/workspace/openclaw`.
+- Hermes can inspect the OpenClaw checkout when the compose service includes
+  the repo bind mount.
+- Hermes reuses Local RAG instead of duplicating the index.
+- Hermes can use skills and approved MCP servers without sharing OpenClaw
+  secrets or state.
+- Hermes should keep separate state and policy files from OpenClaw.
+- Enable Slack or Discord only after the same tailnet and secrets boundary is
+  validated.
 
 ## Minimum verification checklist
 
@@ -62,10 +42,6 @@ replacing it.
 4. Hermes memory and skills paths are writable.
 5. Hermes can inspect the OpenClaw repo at `/workspace/openclaw`.
 6. Hermes dashboard responds at `http://aisha:9119/`.
-7. OpenClaw still serves the control UI at
-   `https://aisha.tail4553c9.ts.net/openclaw/`.
-
-## Notes
-
-This repository now treats Hermes as a live second runtime, not as an
-implicit replacement for OpenClaw.
+7. The native OpenClaw Control UI is available at
+   `https://aisha.tail4553c9.ts.net/openclaw/`; the Aisha chat gateway is
+   available separately at `https://aisha.tail4553c9.ts.net/aisha/`.

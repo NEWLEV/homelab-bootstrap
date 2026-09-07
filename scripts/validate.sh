@@ -123,12 +123,12 @@ validate_network_policy() {
 }
 
 validate_openclaw_consolidation() {
-    section "OpenClaw consolidation contract"
+    section "OpenClaw separation contract"
 
     if "${REPO_ROOT}/tests/openclaw-consolidation.sh"; then
-        pass "OpenClaw consolidation contract is valid"
+        pass "OpenClaw separation contract is valid"
     else
-        fail "OpenClaw consolidation contract validation failed"
+        fail "OpenClaw separation contract validation failed"
     fi
 }
 
@@ -149,6 +149,16 @@ validate_hermes() {
         pass "Hermes runtime contract is valid"
     else
         fail "Hermes runtime contract validation failed"
+    fi
+}
+
+validate_tailscale_ingress() {
+    section "Tailscale ingress contract"
+
+    if bash "${REPO_ROOT}/tests/tailscale-ingress.sh"; then
+        pass "Tailscale ingress contract is valid"
+    else
+        fail "Tailscale ingress contract validation failed"
     fi
 }
 
@@ -501,6 +511,7 @@ main() {
     validate_system_profile
     validate_knowledge_source_contract
     validate_network_policy
+    validate_tailscale_ingress
     validate_openclaw_consolidation
     validate_homepage_shortcuts
     validate_hermes

@@ -1,33 +1,21 @@
 # TOOLS.md - Local Notes
 
-Skills define _how_ tools work. This file is for _your_ specifics — the stuff that's unique to your setup: camera names and locations, SSH hosts and aliases, preferred TTS voices, speaker/room names, device nicknames, anything environment-specific.
+Use this file for machine-specific notes only.
 
-## Examples
+## Keep here
 
-```markdown
-### Cameras
+- SSH hosts and aliases
+- camera or device names
+- preferred TTS voices
+- workspace-specific shortcuts
+- anything unique to this setup
 
-- living-room → Main area, 180° wide angle
-- front-door → Entrance, motion-triggered
+## Keep out
 
-### SSH
+- shared rules
+- personality guidance
+- task-specific instructions
 
-- home-server → 192.168.1.100, user: admin
+## Reminder
 
-### TTS
-
-- Preferred voice: "Nova" (warm, slightly British)
-- Default speaker: Kitchen HomePod
-```
-
-## Why Separate?
-
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
-
----
-
-Add whatever helps you do your job. This is your cheat sheet.
-
-## Related
-
-- [Agent workspace](/concepts/agent-workspace)
+If a note would help future sessions, add it here in a short, factual form.

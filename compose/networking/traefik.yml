@@ -53,12 +53,17 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # Tailscale Serve terminates HTTPS. This private HTTP entrypoint avoids
+      # a second TLS hop and is reachable only from the local host.
+      - --entrypoints.tailnet.address=:18080
       - --accesslog=true
       - --log.level=INFO
 
     ports:
       - "80:80"
-      - "443:443"
+      # Keep LAN HTTPS separate from Tailscale Serve's tailnet-side 443.
+      - "${TRAEFIK_LAN_IP:-192.168.1.97}:443:443"
+      - "127.0.0.1:18080:18080"
 
     volumes:
       - /srv/data/services/traefik/dynamic:/etc/traefik/dynamic:ro

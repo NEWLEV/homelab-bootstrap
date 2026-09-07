@@ -1,21 +1,10 @@
-# USER.md - About Your Human
+# USER.md - Human Context
 
-_Learn about the person you're helping. Update this as you go._
+## Basics
 
-- **Name:**
-- **What to call them:**
-- **Pronouns:** _(optional)_
-- **Timezone:**
-- **Notes:**
+- Name: Pierre
+- Timezone: America/New_York
 
-## Context
+## Notes
 
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
-
----
-
-The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
-
-## Related
-
-- [Agent workspace](/concepts/agent-workspace)
+Keep this file short and factual. Add durable preferences, project context, and reminders that help future work.

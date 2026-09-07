@@ -29,6 +29,7 @@ let gatewayPort;
 
 const stubState = {
   lastAuthorization: null,
+  lastModel: null,
   slowRequestClosed: false,
   releaseSlow: null,
 };
@@ -47,6 +48,7 @@ function stubHandler(req, res) {
         chunks: 42,
         embedding_model: 'nomic-embed-text',
         generation_model: 'llama3.2:3b',
+        available_models: ['llama3.2:3b', 'openai/gpt-5.5'],
         index_status: 'succeeded',
         authentication_enabled: true,
         rate_limiting_enabled: true,
@@ -65,6 +67,7 @@ function stubHandler(req, res) {
     req.on('end', () => {
       const request = JSON.parse(body);
       const question = request.question;
+      stubState.lastModel = request.model || null;
 
       if (stubState.lastAuthorization !== `Bearer ${TEST_TOKEN}`) {
         res.writeHead(401, { 'content-type': 'application/json' });
@@ -218,6 +221,23 @@ async function sendMessage(conversationId, question, clientMessageId) {
   });
 }
 
+async function sendMessageWithModel(
+  conversationId,
+  question,
+  clientMessageId,
+  model,
+) {
+  return fetch(gatewayUrl(`/api/conversations/${conversationId}/messages`), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      question,
+      client_message_id: clientMessageId,
+      model,
+    }),
+  });
+}
+
 async function getConversation(conversationId) {
   const response = await fetch(
     gatewayUrl(`/api/conversations/${conversationId}`),
@@ -324,6 +344,7 @@ test('api health reports degraded while the token is unconfigured', async () => 
   assert.equal(payload.ready, false);
   assert.equal(payload.knowledge_service_token_configured, false);
   assert.equal(payload.knowledge_service.reachable, true);
+  assert.ok(Array.isArray(payload.knowledge_service.available_models));
 });
 
 test('message submission is refused with guidance while unconfigured', async () => {
@@ -345,6 +366,7 @@ test('api health becomes ready once the token is provisioned', async () => {
   assert.equal(payload.status, 'ok');
   assert.equal(payload.ready, true);
   assert.equal(payload.knowledge_service_token_configured, true);
+  assert.ok(payload.knowledge_service.available_models.includes('llama3.2:3b'));
   // The health payload must not leak filesystem paths or token material.
   const raw = JSON.stringify(payload);
   assert.ok(!raw.includes(tmpRoot));
@@ -455,7 +477,28 @@ test('streams a real answer and persists the exchange', async () => {
   assert.equal(reply.role, 'assistant');
   assert.equal(reply.status, 'complete');
   assert.equal(reply.grounded, true);
+  assert.equal(reply.model, 'llama3.2:3b');
   assert.equal(conversation.title, 'How are backups scheduled?');
+});
+
+test('forwards the selected model and persists it on the conversation', async () => {
+  const conversationId = await createConversation();
+  const clientMessageId = crypto.randomUUID();
+
+  const response = await sendMessageWithModel(
+    conversationId,
+    'How are backups scheduled?',
+    clientMessageId,
+    'openai/gpt-5.5',
+  );
+  assert.equal(response.status, 200);
+  await readSseEvents(response);
+
+  assert.equal(stubState.lastModel, 'openai/gpt-5.5');
+
+  const conversation = await getConversation(conversationId);
+  assert.equal(conversation.model, 'openai/gpt-5.5');
+  assert.equal(conversation.messages[1].model, 'openai/gpt-5.5');
 });
 
 test('replays completed answers idempotently instead of regenerating', async () => {

@@ -1,9 +1,32 @@
 from fastapi.testclient import TestClient
 
+from app import main
 from app.main import app
 
 
 client = TestClient(app)
+
+
+def test_model_discovery_excludes_embedding_model(monkeypatch) -> None:
+    class Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {
+                "models": [
+                    {"name": "llama3.2:3b"},
+                    {"name": "nomic-embed-text:latest"},
+                ]
+            }
+
+    monkeypatch.setattr(main, "_available_models_cache", None)
+    monkeypatch.setattr(main.httpx, "get", lambda *args, **kwargs: Response())
+
+    models = main.discover_available_models()
+
+    assert "llama3.2:3b" in models
+    assert "nomic-embed-text:latest" not in models
 
 
 def test_health() -> None:
@@ -21,6 +44,8 @@ def test_health() -> None:
     assert body["reranker_enabled"] is False
     assert body["reranker_model"] == "Xenova/ms-marco-MiniLM-L-6-v2"
     assert body["reranker_threads"] == 2
+    assert isinstance(body["available_models"], list)
+    assert body["generation_model"] in body["available_models"]
     assert body["confidence_min_score"] == 0.45
     assert body["index_status"] in {"idle", "failed"}
     assert "last_index_success_at" in body

@@ -11,11 +11,9 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: "proxy"
+      # Tailscale Serve terminates HTTPS before requests reach Traefik.
       traefik.http.routers.homepage.rule: "Host(`aisha.tail4553c9.ts.net`)"
-      traefik.http.routers.homepage.entrypoints: "websecure"
-      traefik.http.routers.homepage.tls: "true"
-      traefik.http.routers.homepage.middlewares: "homepage-tailnet@docker"
-      traefik.http.middlewares.homepage-tailnet.ipallowlist.sourcerange: "100.64.0.0/10,fd7a:115c:a1e0::/48"
+      traefik.http.routers.homepage.entrypoints: "tailnet"
       traefik.http.services.homepage.loadbalancer.server.port: "3000"
 
     # Direct dashboard access without Traefik (http://aisha:8000).
@@ -31,7 +29,7 @@ services:
     environment:
       PUID: "1000"
       PGID: "1000"
-      HOMEPAGE_ALLOWED_HOSTS: "aisha:8000,100.106.201.14:8000,aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000,localhost:8000,127.0.0.1:8000"
+      HOMEPAGE_ALLOWED_HOSTS: "aisha.tail4553c9.ts.net,aisha:8000,100.106.201.14:8000,aisha:3000,100.106.201.14:3000,localhost:3000,127.0.0.1:3000,localhost:8000,127.0.0.1:8000"
 
 networks:
   proxy:

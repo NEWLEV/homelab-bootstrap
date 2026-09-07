@@ -40,3 +40,7 @@ config/**/.env
 configs/**/.env
 
 .venv/
+
+# Local RAG test/runtime databases
+.test-chroma/
+services/local-rag/pytest-cache-files-*/

@@ -29,8 +29,14 @@
     </header>
 
     <div class="conversation-bar">
-      <label class="visually-hidden" for="conversation-picker">Conversation</label>
-      <select id="conversation-picker" aria-label="Select conversation"></select>
+      <div class="select-field">
+        <label for="conversation-picker">Conversation</label>
+        <select id="conversation-picker" aria-label="Select conversation"></select>
+      </div>
+      <div class="select-field">
+        <label for="model-picker">Model</label>
+        <select id="model-picker" aria-label="Select model"></select>
+      </div>
     </div>
 
     <div id="notice" class="notice" hidden>

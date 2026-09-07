@@ -32,10 +32,10 @@ same-origin Aisha chat gateway. UFW is active with deny-by-default IPv4 and
 IPv6 input, but Docker forwarding currently precedes UFW; the repository
 policy therefore adds an explicit `DOCKER-USER` chain.
 
-The currently preferred OpenClaw posture is loopback-only gateway transport
-with Tailscale Serve publishing `https://aisha.tail4553c9.ts.net/openclaw/`
-for the stock Control UI. Repository state should keep the gateway on loopback
-so the browser receives a secure HTTPS origin.
+The currently preferred ingress posture terminates HTTPS in Tailscale Serve,
+then forwards to Traefik's loopback-only HTTP entrypoint. OpenClaw is published
+at `https://aisha.tail4553c9.ts.net/openclaw/` with `/aisha/` retained as a
+compatibility alias. The gateway has no host-published port.
 
 The current live cutover verifies the same-origin launcher path. The
 Hermes runtime, when deployed, should remain separate and reuse shared
