@@ -99,6 +99,9 @@ services:
       - no-new-privileges=true
 
   nlc-api:
+    profiles:
+      - nlc
+
     build:
       context: ../../services/local-rag
       dockerfile: Dockerfile

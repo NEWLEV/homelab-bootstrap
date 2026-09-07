@@ -44,16 +44,16 @@ Purpose
 
 Provides local document indexing and retrieval.
 
-The Compose project runs two RAG API containers:
+The default Compose project runs one required RAG API container:
 
 - `local-rag-api` serves the canonical homelab repository knowledge source on
   loopback port `8090`.
-- `local-rag-nlc-api` serves curated NLC/OpenClaw operating knowledge on
-  loopback port `8091`.
 
-Both APIs share the local Ollama runtime and bearer-token secret, but they use
-separate Chroma stores so the general homelab index and NLC operating index can
-be rebuilt independently.
+The optional `nlc` Compose profile adds `local-rag-nlc-api`, which serves
+curated NLC/OpenClaw operating knowledge on loopback port `8091`. The optional
+API shares the local Ollama runtime and bearer-token secret, but uses a separate
+Chroma store so the general homelab index and NLC operating index can be rebuilt
+independently.
 
 Configuration
 
@@ -71,6 +71,18 @@ NLC knowledge source
 
 ```text
 ${AISHA_NLC_SOURCE:-/home/nlc/.openclaw/workspace}
+```
+
+Enable the optional NLC collection only on hosts that have the source checkout:
+
+```bash
+docker compose -f compose/ai/local-rag.yml --profile nlc up -d
+```
+
+When Hermes should use this optional collection, set:
+
+```text
+HERMES_NLC_RAG_URL=http://local-rag-nlc-api:8080
 ```
 
 Prepare an exact reviewed revision before deploying or indexing:

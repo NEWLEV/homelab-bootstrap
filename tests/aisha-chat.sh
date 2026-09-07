@@ -56,6 +56,8 @@ test_compose_contract() {
     output="$(cat "$REPO_ROOT/compose/ai/openclaw.yml")"
     local local_rag_output
     local_rag_output="$(cat "$REPO_ROOT/compose/ai/local-rag.yml")"
+    local manifest_output
+    manifest_output="$(cat "$REPO_ROOT/configs/services.json")"
     assert_contains "compose routes the aisha chat path" "PathPrefix(\`/aisha\`)" "$output"
     if grep -Fq "PathPrefix(\`/openclaw\`)" <<<"$output"; then
         fail "compose leaves native openclaw path to the host gateway"
@@ -70,8 +72,12 @@ test_compose_contract() {
     assert_contains "compose configures embed origins" "OPENCLAW_EMBED_ORIGINS" "$output"
     assert_contains "local rag documents qwen model baseline" "qwen3:4b" "$local_rag_output"
     assert_contains "local rag defines NLC collection API" "container_name: local-rag-nlc-api" "$local_rag_output"
+    assert_contains "local rag keeps NLC collection optional" "profiles:" "$local_rag_output"
+    assert_contains "local rag exposes NLC profile name" "- nlc" "$local_rag_output"
     assert_contains "local rag keeps NLC API loopback-only" 'published: "8091"' "$local_rag_output"
     assert_contains "local rag makes NLC source configurable" 'AISHA_NLC_SOURCE' "$local_rag_output"
+    assert_contains "manifest keeps NLC RAG optional" '"name": "local-rag-nlc-api"' "$manifest_output"
+    assert_contains "manifest does not require NLC RAG" '"required": false' "$manifest_output"
     if grep -Fq 'published: "18789"' <<<"$output"; then
         fail "compose does not publish the gateway port"
     else

@@ -32,7 +32,7 @@
       "compose_file": "compose/ai/local-rag.yml",
       "compose_service": "nlc-api",
       "container": "local-rag-nlc-api",
-      "required": true,
+      "required": false,
       "validation": "http",
       "url": "http://127.0.0.1:8091/health",
       "expected_status": [200],
