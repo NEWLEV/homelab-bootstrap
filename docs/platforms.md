@@ -57,6 +57,20 @@ state as a portability fix.
 
 Start from `configs/host.env.example` when preparing a new host profile.
 
+## Health Checks
+
+Run the portable health command after cloning, pulling, or applying bootstrap
+changes:
+
+```bash
+./scripts/health
+```
+
+The command reports host details, storage readiness, Docker and Tailscale
+availability, running containers, package updates when `apt` is present, NVMe
+health when `smartctl` is available, repository state, and installer
+recommendations. `./scripts/healthcheck` is available as a compatibility alias.
+
 ## MacBooks
 
 MacBooks are supported as development and control machines. They are the right

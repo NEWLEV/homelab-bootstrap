@@ -123,10 +123,16 @@ shellcheck install.sh
 
 ./tests/bootstrap-manifest.sh
 
+bash tests/platform-portability.sh
+
 ./install.sh --dry-run
+
+./scripts/health
 ```
 
 Run any additional tests affected by your changes.
+
+`./scripts/healthcheck` is kept as an alias for `./scripts/health`.
 
 ---
 

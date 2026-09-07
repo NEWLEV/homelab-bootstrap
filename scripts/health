@@ -1,83 +1,300 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
-green="\e[32m"
-yellow="\e[33m"
-red="\e[31m"
-blue="\e[36m"
-reset="\e[0m"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
-ok()   { echo -e "${green}✓${reset} $1"; }
-warn() { echo -e "${yellow}!${reset} $1"; }
-bad()  { echo -e "${red}✗${reset} $1"; }
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly REPO_ROOT
 
-echo
-echo -e "${blue}========== AISHA SYSTEM ==========${reset}"
-echo
+PASS_COUNT=0
+WARN_COUNT=0
+FAIL_COUNT=0
+SKIP_COUNT=0
 
-echo "Hostname : $(hostname)"
-echo "Kernel   : $(uname -r)"
-echo "Uptime   : $(uptime -p)"
-echo
+supports_color() {
+    [[ -t 1 ]] && [[ "${NO_COLOR:-}" == "" ]]
+}
 
-echo "CPU Temp : $(vcgencmd measure_temp 2>/dev/null || echo N/A)"
-echo "Memory   :"
-free -h | awk 'NR==2 {print "  Used: "$3" / "$2}'
-echo
-
-echo "Storage:"
-df -h / | awk 'NR==2 {print "  System: "$3" / "$2" ("$5")"}'
-df -h /srv/data | awk 'NR==2 {print "  Data  : "$3" / "$2" ("$5")"}'
-echo
-
-echo "Docker:"
-if systemctl is-active --quiet docker; then
-    ok "Docker running"
+if supports_color; then
+    readonly GREEN=$'\033[32m'
+    readonly YELLOW=$'\033[33m'
+    readonly RED=$'\033[31m'
+    readonly BLUE=$'\033[36m'
+    readonly RESET=$'\033[0m'
 else
-    bad "Docker stopped"
+    readonly GREEN=''
+    readonly YELLOW=''
+    readonly RED=''
+    readonly BLUE=''
+    readonly RESET=''
 fi
 
-echo "Pironman:"
-if systemctl is-active --quiet pironman5; then
-    ok "Pironman running"
-else
-    bad "Pironman stopped"
-fi
+section() {
+    printf '\n%s========== %s ==========%s\n' "$BLUE" "$1" "$RESET"
+}
 
-echo "Tailscale:"
-if tailscale status >/dev/null 2>&1; then
-    ok "$(tailscale ip -4 | head -1)"
-else
-    bad "Disconnected"
-fi
+pass() {
+    PASS_COUNT=$((PASS_COUNT + 1))
+    printf '  %s[PASS]%s %s\n' "$GREEN" "$RESET" "$1"
+}
 
-echo
+warn() {
+    WARN_COUNT=$((WARN_COUNT + 1))
+    printf '  %s[WARN]%s %s\n' "$YELLOW" "$RESET" "$1"
+}
 
-echo "Containers:"
-docker ps --format "  • {{.Names}} ({{.Status}})"
+fail() {
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    printf '  %s[FAIL]%s %s\n' "$RED" "$RESET" "$1"
+}
 
-echo
+skip() {
+    SKIP_COUNT=$((SKIP_COUNT + 1))
+    printf '  [SKIP] %s\n' "$1"
+}
 
-echo "Updates:"
-updates=$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l)
+have() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-if [ "$updates" -eq 0 ]; then
-    ok "System up to date"
-else
-    warn "$updates package(s) available"
-fi
+safe_hostname() {
+    hostname 2>/dev/null || printf 'unknown'
+}
 
-echo
+memory_summary() {
+    if have free; then
+        free -h | awk 'NR==2 {print "Used: "$3" / "$2}'
+    elif have sysctl; then
+        sysctl -n hw.memsize 2>/dev/null |
+            awk '{ printf "Total: %.0f GiB\n", $1 / 1024 / 1024 / 1024 }' ||
+            printf 'Unavailable\n'
+    else
+        printf 'Unavailable\n'
+    fi
+}
 
-echo "NVMe Health:"
+data_path() {
+    printf '%s\n' "${AISHA_DATA_ROOT:-/srv/data}"
+}
 
-for d in /dev/nvme*n1; do
-    echo
-    echo "$(basename "$d")"
+check_system() {
+    section "System"
+    printf '  Hostname: %s\n' "$(safe_hostname)"
+    printf '  Kernel: %s\n' "$(uname -sr 2>/dev/null || printf 'unknown')"
 
-    sudo smartctl -H "$d" | grep "SMART overall-health" || true
-    sudo smartctl -A "$d" | egrep "Temperature|Percentage Used|Data Units Written|Power On Hours" || true
-done
+    if have uptime; then
+        printf '  Uptime: %s\n' "$(uptime -p 2>/dev/null || uptime)"
+    fi
 
-echo
-echo "=================================="
+    printf '  Memory: %s\n' "$(memory_summary)"
+
+    if have vcgencmd; then
+        printf '  CPU temp: %s\n' "$(vcgencmd measure_temp 2>/dev/null || printf 'unavailable')"
+    else
+        skip "Raspberry Pi CPU temperature command unavailable"
+    fi
+}
+
+check_storage() {
+    section "Storage"
+
+    local root
+    root="$(data_path)"
+
+    if df -h / >/dev/null 2>&1; then
+        df -h / | awk 'NR==2 {print "  System: "$3" / "$2" ("$5")"}'
+    else
+        warn "Unable to inspect root filesystem usage"
+    fi
+
+    if [[ -d "$root" ]] && df -h "$root" >/dev/null 2>&1; then
+        df -h "$root" | awk -v label="$root" 'NR==2 {print "  Data ("label"): "$3" / "$2" ("$5")"}'
+    else
+        skip "Data path not present: ${root}"
+    fi
+
+    if have mountpoint; then
+        if mountpoint -q "$root" 2>/dev/null; then
+            pass "${root} is a mountpoint"
+        else
+            warn "${root} is not a mountpoint"
+        fi
+    else
+        skip "mountpoint command unavailable"
+    fi
+}
+
+check_command() {
+    local command_name="$1"
+
+    if have "$command_name"; then
+        pass "Command available: ${command_name}"
+    else
+        skip "Command unavailable: ${command_name}"
+    fi
+}
+
+check_services() {
+    section "Host services"
+
+    if have systemctl; then
+        if systemctl is-active --quiet docker 2>/dev/null; then
+            pass "Docker service running"
+        else
+            warn "Docker service is not active"
+        fi
+
+        if systemctl list-unit-files pironman5.service >/dev/null 2>&1; then
+            if systemctl is-active --quiet pironman5 2>/dev/null; then
+                pass "Pironman service running"
+            else
+                warn "Pironman service is installed but not active"
+            fi
+        else
+            skip "Pironman service not installed on this host"
+        fi
+    else
+        skip "systemctl unavailable on this host"
+    fi
+
+    if have tailscale; then
+        if tailscale status >/dev/null 2>&1; then
+            pass "Tailscale connected: $(tailscale ip -4 2>/dev/null | head -n 1 || printf 'ip unavailable')"
+        else
+            warn "Tailscale command exists but status check failed"
+        fi
+    else
+        skip "Tailscale unavailable on this host"
+    fi
+}
+
+check_containers() {
+    section "Containers"
+
+    if ! have docker; then
+        skip "Docker CLI unavailable"
+        return
+    fi
+
+    if ! docker info >/dev/null 2>&1; then
+        warn "Docker daemon is not reachable"
+        return
+    fi
+
+    local container_count
+    container_count="$(docker ps -q | wc -l | tr -d ' ')"
+
+    if [[ "$container_count" == "0" ]]; then
+        warn "No running containers"
+        return
+    fi
+
+    docker ps --format '  {{.Names}} ({{.Status}})'
+}
+
+check_updates() {
+    section "Updates"
+
+    if have apt; then
+        local updates
+        updates="$(apt list --upgradable 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')"
+
+        if [[ "$updates" == "0" ]]; then
+            pass "System packages up to date"
+        else
+            warn "${updates} package(s) available"
+        fi
+    else
+        skip "apt unavailable; package update check is Linux/Debian specific"
+    fi
+}
+
+check_nvme_health() {
+    section "NVMe Health"
+
+    if ! have smartctl; then
+        skip "smartctl unavailable"
+        return
+    fi
+
+    shopt -s nullglob
+    local devices=(/dev/nvme*n1)
+    shopt -u nullglob
+
+    if ((${#devices[@]} == 0)); then
+        skip "No NVMe devices detected"
+        return
+    fi
+
+    local device
+    for device in "${devices[@]}"; do
+        printf '  %s\n' "$(basename "$device")"
+        if smartctl -H "$device" 2>/dev/null | grep -E 'SMART overall-health|SMART overall-health self-assessment|SMART Health Status'; then
+            pass "SMART health readable for ${device}"
+        else
+            warn "Unable to read SMART health for ${device}; run with appropriate permissions if needed"
+        fi
+    done
+}
+
+check_repository() {
+    section "Repository"
+
+    if [[ -d "${REPO_ROOT}/.git" ]] && have git; then
+        printf '  Root: %s\n' "$REPO_ROOT"
+        printf '  Branch: %s\n' "$(git -C "$REPO_ROOT" branch --show-current 2>/dev/null || printf 'unknown')"
+        printf '  Commit: %s\n' "$(git -C "$REPO_ROOT" log -1 --oneline 2>/dev/null || printf 'unknown')"
+        if [[ -z "$(git -C "$REPO_ROOT" status --short 2>/dev/null)" ]]; then
+            pass "Working tree clean"
+        else
+            warn "Working tree has local changes"
+        fi
+    else
+        skip "Git repository metadata unavailable"
+    fi
+
+    if [[ -x "${REPO_ROOT}/install.sh" ]]; then
+        pass "Installer is executable"
+    else
+        warn "Installer is missing or not executable"
+    fi
+}
+
+check_recommendations() {
+    section "Installer Recommendations"
+
+    if [[ -x "${REPO_ROOT}/install.sh" ]]; then
+        "${REPO_ROOT}/install.sh" --recommend || warn "Installer recommendation command failed"
+    else
+        skip "Installer unavailable"
+    fi
+}
+
+main() {
+    check_system
+    check_storage
+
+    section "Tools"
+    check_command git
+    check_command docker
+    check_command tailscale
+    check_command smartctl
+
+    check_services
+    check_containers
+    check_updates
+    check_nvme_health
+    check_repository
+    check_recommendations
+
+    section "Summary"
+    printf '  Passed: %d\n' "$PASS_COUNT"
+    printf '  Warnings: %d\n' "$WARN_COUNT"
+    printf '  Failed: %d\n' "$FAIL_COUNT"
+    printf '  Skipped: %d\n' "$SKIP_COUNT"
+
+    ((FAIL_COUNT == 0))
+}
+
+main "$@"
