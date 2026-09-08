@@ -3,7 +3,8 @@ set -Eeuo pipefail
 
 # Compatibility wrapper for the old consolidation command. The native
 # gateway and the repository-managed Aisha gateway are intentionally separate.
-readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
 readonly NATIVE_UNIT="openclaw-gateway.service"
 readonly NATIVE_UI_URL="${OPENCLAW_UI_URL:-https://aisha.tail4553c9.ts.net/openclaw/}"
 readonly AISHA_HEALTH_URL="${AISHA_HEALTH_URL:-https://aisha.tail4553c9.ts.net/aisha/api/health}"

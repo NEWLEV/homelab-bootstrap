@@ -13,7 +13,8 @@ services:
       - run
 
     env_file:
-      - ${HERMES_ENV_FILE:-/srv/data/services/hermes/hermes.env}
+      - path: ${HERMES_ENV_FILE:-/srv/data/services/hermes/hermes.env}
+        required: false
 
     environment:
       HOME: /opt/data

@@ -56,9 +56,10 @@ test_hermes_compose_contract() {
     assert_contains "hermes compose enables api server" 'API_SERVER_ENABLED: "true"' "$output"
     assert_contains "hermes compose enables dashboard" 'HERMES_DASHBOARD: "1"' "$output"
     assert_contains "hermes compose publishes dashboard port" 'published: "9119"' "$output"
-    assert_contains "hermes dashboard binds to tailnet" 'host_ip: 100.106.201.14' "$output"
     assert_contains "hermes compose publishes api port" 'published: "8642"' "$output"
-    assert_contains "hermes compose loads env file" 'HERMES_ENV_FILE' "$output"
+    assert_contains "hermes dashboard binds to tailnet" 'host_ip: ${TAILNET_BIND_IP:-100.106.201.14}' "$output"
+    assert_contains "hermes compose loads optional env file" 'HERMES_ENV_FILE' "$output"
+    assert_contains "hermes env file is optional for clean validation" 'required: false' "$output"
     assert_contains "hermes healthcheck has a request timeout" 'req.setTimeout(5000' "$output"
 }
 
