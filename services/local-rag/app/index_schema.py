@@ -1,8 +1,16 @@
+import os
 from typing import Any
 
 
 INDEX_SCHEMA_VERSION = "1"
-COLLECTION_DESCRIPTION = "Aisha homelab repository"
+COLLECTION_NAME = os.environ.get(
+    "COLLECTION_NAME",
+    "homelab_bootstrap",
+)
+COLLECTION_DESCRIPTION = os.environ.get(
+    "COLLECTION_DESCRIPTION",
+    "Aisha homelab repository",
+)
 
 REQUIRED_METADATA_FIELDS = {
     "path",

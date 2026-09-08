@@ -9,6 +9,7 @@ import httpx
 
 from app.chunking import chunk_document
 from app.index_schema import (
+    COLLECTION_NAME,
     INDEX_SCHEMA_VERSION,
     REQUIRED_METADATA_FIELDS,
     collection_metadata,
@@ -233,7 +234,7 @@ def index_repository(*, rebuild: bool = False) -> dict[str, Any]:
     )
 
     collection = client.get_or_create_collection(
-        name="homelab_bootstrap",
+        name=COLLECTION_NAME,
         metadata=collection_metadata(EMBEDDING_MODEL),
     )
 

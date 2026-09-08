@@ -57,7 +57,7 @@ class FakeClient:
         name: str,
         metadata: dict[str, str],
     ) -> FakeCollection:
-        assert name == "homelab_bootstrap"
+        assert name == indexer.COLLECTION_NAME
         assert metadata["description"] == "Aisha homelab repository"
         if not self.collection.metadata:
             self.collection.metadata = metadata
@@ -88,6 +88,22 @@ def test_chunk_id_is_stable() -> None:
 
     assert first == second
     assert len(first) == 64
+
+
+def test_indexer_uses_configured_collection_name(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    collection = FakeCollection()
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+
+    configure_indexer(monkeypatch, source_root, collection)
+    monkeypatch.setattr(indexer, "COLLECTION_NAME", "ops_core")
+
+    result = indexer.index_repository()
+
+    assert result["total_chunks"] == 0
 
 
 def test_chunk_id_changes_when_content_changes() -> None:

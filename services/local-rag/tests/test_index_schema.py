@@ -1,6 +1,7 @@
 from typing import Any
 
 from app.index_schema import (
+    COLLECTION_DESCRIPTION,
     INDEX_SCHEMA_VERSION,
     collection_metadata,
     inspect_collection,
@@ -9,6 +10,10 @@ from app.index_schema import (
 
 CHUNKING_VERSION = "2"
 EMBEDDING_MODEL = "nomic-embed-text"
+
+
+def test_collection_metadata_uses_configured_description() -> None:
+    assert collection_metadata(EMBEDDING_MODEL)["description"] == COLLECTION_DESCRIPTION
 
 
 def valid_metadata() -> dict[str, str | int]:

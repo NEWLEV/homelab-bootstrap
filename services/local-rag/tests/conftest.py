@@ -28,7 +28,12 @@ os.environ["RATE_LIMIT_BURST"] = "10"
 os.environ["MAX_CONCURRENT_REQUESTS"] = "0"
 os.environ["MAX_REQUEST_BODY_BYTES"] = "0"
 
-test_data_dir = Path(tempfile.gettempdir()) / "aisha-local-rag-tests"
+test_data_dir = Path(
+    os.environ.get(
+        "AISHA_LOCAL_RAG_TEST_ROOT",
+        str(Path(tempfile.gettempdir()) / "aisha-local-rag-tests"),
+    )
+)
 test_data_dir.mkdir(parents=True, exist_ok=True)
 temp_dir = test_data_dir / "tmp"
 temp_dir.mkdir(parents=True, exist_ok=True)

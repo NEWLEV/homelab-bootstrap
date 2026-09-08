@@ -27,6 +27,7 @@ from app.index_jobs import (
 )
 from app.index_schema import (
     INDEX_SCHEMA_VERSION,
+    COLLECTION_NAME,
     collection_metadata,
     inspect_collection,
 )
@@ -160,7 +161,7 @@ chroma_client = chromadb.PersistentClient(
 )
 
 collection = chroma_client.get_or_create_collection(
-    name="homelab_bootstrap",
+    name=COLLECTION_NAME,
     metadata=collection_metadata(EMBEDDING_MODEL),
 )
 
