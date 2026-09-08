@@ -19,6 +19,14 @@ readonly REQUIRED_DIRECTORIES=(
     "/srv/data/services"
 )
 
+readonly LOCAL_RAG_WRITABLE_DIRECTORIES=(
+    "/srv/data/services/local-rag/chroma"
+    "/srv/data/services/local-rag/models"
+    "/srv/data/services/local-rag/ops-chroma"
+)
+
+readonly LOCAL_RAG_RUNTIME_OWNER="65532:65532"
+
 log() {
     printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
 }
@@ -60,6 +68,36 @@ ensure_directory() {
     if [[ "$owner" != "${USER}:${USER}" ]]; then
         warning "${directory} is owned by ${owner}; expected ${USER}:${USER}"
         warning "Ownership was not changed automatically."
+    fi
+}
+
+ensure_runtime_directory() {
+    local directory="$1"
+    local owner="$2"
+
+    if [[ -d "$directory" ]]; then
+        success "Directory exists: ${directory}"
+    else
+        mkdir -p "$directory"
+        DIRECTORIES_CHANGED=true
+        log "Created directory: ${directory}"
+    fi
+
+    local current_owner
+    current_owner="$(stat -c '%u:%g' "$directory")"
+
+    if [[ "$current_owner" == "$owner" ]]; then
+        success "Directory owner is ${owner}: ${directory}"
+        return
+    fi
+
+    if command -v sudo >/dev/null 2>&1; then
+        sudo chown -R "$owner" "$directory"
+        DIRECTORIES_CHANGED=true
+        success "Updated directory owner to ${owner}: ${directory}"
+    else
+        warning "${directory} is owned by ${current_owner}; expected ${owner}"
+        warning "sudo is unavailable, so ownership was not changed automatically."
     fi
 }
 
@@ -147,6 +185,12 @@ log "Ensuring required directory structure"
 
 for directory in "${REQUIRED_DIRECTORIES[@]}"; do
     ensure_directory "$directory"
+done
+
+log "Ensuring Local RAG writable runtime directories"
+
+for directory in "${LOCAL_RAG_WRITABLE_DIRECTORIES[@]}"; do
+    ensure_runtime_directory "$directory" "$LOCAL_RAG_RUNTIME_OWNER"
 done
 
 log "Storage validation summary"

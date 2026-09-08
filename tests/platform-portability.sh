@@ -58,6 +58,10 @@ assert_contains "netdata hostname is configurable" \
     '${HOMELAB_HOSTNAME:-aisha}' "$REPO_ROOT/compose/monitoring/netdata.yml"
 assert_contains "hermes dashboard bind IP is configurable" \
     'host_ip: ${TAILNET_BIND_IP:-100.106.201.14}' "$REPO_ROOT/compose/ai/hermes.yml"
+assert_contains "storage phase prepares Local RAG runtime ownership" \
+    'LOCAL_RAG_RUNTIME_OWNER="65532:65532"' "$REPO_ROOT/scripts/bootstrap.d/02-storage.sh"
+assert_contains "storage phase prepares operations Chroma path" \
+    "/srv/data/services/local-rag/ops-chroma" "$REPO_ROOT/scripts/bootstrap.d/02-storage.sh"
 
 recommend_output="$(
     AISHA_DETECT_KERNEL=Darwin \
