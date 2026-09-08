@@ -103,6 +103,7 @@ export SOPS_AGE_KEY_FILE=/mnt/aisha-recovery/age/aisha.agekey
 | `docs/developer-guide.md` | Development workflow |
 | `docs/release-process.md` | Release workflow |
 | `docs/roadmap.md` | Platform scope and delivery status |
+| `SECURITY.md` | Security policy and public repository rules |
 | `docs/system.md` | Current machine profile and operational posture |
 | `docs/system-profile.json` | Structured system inventory baseline |
 | `docs/drift-map.json` | Live-to-repository reconciliation map |
