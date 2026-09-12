@@ -85,3 +85,12 @@ control remote Linux hosts over SSH.
 The bootstrap installer does not apply host changes directly on macOS. Use
 `./install.sh --recommend` for local guidance, then apply bootstrap phases from
 a Debian-family Linux host, Linux VM, or the target homelab machine.
+
+## Apple Silicon Mac Mini
+
+Apple Silicon Mac mini hosts should run Aisha inside a Debian `arm64` VM. The
+validated Apple M4 path uses Lima with the macOS `vz` backend and a separate
+ext4 Lima data disk mounted at `/srv/data` in the guest.
+
+See `docs/mac-mini-m4-lima.md` for the recorded deployment profile and
+validation evidence.

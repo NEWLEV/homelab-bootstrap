@@ -95,6 +95,7 @@ export SOPS_AGE_KEY_FILE=/mnt/aisha-recovery/age/aisha.agekey
 | `docs/architecture.md` | System architecture |
 | `docs/bootstrap.md` | Bootstrap process |
 | `docs/platforms.md` | Supported host platforms and portability rules |
+| `docs/mac-mini-m4-lima.md` | Apple M4 Mac mini Lima deployment profile |
 | `docs/storage.md` | Storage layout |
 | `docs/network.md` | Network architecture |
 | `docs/services.md` | Managed services |
