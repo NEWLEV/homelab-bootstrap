@@ -229,6 +229,8 @@ Local RAG health: ok, 179 chunks indexed
 OpenClaw health: ok, Local RAG reachable
 https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
 https://aisha-macmini.tail4553c9.ts.net/openclaw/ 200
+https://aisha-macmini.tail4553c9.ts.net/n8n/ 200
+https://aisha-macmini.tail4553c9.ts.net/n8n/home/workflows 200
 ```
 
 Hermes pulled and bound to the Mac mini tailnet IP after loading
