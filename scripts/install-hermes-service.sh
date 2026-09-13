@@ -122,7 +122,6 @@ if ! path_has_content "$env_file"; then
     umask 077
     cat >"$env_file" <<EOF
 # Hermes runtime secrets and dashboard auth.
-API_SERVER_KEY=$(openssl rand -hex 32)
 HERMES_DASHBOARD_BASIC_AUTH_USERNAME=hermes
 HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=$(openssl rand -hex 16)
 HERMES_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -hex 32)
@@ -144,4 +143,3 @@ compose "${compose_args[@]}" -f "$compose_file" up -d --force-recreate --remove-
 
 printf 'Hermes runtime is ready.\n'
 printf 'Dashboard: http://aisha:9119/\n'
-printf 'API: http://aisha:8642/\n'

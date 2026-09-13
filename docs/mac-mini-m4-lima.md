@@ -249,6 +249,10 @@ docker compose -f compose/ai/hermes.yml ps
 ```
 
 The expected result is a healthy Hermes dashboard on the Aisha tailnet address.
+The deployment does not publish Hermes port `8642`: the current container starts
+the dashboard and gateway process, but no API listener was present during live
+validation. Keep that port closed until an API listener has been explicitly
+enabled and proven on the target host.
 
 The 2026-09-13 live retries proved:
 
@@ -257,8 +261,8 @@ The 2026-09-13 live retries proved:
   inside the Lima `vz` ARM64 guest;
 - the installer can rerun against a container-owned Hermes runtime directory;
 - the installer can run Compose while preserving a protected `0600` env file;
-- the container starts from the pinned digest and binds ports to
-  `100.96.211.56`.
+- the container starts from the pinned digest and exposes the dashboard on
+  `100.96.211.56:9119`.
 
 The root cause of the final readiness failure was Hermes importing
 `cryptography.hazmat.primitives.hashes` during plugin/model-tool discovery. In

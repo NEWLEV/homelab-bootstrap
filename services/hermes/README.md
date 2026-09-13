@@ -11,7 +11,7 @@ Hermes is the second assistant runtime for this appliance.
 
 ## Recommended runtime boundaries
 
-- Hermes gateway/API: separate service or container.
+- Hermes dashboard/gateway: separate service or container.
 - Hermes state: `~/.hermes/`.
 - Hermes config: `~/.hermes/config.yaml`.
 - Hermes environment: `~/.hermes/.env`.

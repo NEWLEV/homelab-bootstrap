@@ -259,9 +259,9 @@ runtime is installed with:
 bash scripts/install-hermes-service.sh
 ```
 
-The dashboard is exposed on `http://aisha:9119/`, and the API server listens
-on `http://aisha:8642/` once the runtime is started. Both ports bind only to
-the Tailscale IPv4 address.
+The dashboard is exposed on `http://aisha:9119/` and binds only to the
+Tailscale IPv4 address. Do not publish a Hermes API port until that listener
+has been enabled and live-proven on the target host.
 
 Verify
 
@@ -432,4 +432,3 @@ Run:
 ```
 
 Resolve all reported validation errors before applying changes.
-

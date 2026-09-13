@@ -23,15 +23,11 @@ services:
       LOCAL_RAG_URL: http://local-rag-api:8080
       OPS_RAG_URL: ${HERMES_OPS_RAG_URL:-}
       LOCAL_RAG_TOKEN_FILE: /run/secrets/local_rag_api_token
-      API_SERVER_ENABLED: "true"
-      API_SERVER_HOST: 0.0.0.0
-      API_SERVER_PORT: "8642"
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: 0.0.0.0
       HERMES_DASHBOARD_PORT: "9119"
       HERMES_GATEWAY_BOOTSTRAP_STATE: running
       OPENSSL_armcap: ${HERMES_OPENSSL_ARMCAP:-0}
-      API_SERVER_CORS_ORIGINS: "http://${HOMELAB_HOSTNAME:-aisha}:8000,http://${TAILNET_BIND_IP:-100.106.201.14}:8000,https://${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}"
 
     volumes:
       - /srv/data/services/hermes:/opt/data
@@ -43,10 +39,6 @@ services:
     ports:
       - target: 9119
         published: "9119"
-        host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
-        protocol: tcp
-      - target: 8642
-        published: "8642"
         host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
         protocol: tcp
 

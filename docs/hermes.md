@@ -46,6 +46,9 @@ operator intent to `running`. Deliberate stopped state is preserved.
 - Hermes can inspect the OpenClaw checkout when the compose service includes
   the repo bind mount.
 - Hermes reuses Local RAG instead of duplicating the index.
+- The verified container-backed surface is the Hermes dashboard on port `9119`.
+  Do not publish an API port until the image exposes a listener that has been
+  started and live-proven on the target host.
 - Hermes can use skills and approved MCP servers without sharing OpenClaw
   secrets or state.
 - Hermes should keep separate state and policy files from OpenClaw.
