@@ -53,6 +53,16 @@ if AISHA_REPOSITORY_ROOT="$SOURCE_REPOSITORY" \
 fi
 rm "${KNOWLEDGE_SOURCE}/untracked.txt"
 
+HOST_ENV="${TEST_ROOT}/host.env"
+HOST_ENV_KNOWLEDGE_SOURCE="${TEST_ROOT}/host-env-knowledge-source"
+printf 'AISHA_REPOSITORY_ROOT=%s\nAISHA_KNOWLEDGE_SOURCE=%s\n' \
+    "$SOURCE_REPOSITORY" "$HOST_ENV_KNOWLEDGE_SOURCE" > "$HOST_ENV"
+
+AISHA_HOST_ENV="$HOST_ENV" \
+    "${REPO_ROOT}/scripts/sync-knowledge-source" "$first_revision" >/dev/null
+
+[[ "$(git -C "$HOST_ENV_KNOWLEDGE_SOURCE" rev-parse HEAD)" == "$first_revision" ]]
+
 FAKE_BIN="${TEST_ROOT}/bin"
 mkdir -p "$FAKE_BIN"
 cat > "${FAKE_BIN}/curl" <<'CURL'

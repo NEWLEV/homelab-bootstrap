@@ -1,6 +1,31 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+load_host_env_default() {
+    local name="$1"
+    local host_env="${AISHA_HOST_ENV:-/srv/data/services/host.env}"
+    local value
+
+    [[ -z "${!name+x}" && -r "$host_env" ]] || return 0
+
+    value="$(
+        awk -F= -v key="$name" '
+            $1 == key {
+                sub(/^[^=]*=/, "")
+                print
+                exit
+            }
+        ' "$host_env"
+    )"
+
+    [[ -n "$value" ]] || return 0
+    printf -v "$name" '%s' "$value"
+    export "$name"
+}
+
+load_host_env_default AISHA_REPOSITORY_ROOT
+load_host_env_default AISHA_KNOWLEDGE_SOURCE
+
 readonly REPOSITORY="${AISHA_REPOSITORY_ROOT:-/srv/data/git/homelab-bootstrap}"
 readonly TARGET="${AISHA_KNOWLEDGE_SOURCE:-/srv/data/git/homelab-bootstrap-index}"
 readonly REVISION="${1:-}"
