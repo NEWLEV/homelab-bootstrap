@@ -218,14 +218,22 @@ available through Traefik at:
 https://aisha-macmini.tail4553c9.ts.net/aisha/
 ```
 
-The older `/openclaw` shortcut is only published when a real native loopback
+The `/openclaw` shortcut is only published when a real native loopback
 OpenClaw gateway is present. Do not alias it to `/aisha/`; that makes an
 OpenClaw label open Aisha chat.
 
-Homepage exposes the working compose-backed chat surface as an Aisha card:
-`https://aisha-macmini.tail4553c9.ts.net/aisha/`. The card may describe that
-surface as OpenClaw-backed Aisha chat, but it must not point an OpenClaw label
-at `/openclaw/` unless the native gateway exists.
+On the Mac mini, the native OpenClaw gateway runs as a user systemd service
+on loopback port `18789`, with Tailscale Serve publishing it at:
+
+```text
+https://aisha-macmini.tail4553c9.ts.net/openclaw/
+```
+
+The Homepage OpenClaw card points to that native Control UI. The
+compose-backed Aisha chat surface remains available directly at `/aisha/`,
+but it is not labeled as OpenClaw on the dashboard. Pironman5 Max is omitted
+from the Mac mini Homepage runtime because this device does not have that
+Raspberry Pi hardware dashboard.
 
 The 2026-09-12 secret-backed verification reached:
 

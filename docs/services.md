@@ -194,10 +194,10 @@ with:
 Homepage control shortcuts
 
 The Homepage dashboard exposes service cards for operational surfaces such as
-the OpenClaw-backed Aisha chat surface, Hermes, n8n, Kuma, File Browser,
-Portainer, and Netdata. It does not inject a floating Aisha chat launcher.
-The normal Aisha service card points to `/aisha/`; do not point a Homepage
-card at `/openclaw/` unless a real native OpenClaw Control UI is installed.
+the native OpenClaw Control UI, Hermes, n8n, Kuma, File Browser, Portainer,
+and Netdata. It does not inject a floating Aisha chat launcher. The OpenClaw
+service card points to `/openclaw/` only when the native loopback gateway is
+installed; do not alias that label to the compose-backed `/aisha/` chat route.
 The disabled custom asset placeholders live in `configs/homepage/custom.js`
 and `configs/homepage/custom.css`. The main dashboard cards live in
 `configs/homepage/services.yaml`.
