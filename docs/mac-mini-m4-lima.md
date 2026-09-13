@@ -147,6 +147,7 @@ The 2026-09-12 Mac mini deployment validated:
 - `/srv/data` mounted from `/dev/vdb1` as ext4 with `noatime`
 - non-secret core services started on the guest tailnet IP
 - Compose tailnet host references parameterized for non-Aisha hosts
+- Tailscale Serve HTTPS root published to the local Traefik entrypoint
 
 The bootstrap phases completed successfully:
 
@@ -169,6 +170,25 @@ Tailscale inside the Debian guest:
 ```text
 aisha-macmini.tail4553c9.ts.net
 100.96.211.56
+```
+
+The 2026-09-12 non-secret service surface was verified at:
+
+```text
+https://aisha-macmini.tail4553c9.ts.net/ 200
+http://100.96.211.56:8000 200
+http://100.96.211.56:8080 200
+http://100.96.211.56:9000 307
+http://100.96.211.56:19999 200
+http://100.96.211.56:3001 302
+```
+
+Secret-backed services remain blocked until runtime secrets are restored:
+
+```text
+/srv/data/services/local-rag/secrets/api-token
+/srv/data/services/openclaw/secrets.env
+/srv/data/services/hermes/hermes.env
 ```
 
 Do not commit Tailscale auth keys, node keys, or other secrets.
