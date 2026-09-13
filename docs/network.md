@@ -142,16 +142,18 @@ Routed services on the tailnet host `aisha.tail4553c9.ts.net`:
 | Path | Service |
 |------|---------|
 | `/` | Homepage dashboard |
-| `/openclaw` | Native OpenClaw Control UI (`127.0.0.1:18789`) |
+| `/openclaw` | Native OpenClaw Control UI when present; otherwise a compatibility alias to `/aisha` |
 | `/aisha` | Aisha chat gateway (container via Traefik) |
 | `/n8n` | n8n workflow automation, when installed |
 
 The Homepage route remains available on `http://100.106.201.14:8000` for
 local dashboard access. The native OpenClaw gateway listens on loopback and
 is published directly by Tailscale Serve at
-`https://aisha.tail4553c9.ts.net/openclaw/`. The root Serve handler sends the
-Homepage and `/aisha/` traffic to Traefik's private loopback entrypoint;
-Traefik then routes `/aisha/` to the repository-managed Aisha container.
+`https://aisha.tail4553c9.ts.net/openclaw/` when it exists. Fresh
+compose-backed installs keep `/openclaw/` as a compatibility alias to the
+repository-managed Aisha route at `/aisha/`. The root Serve handler sends the
+Homepage, `/aisha/`, and optional `/n8n/` traffic to Traefik's private loopback
+entrypoint.
 
 The Homepage and OpenClaw routes are reachable through the tailnet-only
 Tailscale Serve listener and a loopback-only Traefik entrypoint. OpenClaw

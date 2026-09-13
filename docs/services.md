@@ -407,6 +407,23 @@ Restore runtime secrets:
 
 ## n8n and Ollama
 
+n8n is optional workflow automation. Install it after Local RAG and Traefik are
+running:
+
+```bash
+bash scripts/install-n8n-service.sh
+sudo bash scripts/configure-tailscale-ingress
+```
+
+The installer creates `/srv/data/services/n8n/n8n.env` with a local
+`N8N_ENCRYPTION_KEY` if one does not exist. Do not commit that file.
+
+The n8n editor is exposed through Traefik at:
+
+```text
+https://aisha.tail4553c9.ts.net/n8n/
+```
+
 For direct Ollama calls from n8n, use the Docker-network hostname:
 
 ```text

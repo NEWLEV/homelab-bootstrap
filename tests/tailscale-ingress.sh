@@ -21,14 +21,14 @@ assert_contains "ingress installer uses background mode" '--bg' "$script"
 assert_contains "ingress installer clears stale handlers" 'tailscale serve reset' "$script"
 assert_contains "ingress installer uses loopback backend" \
     'http://127.0.0.1:18080' "$script"
-assert_contains "ingress installer preserves optional n8n" \
-    '--set-path=/n8n' "$script"
 assert_contains "ingress installer checks native OpenClaw" \
     '"$OPENCLAW_BACKEND/openclaw/"' "$script"
 assert_contains "ingress installer publishes native OpenClaw" \
     '--set-path=/openclaw' "$script"
 assert_contains "ingress installer preserves native base path" \
     '"$OPENCLAW_BACKEND/openclaw"' "$script"
+assert_contains "ingress installer aliases OpenClaw to Aisha when native gateway is absent" \
+    '"$TRAEFIK_BACKEND/aisha"' "$script"
 assert_contains "ingress installer checks Traefik first" \
     'Traefik is not ready' "$script"
 assert_contains "AI reconfigure script manages Traefik" \

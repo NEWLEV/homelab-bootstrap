@@ -1,0 +1,62 @@
+name: n8n
+
+services:
+  n8n:
+    image: ${N8N_IMAGE:-n8nio/n8n:1.119.2}
+    container_name: n8n
+    restart: unless-stopped
+
+    env_file:
+      - path: ${N8N_ENV_FILE:-/srv/data/services/n8n/n8n.env}
+        required: false
+
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      N8N_PATH: /n8n/
+      N8N_EDITOR_BASE_URL: "https://${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}/n8n/"
+      WEBHOOK_URL: "https://${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}/n8n/"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_SECURE_COOKIE: "true"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      GENERIC_TIMEZONE: "${TZ:-America/New_York}"
+      OLLAMA_BASE_URL: http://local-rag-ollama:11434
+
+    volumes:
+      - /srv/data/services/n8n:/home/node/.n8n
+
+    networks:
+      - proxy
+      - rag-private
+
+    security_opt:
+      - no-new-privileges=true
+
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.n8n.rule: "Host(`${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}`) && PathPrefix(`/n8n`)"
+      traefik.http.routers.n8n.entrypoints: "tailnet"
+      traefik.http.services.n8n.loadbalancer.server.port: "5678"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          node -e "const http=require('http');
+          const req=http.get('http://127.0.0.1:5678/healthz', res => process.exit(res.statusCode && res.statusCode < 500 ? 0 : 1));
+          req.setTimeout(5000, () => { req.destroy(); process.exit(1); });
+          req.on('error', () => process.exit(1));"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  proxy:
+    external: true
+  rag-private:
+    external: true
+    name: local-rag_rag-private

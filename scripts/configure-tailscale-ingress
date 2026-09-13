@@ -6,7 +6,6 @@ set -Eeuo pipefail
 readonly SERVE_PORT="${TAILSCALE_SERVE_PORT:-443}"
 readonly TRAEFIK_BACKEND="${TAILSCALE_SERVE_BACKEND:-http://127.0.0.1:18080}"
 readonly TRAEFIK_HOST="${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}"
-readonly N8N_BACKEND="${TAILSCALE_N8N_BACKEND:-http://127.0.0.1:5678}"
 readonly OPENCLAW_BACKEND="${TAILSCALE_OPENCLAW_BACKEND:-http://127.0.0.1:18789}"
 
 if ((EUID != 0)); then
@@ -43,27 +42,18 @@ fi
 tailscale serve reset
 tailscale serve --yes --bg --https="$SERVE_PORT" "$TRAEFIK_BACKEND"
 
-# Keep the existing n8n shortcut working when the optional local service is
-# installed. A later run will add it after n8n is started.
-if curl --fail --silent --show-error --max-time 3 "$N8N_BACKEND/" >/dev/null 2>&1; then
-    tailscale serve --yes --bg --https="$SERVE_PORT" \
-        --set-path=/n8n "$N8N_BACKEND"
-    printf 'Preserved n8n at /n8n via %s.\n' "$N8N_BACKEND"
-else
-    printf 'n8n backend not detected at %s; /n8n was not configured.\n' \
-        "$N8N_BACKEND"
-fi
-
 # The compose-backed OpenClaw route is served through Traefik at /aisha. Older
 # native gateway installs may also expose /openclaw on loopback; preserve that
-# shortcut when it is detected, but do not require it on fresh installs.
+# shortcut when it is detected. Fresh compose-backed installs publish /openclaw
+# as a compatibility alias to /aisha so dashboard shortcuts do not 404.
 if ((native_openclaw_available)); then
     tailscale serve --yes --bg --https="$SERVE_PORT" \
         --set-path=/openclaw "$OPENCLAW_BACKEND/openclaw"
     printf 'Published native OpenClaw at /openclaw via %s.\n' "$OPENCLAW_BACKEND"
 else
-    printf 'Native OpenClaw was not detected at %s/openclaw; using Traefik /aisha.\n' \
-        "$OPENCLAW_BACKEND"
+    tailscale serve --yes --bg --https="$SERVE_PORT" \
+        --set-path=/openclaw "$TRAEFIK_BACKEND/aisha"
+    printf 'Published /openclaw compatibility alias through Traefik /aisha.\n'
 fi
 
 printf 'Tailscale Serve now terminates HTTPS on port %s and proxies to %s.\n' \
