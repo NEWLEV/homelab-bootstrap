@@ -1,8 +1,8 @@
 - Assistant Runtimes:
-    - OpenClaw:
+    - Aisha:
         icon: mdi-robot
-        href: https://aisha.tail4553c9.ts.net/openclaw/
-        description: Secure native OpenClaw Control UI
+        href: https://aisha.tail4553c9.ts.net/aisha/
+        description: Chat and local knowledge gateway
     - Hermes:
         icon: mdi-brain
         href: http://aisha:9119/
@@ -11,7 +11,7 @@
 - Automation:
     - n8n:
         icon: n8n
-        href: https://aisha.tail4553c9.ts.net/n8n/home/workflows
+        href: http://100.106.201.14:5678/
         description: Workflow automation and orchestration
         target: _blank
 

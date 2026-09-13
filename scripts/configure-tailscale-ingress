@@ -51,18 +51,16 @@ fi
 tailscale serve reset
 tailscale serve --yes --bg --https="$SERVE_PORT" "$TRAEFIK_BACKEND"
 
-# The compose-backed OpenClaw route is served through Traefik at /aisha. Older
-# native gateway installs may also expose /openclaw on loopback; preserve that
-# shortcut when it is detected. Fresh compose-backed installs publish /openclaw
-# as a compatibility alias to /aisha so dashboard shortcuts do not 404.
+# The compose-backed Aisha chat route is served through Traefik at /aisha.
+# Only publish /openclaw when a real native OpenClaw backend is present; do not
+# alias it to chat, because that makes the dashboard label misleading.
 if ((native_openclaw_available)); then
     tailscale serve --yes --bg --https="$SERVE_PORT" \
         --set-path=/openclaw "$OPENCLAW_BACKEND/openclaw"
     printf 'Published native OpenClaw at /openclaw via %s.\n' "$OPENCLAW_BACKEND"
 else
-    tailscale serve --yes --bg --https="$SERVE_PORT" \
-        --set-path=/openclaw "$TRAEFIK_BACKEND/aisha"
-    printf 'Published /openclaw compatibility alias through Traefik /aisha.\n'
+    printf 'Native OpenClaw was not detected at %s/openclaw; /openclaw was not configured.\n' \
+        "$OPENCLAW_BACKEND"
 fi
 
 printf 'Tailscale Serve now terminates HTTPS on port %s and proxies to %s.\n' \

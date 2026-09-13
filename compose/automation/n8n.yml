@@ -13,13 +13,12 @@ services:
     environment:
       N8N_HOST: 0.0.0.0
       N8N_PORT: "5678"
-      N8N_PROTOCOL: https
-      N8N_PATH: /n8n/
-      N8N_EDITOR_BASE_URL: "https://${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}/n8n/"
-      WEBHOOK_URL: "https://${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}/n8n/"
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: "http://${TAILNET_BIND_IP:-100.106.201.14}:5678/"
+      WEBHOOK_URL: "http://${TAILNET_BIND_IP:-100.106.201.14}:5678/"
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
-      N8N_SECURE_COOKIE: "true"
+      N8N_SECURE_COOKIE: "false"
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
       GENERIC_TIMEZONE: "${TZ:-America/New_York}"
       OLLAMA_BASE_URL: http://local-rag-ollama:11434
@@ -27,19 +26,17 @@ services:
     volumes:
       - /srv/data/services/n8n:/home/node/.n8n
 
+    ports:
+      - target: 5678
+        published: "5678"
+        host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
+        protocol: tcp
+
     networks:
-      - proxy
       - rag-private
 
     security_opt:
       - no-new-privileges=true
-
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "proxy"
-      traefik.http.routers.n8n.rule: "Host(`${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}`) && PathPrefix(`/n8n`)"
-      traefik.http.routers.n8n.entrypoints: "tailnet"
-      traefik.http.services.n8n.loadbalancer.server.port: "5678"
 
     healthcheck:
       test:
@@ -55,8 +52,6 @@ services:
       start_period: 30s
 
 networks:
-  proxy:
-    external: true
   rag-private:
     external: true
     name: local-rag_rag-private

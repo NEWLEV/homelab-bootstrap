@@ -218,9 +218,9 @@ available through Traefik at:
 https://aisha-macmini.tail4553c9.ts.net/aisha/
 ```
 
-The older `/openclaw` shortcut is kept as a compatibility alias to `/aisha/`
-when no native loopback gateway is present, so existing dashboard shortcuts do
-not 404 on fresh Mac mini deployments.
+The older `/openclaw` shortcut is only published when a real native loopback
+OpenClaw gateway is present. Do not alias it to `/aisha/`; that makes an
+OpenClaw label open Aisha chat.
 
 The 2026-09-12 secret-backed verification reached:
 
@@ -228,9 +228,7 @@ The 2026-09-12 secret-backed verification reached:
 Local RAG health: ok, 179 chunks indexed
 OpenClaw health: ok, Local RAG reachable
 https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
-https://aisha-macmini.tail4553c9.ts.net/openclaw/ 200
-https://aisha-macmini.tail4553c9.ts.net/n8n/ 200
-https://aisha-macmini.tail4553c9.ts.net/n8n/home/workflows 200
+http://100.96.211.56:5678/ 200
 ```
 
 Hermes pulled and bound to the Mac mini tailnet IP after loading

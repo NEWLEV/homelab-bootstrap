@@ -29,8 +29,8 @@ assert_contains "ingress installer publishes native OpenClaw" \
     '--set-path=/openclaw' "$script"
 assert_contains "ingress installer preserves native base path" \
     '"$OPENCLAW_BACKEND/openclaw"' "$script"
-assert_contains "ingress installer aliases OpenClaw to Aisha when native gateway is absent" \
-    '"$TRAEFIK_BACKEND/aisha"' "$script"
+assert_contains "ingress installer does not alias OpenClaw to chat" \
+    '/openclaw was not configured' "$script"
 assert_contains "ingress installer checks Traefik first" \
     'Traefik is not ready' "$script"
 assert_contains "AI reconfigure script manages Traefik" \

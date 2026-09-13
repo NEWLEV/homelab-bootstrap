@@ -24,8 +24,8 @@ assert_not_contains() {
     if grep -Fq -- "$rejected" "$file"; then fail "$name"; else pass "$name"; fi
 }
 
-assert_contains "OpenClaw shortcut points to the tailnet Control UI" \
-    "https://aisha.tail4553c9.ts.net/openclaw/" \
+assert_contains "Aisha shortcut points to the chat gateway" \
+    "https://aisha.tail4553c9.ts.net/aisha/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Aisha launcher points to the tailnet chat gateway" \
     "https://aisha.tail4553c9.ts.net/aisha" \
@@ -35,25 +35,25 @@ assert_not_contains "Aisha launcher does not treat native OpenClaw as chat" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Hermes shortcut is present" \
     "http://aisha:9119/" \
-    "$REPO_ROOT/configs/homepage/custom.js"
-assert_contains "n8n shortcut points to secure automation UI" \
-    "https://aisha.tail4553c9.ts.net/n8n/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "n8n shortcut points to direct tailnet automation UI" \
+    "http://100.106.201.14:5678/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Kuma shortcut is present" \
     "http://100.106.201.14:3001" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "File Browser shortcut is present" \
     "http://100.106.201.14:8080" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Portainer shortcut uses the live HTTP page" \
     "http://100.106.201.14:9000" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Netdata shortcut is present" \
     "http://100.106.201.14:19999" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Pironman shortcut points to the live dashboard" \
     "http://aisha:34001" \
-    "$REPO_ROOT/configs/homepage/custom.js"
+    "$REPO_ROOT/configs/homepage/services.yaml"
 
 assert_contains "Hermes dashboard card is present" \
     "Live Hermes dashboard" \
@@ -80,5 +80,3 @@ fi
 
 printf '\nPassed: %d\nFailed: %d\n' "$PASS_COUNT" "$FAIL_COUNT"
 ((FAIL_COUNT == 0))
-
-
