@@ -50,6 +50,8 @@ assert_not_contains "docker phase no longer requires only arm64" \
     "Expected arm64 architecture" "$REPO_ROOT/scripts/bootstrap.d/05-docker.sh"
 assert_contains "homepage direct port bind is configurable" \
     '${TAILNET_BIND_IP:-100.106.201.14}' "$REPO_ROOT/compose/core/homepage.yml"
+assert_contains "homepage tailnet host is configurable" \
+    '${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}' "$REPO_ROOT/compose/core/homepage.yml"
 assert_contains "filebrowser bind IP is configurable" \
     '${TAILNET_BIND_IP:-100.106.201.14}:8080:80' "$REPO_ROOT/compose/core/filebrowser.yml"
 assert_contains "portainer bind IP is configurable" \

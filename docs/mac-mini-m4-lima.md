@@ -142,6 +142,7 @@ The 2026-09-12 Mac mini deployment validated:
 - Docker data root at `/srv/data/services/docker`
 - Docker Engine `29.8.0`
 - Docker Compose `v5.5.1`
+- Tailscale `1.102.4` authenticated as `aisha-macmini`
 - active `docker` and `containerd` services
 - `/srv/data` mounted from `/dev/vdb1` as ext4 with `noatime`
 
@@ -160,6 +161,12 @@ export PATH="$HOME/.local/bin:$PATH"
 limactl shell aisha-macmini
 ```
 
-For tailnet-native administration, install and authenticate Tailscale inside
-the Debian guest as a later host-specific step. Do not commit Tailscale auth
-keys, node keys, or other secrets.
+Tailnet-native administration is available after installing and authenticating
+Tailscale inside the Debian guest:
+
+```text
+aisha-macmini.tail4553c9.ts.net
+100.96.211.56
+```
+
+Do not commit Tailscale auth keys, node keys, or other secrets.
