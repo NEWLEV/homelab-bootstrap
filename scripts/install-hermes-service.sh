@@ -15,22 +15,65 @@ host_env="${AISHA_HOST_ENV:-/srv/data/services/host.env}"
 local_rag_token_file="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
 compose_args=()
 
+require_sudo() {
+    if ! command -v sudo >/dev/null 2>&1; then
+        printf 'sudo is required to update container-owned Hermes runtime paths.\n' >&2
+        exit 1
+    fi
+}
+
+mkdir_runtime_paths() {
+    if mkdir -p "$@" 2>/dev/null; then
+        return 0
+    fi
+
+    require_sudo
+    sudo mkdir -p "$@"
+}
+
+chmod_path() {
+    local mode="$1"
+    local path="$2"
+
+    if chmod "$mode" "$path" 2>/dev/null; then
+        return 0
+    fi
+
+    require_sudo
+    sudo chmod "$mode" "$path"
+}
+
 repair_failed_gateway_state() {
     local state_file="$runtime_dir/gateway_state.json"
     local backup_file
 
-    [[ -s "$state_file" ]] || return 0
-
-    if ! grep -Eq '"(gateway_state|desired_state)"[[:space:]]*:[[:space:]]*"(starting|startup_failed)"' "$state_file"; then
+    if [[ ! -s "$state_file" ]] && ! sudo test -s "$state_file" 2>/dev/null; then
         return 0
     fi
 
+    if ! grep -Eq '"(gateway_state|desired_state)"[[:space:]]*:[[:space:]]*"(starting|startup_failed)"' "$state_file" 2>/dev/null; then
+        require_sudo
+        if ! sudo grep -Eq '"(gateway_state|desired_state)"[[:space:]]*:[[:space:]]*"(starting|startup_failed)"' "$state_file"; then
+            return 0
+        fi
+    fi
+
     backup_file="${state_file}.$(date -u +%Y%m%dT%H%M%SZ).bak"
-    cp -p "$state_file" "$backup_file"
-    cat >"$state_file" <<EOF
+    if cp -p "$state_file" "$backup_file" 2>/dev/null && cat >"$state_file" <<EOF
 {"gateway_state":"running","desired_state":"running","timestamp":$(date +%s),"kind":"hermes-gateway","repaired_from":"transient-startup-failure","backup":"$backup_file"}
 EOF
-    chmod 600 "$state_file"
+    then
+        chmod_path 600 "$state_file"
+        printf 'Repaired transient Hermes gateway startup state: %s\n' "$backup_file"
+        return 0
+    fi
+
+    require_sudo
+    sudo cp -p "$state_file" "$backup_file"
+    printf '{"gateway_state":"running","desired_state":"running","timestamp":%s,"kind":"hermes-gateway","repaired_from":"transient-startup-failure","backup":"%s"}\n' \
+        "$(date +%s)" "$backup_file" |
+        sudo tee "$state_file" >/dev/null
+    sudo chmod 600 "$state_file"
     printf 'Repaired transient Hermes gateway startup state: %s\n' "$backup_file"
 }
 
@@ -43,7 +86,7 @@ if [[ ! -s "$compose_file" ]]; then
     exit 1
 fi
 
-mkdir -p \
+mkdir_runtime_paths \
     "$runtime_dir" \
     "$runtime_dir/logs" \
     "$runtime_dir/memories" \
@@ -65,10 +108,10 @@ HERMES_DASHBOARD_BASIC_AUTH_USERNAME=hermes
 HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=$(openssl rand -hex 16)
 HERMES_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -hex 32)
 EOF
-    chmod 600 "$env_file"
+    chmod_path 600 "$env_file"
     printf 'Installed Hermes env file: %s\n' "$env_file"
 else
-    chmod 600 "$env_file"
+    chmod_path 600 "$env_file"
     printf 'Already configured Hermes env file: %s\n' "$env_file"
 fi
 

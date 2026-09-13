@@ -86,6 +86,14 @@ test_hermes_installer_uses_host_env() {
     assert_contains "hermes installer uses host env" '--env-file "$host_env"' "$output"
 }
 
+test_hermes_installer_handles_container_owned_runtime() {
+    local output
+    output="$(cat "$REPO_ROOT/scripts/install-hermes-service.sh")"
+    assert_contains "hermes installer has sudo fallback" 'require_sudo()' "$output"
+    assert_contains "hermes installer falls back for mkdir" 'sudo mkdir -p "$@"' "$output"
+    assert_contains "hermes installer falls back for chmod" 'sudo chmod "$mode" "$path"' "$output"
+}
+
 test_hermes_installer_repairs_transient_startup_state() {
     local output
     output="$(cat "$REPO_ROOT/scripts/install-hermes-service.sh")"
@@ -101,6 +109,7 @@ test_hermes_compose_contract
 test_hermes_installer_exists
 test_hermes_installer_forces_recreate
 test_hermes_installer_uses_host_env
+test_hermes_installer_handles_container_owned_runtime
 test_hermes_installer_repairs_transient_startup_state
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
