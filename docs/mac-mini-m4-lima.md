@@ -17,6 +17,10 @@ without installing Linux directly on Apple Silicon hardware.
 This is a VM deployment profile. The bootstrap installer is still run inside a
 Debian-family Linux guest, not on macOS.
 
+Use the simple user-facing name "Aisha" for the assistant and dashboard. Keep
+`aisha-macmini` only where a unique machine identity is required, such as the
+Lima guest name, Tailscale node name, SOPS bundle name, and Git history.
+
 ## Host Setup
 
 Install Lima under the macOS user account:
@@ -226,8 +230,19 @@ https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
 ```
 
 Hermes pulled and bound to the Mac mini tailnet IP after loading
-`/srv/data/services/host.env`, but the upstream `nousresearch/hermes-agent`
-runtime did not become healthy on this ARM64 VM. The container logged
-`Illegal instruction` during profile reconciliation and was stopped to avoid a
-restart loop. Treat Hermes as pending upstream runtime/profile repair on this
-deployment.
+`/srv/data/services/host.env`, but the first Mac mini attempt persisted a failed
+gateway startup marker while the host-env bind was still wrong. A clean ARM64
+probe of `nousresearch/hermes-agent:latest` started successfully, so the
+repository installer now seeds fresh gateway state as `running` and repairs
+only transient `starting` or `startup_failed` gateway markers before recreating
+the container.
+
+After applying the repair, rerun:
+
+```bash
+cd /srv/data/git/homelab-bootstrap
+bash scripts/install-hermes-service.sh
+docker compose -f compose/ai/hermes.yml ps
+```
+
+The expected result is a healthy Hermes dashboard on the Aisha tailnet address.

@@ -22,6 +22,12 @@ Hermes keeps its own state, skills, sessions, and MCP config under
 Hermes state lives under `/srv/data/services/hermes/`, so it follows the
 normal service-data backup and restore flow used by the rest of Aisha.
 
+On container-backed installs, the service seeds the default Hermes gateway with
+`HERMES_GATEWAY_BOOTSTRAP_STATE=running`. The installer also repairs only
+transient failed startup markers in `/srv/data/services/hermes/gateway_state.json`
+(`starting` or `startup_failed`) by backing up the marker and restoring the
+operator intent to `running`. Deliberate stopped state is preserved.
+
 ## Access and boundaries
 
 - OpenClaw is mounted read-only at `/workspace/openclaw`.

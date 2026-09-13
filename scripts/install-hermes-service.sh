@@ -15,6 +15,25 @@ host_env="${AISHA_HOST_ENV:-/srv/data/services/host.env}"
 local_rag_token_file="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
 compose_args=()
 
+repair_failed_gateway_state() {
+    local state_file="$runtime_dir/gateway_state.json"
+    local backup_file
+
+    [[ -s "$state_file" ]] || return 0
+
+    if ! grep -Eq '"(gateway_state|desired_state)"[[:space:]]*:[[:space:]]*"(starting|startup_failed)"' "$state_file"; then
+        return 0
+    fi
+
+    backup_file="${state_file}.$(date -u +%Y%m%dT%H%M%SZ).bak"
+    cp -p "$state_file" "$backup_file"
+    cat >"$state_file" <<EOF
+{"gateway_state":"running","desired_state":"running","timestamp":$(date +%s),"kind":"hermes-gateway","repaired_from":"transient-startup-failure","backup":"$backup_file"}
+EOF
+    chmod 600 "$state_file"
+    printf 'Repaired transient Hermes gateway startup state: %s\n' "$backup_file"
+}
+
 if [[ -r "$host_env" ]]; then
     compose_args+=(--env-file "$host_env")
 fi
@@ -52,6 +71,8 @@ else
     chmod 600 "$env_file"
     printf 'Already configured Hermes env file: %s\n' "$env_file"
 fi
+
+repair_failed_gateway_state
 
 export HERMES_ENV_FILE="$env_file"
 export LOCAL_RAG_API_TOKEN_FILE="$local_rag_token_file"
