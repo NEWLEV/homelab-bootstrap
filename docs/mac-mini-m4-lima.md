@@ -143,6 +143,7 @@ The 2026-09-12 Mac mini deployment validated:
 - Docker Engine `29.8.0`
 - Docker Compose `v5.5.1`
 - Tailscale `1.102.4` authenticated as `aisha-macmini`
+- SOPS `3.13.3` installed for encrypted secret restore
 - active `docker` and `containerd` services
 - `/srv/data` mounted from `/dev/vdb1` as ext4 with `noatime`
 - non-secret core services started on the guest tailnet IP
@@ -186,6 +187,7 @@ http://100.96.211.56:3001 302
 Secret-backed services remain blocked until runtime secrets are restored:
 
 ```text
+SOPS_AGE_KEY_FILE
 /srv/data/services/local-rag/secrets/api-token
 /srv/data/services/openclaw/secrets.env
 /srv/data/services/hermes/hermes.env
