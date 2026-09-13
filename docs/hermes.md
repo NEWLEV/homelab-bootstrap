@@ -27,6 +27,11 @@ The Compose service pins Hermes to the known-good image digest
 by default. Override `HERMES_IMAGE` only after validating the replacement image
 on the target architecture.
 
+On the Apple M4 Mac mini Lima deployment, the pinned digest fixed an
+`Illegal instruction` crash seen in a newer mutable `latest` ARM64 image. If
+Hermes starts but remains unhealthy, check dashboard/API readiness and the
+supervisor logs before changing image or profile state.
+
 On container-backed installs, the service seeds the default Hermes gateway with
 `HERMES_GATEWAY_BOOTSTRAP_STATE=running`. The installer also repairs only
 transient failed startup markers in `/srv/data/services/hermes/gateway_state.json`

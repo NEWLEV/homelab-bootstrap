@@ -249,3 +249,16 @@ docker compose -f compose/ai/hermes.yml ps
 ```
 
 The expected result is a healthy Hermes dashboard on the Aisha tailnet address.
+
+The 2026-09-13 live retry proved:
+
+- the pinned digest removes the `Illegal instruction` crash;
+- the installer can rerun against a container-owned Hermes runtime directory;
+- the installer can run Compose while preserving a protected `0600` env file;
+- the container starts from the pinned digest and binds ports to
+  `100.96.211.56`.
+
+The remaining Hermes issue is dashboard/API readiness: the container stayed
+running but did not listen on `9119` or `8642` before the Mac mini went offline
+again. Continue from supervisor and gateway logs on the next live session
+instead of changing the image or resetting state again.
