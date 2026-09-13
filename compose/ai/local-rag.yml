@@ -6,6 +6,8 @@ x-aisha-ollama-models:
   chat:
     - llama3.2:3b
     - qwen3:4b
+    - gemma3:4b
+    - phi3:mini
   embeddings:
     - nomic-embed-text
 

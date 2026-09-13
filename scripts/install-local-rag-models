@@ -7,7 +7,7 @@ readonly repo_root
 compose_file="${LOCAL_RAG_COMPOSE_FILE:-$repo_root/compose/ai/local-rag.yml}"
 ollama_container="${LOCAL_RAG_OLLAMA_CONTAINER:-local-rag-ollama}"
 embedding_model="${EMBEDDING_MODEL:-nomic-embed-text}"
-chat_models_text="${AISHA_OLLAMA_CHAT_MODELS:-llama3.2:3b qwen3:4b}"
+chat_models_text="${AISHA_OLLAMA_CHAT_MODELS:-llama3.2:3b qwen3:4b gemma3:4b phi3:mini}"
 
 if [[ ! -s "$compose_file" ]]; then
     printf 'Local RAG compose file is missing: %s\n' "$compose_file" >&2

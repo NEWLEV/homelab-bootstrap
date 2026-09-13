@@ -71,6 +71,8 @@ test_compose_contract() {
     assert_contains "compose pins the real rag network name" "name: local-rag_rag-private" "$output"
     assert_contains "compose configures embed origins" "OPENCLAW_EMBED_ORIGINS" "$output"
     assert_contains "local rag documents qwen model baseline" "qwen3:4b" "$local_rag_output"
+    assert_contains "local rag documents gemma free model baseline" "gemma3:4b" "$local_rag_output"
+    assert_contains "local rag documents phi free model baseline" "phi3:mini" "$local_rag_output"
     assert_contains "local rag defines operations collection API" "container_name: local-rag-ops-api" "$local_rag_output"
     assert_contains "local rag keeps operations collection optional" "profiles:" "$local_rag_output"
     assert_contains "local rag exposes operations profile name" "- ops" "$local_rag_output"
@@ -92,16 +94,14 @@ test_dockerfile_contract() {
 }
 
 test_launcher_contract() {
-    assert_file "homepage launcher script exists" "$REPO_ROOT/configs/homepage/custom.js"
+    assert_file "homepage custom script exists" "$REPO_ROOT/configs/homepage/custom.js"
     assert_file "homepage launcher styles exist" "$REPO_ROOT/configs/homepage/custom.css"
     assert_file "launcher install script exists" "$REPO_ROOT/scripts/install-homepage-aisha-launcher"
     assert_file "local rag model install script exists" "$REPO_ROOT/scripts/install-local-rag-models"
 
     local output
     output="$(cat "$REPO_ROOT/configs/homepage/custom.js")"
-    assert_contains "launcher probes the tailnet chat gateway" "https://aisha.tail4553c9.ts.net/aisha" "$output"
-    assert_contains "launcher uses the tailnet gateway origin" "origin: 'https://aisha.tail4553c9.ts.net'" "$output"
-    assert_contains "launcher has an accessible label" "Chat with Aisha" "$output"
+    assert_contains "homepage custom script keeps launcher disabled" "does not inject a floating Aisha chat button" "$output"
 
     local ui_output
     ui_output="$(cat "$REPO_ROOT/services/openclaw/ui/app.js")"

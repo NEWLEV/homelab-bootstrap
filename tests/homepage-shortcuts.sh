@@ -27,11 +27,11 @@ assert_not_contains() {
 assert_contains "Aisha shortcut points to the chat gateway" \
     "https://aisha.tail4553c9.ts.net/aisha/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
-assert_contains "Aisha launcher points to the tailnet chat gateway" \
-    "https://aisha.tail4553c9.ts.net/aisha" \
-    "$REPO_ROOT/configs/homepage/custom.js"
 assert_not_contains "Aisha launcher does not treat native OpenClaw as chat" \
     "https://aisha.tail4553c9.ts.net/openclaw" \
+    "$REPO_ROOT/configs/homepage/custom.js"
+assert_contains "Homepage custom script disables floating chat button" \
+    "does not inject a floating Aisha chat button" \
     "$REPO_ROOT/configs/homepage/custom.js"
 assert_contains "Hermes shortcut is present" \
     "http://aisha:9119/" \
@@ -62,7 +62,7 @@ assert_contains "Hermes dashboard card links to the live runtime" \
     "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 
-assert_contains "Homepage launcher no longer injects the duplicate shortcut panel" \
+assert_not_contains "Homepage no longer injects the duplicate shortcut panel" \
     "document.body.appendChild(button);" \
     "$REPO_ROOT/configs/homepage/custom.js"
 

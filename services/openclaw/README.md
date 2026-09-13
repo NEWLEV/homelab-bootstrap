@@ -41,8 +41,9 @@ chat:
 docker exec local-rag-ollama ollama pull <model>
 ```
 
-The repository-managed local model installer keeps the appliance baseline at
-`llama3.2:3b` plus `qwen3:4b`, with `nomic-embed-text` for embeddings:
+The repository-managed local model installer keeps the appliance baseline on
+free local Ollama models: `llama3.2:3b`, `qwen3:4b`, `gemma3:4b`, and
+`phi3:mini`, with `nomic-embed-text` for embeddings:
 
 ```bash
 scripts/install-local-rag-models
