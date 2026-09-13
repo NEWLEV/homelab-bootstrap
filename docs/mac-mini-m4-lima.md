@@ -230,12 +230,15 @@ https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
 ```
 
 Hermes pulled and bound to the Mac mini tailnet IP after loading
-`/srv/data/services/host.env`, but the first Mac mini attempt persisted a failed
-gateway startup marker while the host-env bind was still wrong. A clean ARM64
-probe of `nousresearch/hermes-agent:latest` started successfully, so the
-repository installer now seeds fresh gateway state as `running` and repairs
-only transient `starting` or `startup_failed` gateway markers before recreating
-the container.
+`/srv/data/services/host.env`, but the mutable `nousresearch/hermes-agent:latest`
+image pulled on the Mac mini crashed with `Illegal instruction` during
+`hermes_cli.container_boot`. The known-good ARM64 image digest
+`nousresearch/hermes-agent@sha256:984813f70658b8ef6d78cb48a56c798c36dc1db20ac7f99cb0b5d55436f1a69b`
+ran the same reconciler successfully on the Mac VM, so the Compose file pins
+that digest by default and leaves `HERMES_IMAGE` as the explicit upgrade path.
+The installer also seeds fresh gateway state as `running` and repairs only
+transient `starting` or `startup_failed` gateway markers before recreating the
+container.
 
 After applying the repair, rerun:
 

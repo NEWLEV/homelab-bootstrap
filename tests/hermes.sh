@@ -48,6 +48,8 @@ test_hermes_compose_contract() {
     local output
     output="$(cat "$REPO_ROOT/compose/ai/hermes.yml")"
     assert_contains "hermes compose names service" "name: hermes" "$output"
+    assert_contains "hermes compose pins known-good image" \
+        'HERMES_IMAGE:-nousresearch/hermes-agent@sha256:984813f70658b8ef6d78cb48a56c798c36dc1db20ac7f99cb0b5d55436f1a69b' "$output"
     assert_contains "hermes compose uses isolated state" "/srv/data/services/hermes:/opt/data" "$output"
     assert_contains "hermes compose exposes openclaw repo" "/srv/data/git/homelab-bootstrap/workspaces/development/repo:/workspace/openclaw:ro" "$output"
     assert_contains "hermes compose references local rag" "LOCAL_RAG_URL: http://local-rag-api:8080" "$output"

@@ -5,7 +5,7 @@ name: hermes
 # Local RAG on the private Docker network.
 services:
   hermes:
-    image: nousresearch/hermes-agent:latest
+    image: ${HERMES_IMAGE:-nousresearch/hermes-agent@sha256:984813f70658b8ef6d78cb48a56c798c36dc1db20ac7f99cb0b5d55436f1a69b}
     container_name: hermes
     restart: unless-stopped
     command:
