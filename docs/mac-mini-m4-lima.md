@@ -190,7 +190,16 @@ Secret-backed services remain blocked until runtime secrets are restored:
 SOPS_AGE_KEY_FILE
 /srv/data/services/local-rag/secrets/api-token
 /srv/data/services/openclaw/secrets.env
+/home/chaliceclaw.guest/.config/openclaw/secrets.env
 /srv/data/services/hermes/hermes.env
+```
+
+The Mac mini deployment uses a separate SOPS bundle and Age recipient:
+
+```text
+AISHA_SECRETS_BUNDLE=secrets/aisha-macmini.enc.yaml
+SOPS_AGE_KEY_FILE=/srv/data/services/age/aisha-macmini.agekey
+recipient=age1p8h774x7ty2v62239hw0sdyd6840k4wkemwv4uu2nej78ss655ms2uvg08
 ```
 
 Do not commit Tailscale auth keys, node keys, or other secrets.

@@ -1,3 +1,5 @@
 creation_rules:
+  - path_regex: ^secrets/aisha-macmini\.enc\.yaml$
+    age: age1p8h774x7ty2v62239hw0sdyd6840k4wkemwv4uu2nej78ss655ms2uvg08
   - path_regex: ^secrets/.*\.(yaml|yml|json|env)$
     age: age1e0k6858y43xvrgdqz7y50a74qe2kz5yrm2fmmtkn7s8xgu86294qfx67r9
