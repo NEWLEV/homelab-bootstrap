@@ -1,4 +1,8 @@
 - Assistant Runtimes:
+    - Aisha:
+        icon: mdi-robot-outline
+        href: https://aisha.tail4553c9.ts.net/aisha/
+        description: OpenClaw-backed Aisha chat
     - Hermes:
         icon: mdi-brain
         href: http://aisha:9119/

@@ -221,16 +221,17 @@ it arrives over `tailscale0`.
 
 Tailscale Serve is the only HTTPS terminator. It proxies the tailnet-only
 hostname to Traefik's loopback-only HTTP entrypoint on `127.0.0.1:18080`.
-The Homepage launcher is the supported way to reach the OpenClaw UI in a
-stable same-origin browser context. The gateway has no host-published port;
-Traefik reaches it only over the private Docker network. Hermes publishes its
-own Tailscale-bound dashboard and API ports rather than sharing the OpenClaw
-control path.
+The Homepage Aisha card is the supported way to reach the compose-backed
+OpenClaw/Aisha chat surface in a stable same-origin browser context. The
+gateway has no host-published port; Traefik reaches it only over the private
+Docker network. Hermes publishes its own Tailscale-bound dashboard rather than
+sharing the OpenClaw control path.
 
 Homepage shortcuts expose the operational landing pages that the dashboard
-should point at: Kuma on 3001, File Browser on 8080, Portainer HTTP on 9000,
-Netdata on 19999, and Pironman5 Max on 34001. Portainer TLS remains available
-on 9443 for clients that prefer it.
+should point at: Aisha chat at `/aisha/`, Hermes on 9119, n8n on 5678, Kuma on
+3001, File Browser on 8080, Portainer HTTP on 9000, Netdata on 19999, and
+Pironman5 Max on 34001. Portainer TLS remains available on 9443 for clients
+that prefer it.
 
 OpenClaw ingress reconciliation is managed by:
 

@@ -222,6 +222,11 @@ The older `/openclaw` shortcut is only published when a real native loopback
 OpenClaw gateway is present. Do not alias it to `/aisha/`; that makes an
 OpenClaw label open Aisha chat.
 
+Homepage exposes the working compose-backed chat surface as an Aisha card:
+`https://aisha-macmini.tail4553c9.ts.net/aisha/`. The card may describe that
+surface as OpenClaw-backed Aisha chat, but it must not point an OpenClaw label
+at `/openclaw/` unless the native gateway exists.
+
 The 2026-09-12 secret-backed verification reached:
 
 ```text

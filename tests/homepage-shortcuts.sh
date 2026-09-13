@@ -24,8 +24,14 @@ assert_not_contains() {
     if grep -Fq -- "$rejected" "$file"; then fail "$name"; else pass "$name"; fi
 }
 
-assert_not_contains "Homepage does not expose an Aisha chat shortcut" \
+assert_contains "Homepage exposes the OpenClaw-backed Aisha chat surface" \
     "https://aisha.tail4553c9.ts.net/aisha/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "Aisha card is labeled honestly" \
+    "OpenClaw-backed Aisha chat" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_not_contains "Homepage does not fake the native OpenClaw route" \
+    "https://aisha.tail4553c9.ts.net/openclaw/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 assert_not_contains "Aisha launcher does not treat native OpenClaw as chat" \
     "https://aisha.tail4553c9.ts.net/openclaw" \
