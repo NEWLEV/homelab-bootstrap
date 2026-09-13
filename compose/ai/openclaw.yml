@@ -11,7 +11,7 @@ services:
       # Serve provides the tailnet-only HTTPS boundary before this entrypoint.
       traefik.enable: "true"
       traefik.docker.network: "proxy"
-      traefik.http.routers.aisha-chat.rule: "Host(`aisha.tail4553c9.ts.net`) && PathPrefix(`/aisha`)"
+      traefik.http.routers.aisha-chat.rule: "Host(`${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}`) && PathPrefix(`/aisha`)"
       traefik.http.routers.aisha-chat.entrypoints: "tailnet"
       traefik.http.services.aisha-chat.loadbalancer.server.port: "18789"
     build:
@@ -33,7 +33,7 @@ services:
       OPENCLAW_GATEWAY_PORT: "18789"
       OPENCLAW_DEFAULT_MODEL: "${GENERATION_MODEL:-llama3.2:3b}"
       # Dashboard origins allowed to embed the chat and probe its health.
-      OPENCLAW_EMBED_ORIGINS: "http://aisha:8000,http://100.106.201.14:8000"
+      OPENCLAW_EMBED_ORIGINS: "http://${HOMELAB_HOSTNAME:-aisha}:8000,http://${TAILNET_BIND_IP:-100.106.201.14}:8000"
       NODE_COMPILE_CACHE: /var/tmp/openclaw-compile-cache
       OPENCLAW_NO_RESPAWN: "1"
 

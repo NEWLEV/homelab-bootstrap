@@ -146,6 +146,7 @@ The 2026-09-12 Mac mini deployment validated:
 - active `docker` and `containerd` services
 - `/srv/data` mounted from `/dev/vdb1` as ext4 with `noatime`
 - non-secret core services started on the guest tailnet IP
+- Compose tailnet host references parameterized for non-Aisha hosts
 
 The bootstrap phases completed successfully:
 
