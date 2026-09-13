@@ -90,6 +90,7 @@ test_hermes_installer_handles_container_owned_runtime() {
     local output
     output="$(cat "$REPO_ROOT/scripts/install-hermes-service.sh")"
     assert_contains "hermes installer has sudo fallback" 'require_sudo()' "$output"
+    assert_contains "hermes installer tests unreadable existing files" 'path_has_content()' "$output"
     assert_contains "hermes installer falls back for mkdir" 'sudo mkdir -p "$@"' "$output"
     assert_contains "hermes installer falls back for chmod" 'sudo chmod "$mode" "$path"' "$output"
 }

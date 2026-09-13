@@ -43,6 +43,13 @@ chmod_path() {
     sudo chmod "$mode" "$path"
 }
 
+path_has_content() {
+    local path="$1"
+
+    [[ -s "$path" ]] && return 0
+    sudo test -s "$path" 2>/dev/null
+}
+
 repair_failed_gateway_state() {
     local state_file="$runtime_dir/gateway_state.json"
     local backup_file
@@ -94,7 +101,7 @@ mkdir_runtime_paths \
     "$runtime_dir/skills" \
     "$runtime_dir/workspace"
 
-if [[ ! -s "$env_file" ]]; then
+if ! path_has_content "$env_file"; then
     if ! command -v openssl >/dev/null 2>&1; then
         printf 'openssl is required to generate Hermes secrets.\n' >&2
         exit 1
