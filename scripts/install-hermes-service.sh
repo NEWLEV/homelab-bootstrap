@@ -11,7 +11,13 @@ readonly repo_root
 compose_file="$repo_root/compose/ai/hermes.yml"
 runtime_dir="${HERMES_RUNTIME_DIR:-/srv/data/services/hermes}"
 env_file="${HERMES_ENV_FILE:-$runtime_dir/hermes.env}"
+host_env="${AISHA_HOST_ENV:-/srv/data/services/host.env}"
 local_rag_token_file="${LOCAL_RAG_API_TOKEN_FILE:-/srv/data/services/local-rag/secrets/api-token}"
+compose_args=()
+
+if [[ -r "$host_env" ]]; then
+    compose_args+=(--env-file "$host_env")
+fi
 
 if [[ ! -s "$compose_file" ]]; then
     printf 'Hermes compose file is missing: %s\n' "$compose_file" >&2
@@ -50,8 +56,8 @@ fi
 export HERMES_ENV_FILE="$env_file"
 export LOCAL_RAG_API_TOKEN_FILE="$local_rag_token_file"
 
-docker compose -f "$compose_file" config --quiet
-docker compose -f "$compose_file" up -d --force-recreate --remove-orphans
+docker compose "${compose_args[@]}" -f "$compose_file" config --quiet
+docker compose "${compose_args[@]}" -f "$compose_file" up -d --force-recreate --remove-orphans
 
 printf 'Hermes runtime is ready.\n'
 printf 'Dashboard: http://aisha:9119/\n'

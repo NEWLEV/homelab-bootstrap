@@ -77,11 +77,18 @@ test_hermes_installer_forces_recreate() {
     assert_contains "hermes installer forces recreate" '--force-recreate --remove-orphans' "$output"
 }
 
+test_hermes_installer_uses_host_env() {
+    local output
+    output="$(cat "$REPO_ROOT/scripts/install-hermes-service.sh")"
+    assert_contains "hermes installer uses host env" '--env-file "$host_env"' "$output"
+}
+
 test_hermes_docs_exist
 test_hermes_docs_contract
 test_hermes_compose_contract
 test_hermes_installer_exists
 test_hermes_installer_forces_recreate
+test_hermes_installer_uses_host_env
 
 printf '\nPassed: %d\n' "$PASS_COUNT"
 printf 'Failed: %d\n' "$FAIL_COUNT"
