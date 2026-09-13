@@ -250,15 +250,24 @@ docker compose -f compose/ai/hermes.yml ps
 
 The expected result is a healthy Hermes dashboard on the Aisha tailnet address.
 
-The 2026-09-13 live retry proved:
+The 2026-09-13 live retries proved:
 
 - the pinned digest removes the `Illegal instruction` crash;
+- `OPENSSL_armcap=0` is required for Hermes' Python `cryptography` import path
+  inside the Lima `vz` ARM64 guest;
 - the installer can rerun against a container-owned Hermes runtime directory;
 - the installer can run Compose while preserving a protected `0600` env file;
 - the container starts from the pinned digest and binds ports to
   `100.96.211.56`.
 
-The remaining Hermes issue is dashboard/API readiness: the container stayed
-running but did not listen on `9119` or `8642` before the Mac mini went offline
-again. Continue from supervisor and gateway logs on the next live session
-instead of changing the image or resetting state again.
+The root cause of the final readiness failure was Hermes importing
+`cryptography.hazmat.primitives.hashes` during plugin/model-tool discovery. In
+the M4 Lima VM, that native extension crashed with `Illegal instruction` unless
+OpenSSL CPU feature probing was masked. The Compose default sets:
+
+```yaml
+OPENSSL_armcap: ${HERMES_OPENSSL_ARMCAP:-0}
+```
+
+Keep that default for this profile unless a newer Hermes image is validated on
+the Mac mini first.
