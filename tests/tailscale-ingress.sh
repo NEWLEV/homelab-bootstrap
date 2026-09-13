@@ -21,6 +21,8 @@ assert_contains "ingress installer uses background mode" '--bg' "$script"
 assert_contains "ingress installer clears stale handlers" 'tailscale serve reset' "$script"
 assert_contains "ingress installer uses loopback backend" \
     'http://127.0.0.1:18080' "$script"
+assert_contains "ingress installer loads host env" \
+    'source "$HOST_ENV_FILE"' "$script"
 assert_contains "ingress installer checks native OpenClaw" \
     '"$OPENCLAW_BACKEND/openclaw/"' "$script"
 assert_contains "ingress installer publishes native OpenClaw" \

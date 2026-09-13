@@ -3,6 +3,15 @@ set -Eeuo pipefail
 
 # Keep TLS termination in Tailscale Serve and send plain HTTP only to the
 # loopback-only Traefik entrypoint. This avoids both double TLS and redirects.
+readonly HOST_ENV_FILE="${HOST_ENV_FILE:-/srv/data/services/host.env}"
+
+if [[ -f "$HOST_ENV_FILE" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$HOST_ENV_FILE"
+    set +a
+fi
+
 readonly SERVE_PORT="${TAILSCALE_SERVE_PORT:-443}"
 readonly TRAEFIK_BACKEND="${TAILSCALE_SERVE_BACKEND:-http://127.0.0.1:18080}"
 readonly TRAEFIK_HOST="${TAILSCALE_SERVE_HOST:-aisha.tail4553c9.ts.net}"
