@@ -26,6 +26,8 @@ assert_contains "n8n persists runtime data" '/srv/data/services/n8n:/home/node/.
 assert_contains "n8n can reach Ollama by Docker DNS" 'http://local-rag-ollama:11434' "$compose"
 assert_contains "n8n installer generates encryption key" 'N8N_ENCRYPTION_KEY=' "$installer"
 assert_contains "n8n installer loads host env" '--env-file "$host_env"' "$installer"
+assert_contains "n8n installer grants container group ownership" 'chown "$(id -u):1000"' "$installer"
+assert_contains "n8n installer grants container group write access" 'chmod 0770 "$runtime_dir"' "$installer"
 
 if bash -n "$installer"; then
     pass "n8n installer syntax"

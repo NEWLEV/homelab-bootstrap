@@ -12,6 +12,17 @@ if [[ -f "$host_env" ]]; then
     compose_args=(--env-file "$host_env" "${compose_args[@]}")
 fi
 
+run_privileged() {
+    if "$@" 2>/dev/null; then
+        return 0
+    fi
+    if command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        "$@"
+    fi
+}
+
 generate_key() {
     if command -v openssl >/dev/null 2>&1; then
         openssl rand -hex 32
@@ -24,7 +35,10 @@ PY
 }
 
 mkdir -p "$runtime_dir"
-chmod 700 "$runtime_dir"
+# n8n runs as UID/GID 1000. Keep the directory owned by the host user so the
+# Compose client can read n8n.env, but grant the container group write access.
+run_privileged chown "$(id -u):1000" "$runtime_dir"
+run_privileged chmod 0770 "$runtime_dir"
 
 if [[ ! -s "$env_file" ]]; then
     umask 077
@@ -36,6 +50,9 @@ else
     chmod 600 "$env_file"
     printf 'Using existing n8n runtime env at %s.\n' "$env_file"
 fi
+
+run_privileged chown "$(id -u):1000" "$env_file"
+run_privileged chmod 0640 "$env_file"
 
 docker network inspect proxy >/dev/null 2>&1 || docker network create proxy >/dev/null
 
