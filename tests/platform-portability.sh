@@ -64,6 +64,8 @@ assert_contains "storage phase prepares Local RAG runtime ownership" \
     'LOCAL_RAG_RUNTIME_OWNER="65532:65532"' "$REPO_ROOT/scripts/bootstrap.d/02-storage.sh"
 assert_contains "storage phase prepares operations Chroma path" \
     "/srv/data/services/local-rag/ops-chroma" "$REPO_ROOT/scripts/bootstrap.d/02-storage.sh"
+assert_contains "storage phase prepares File Browser database path" \
+    "/srv/data/services/filebrowser/database" "$REPO_ROOT/scripts/bootstrap.d/02-storage.sh"
 
 recommend_output="$(
     AISHA_DETECT_KERNEL=Darwin \

@@ -26,6 +26,7 @@ readonly LOCAL_RAG_WRITABLE_DIRECTORIES=(
 )
 
 readonly LOCAL_RAG_RUNTIME_OWNER="65532:65532"
+readonly FILEBROWSER_RUNTIME_OWNER="1000:1000"
 
 log() {
     printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -192,6 +193,12 @@ log "Ensuring Local RAG writable runtime directories"
 for directory in "${LOCAL_RAG_WRITABLE_DIRECTORIES[@]}"; do
     ensure_runtime_directory "$directory" "$LOCAL_RAG_RUNTIME_OWNER"
 done
+
+log "Ensuring File Browser writable runtime directories"
+
+ensure_runtime_directory \
+    "/srv/data/services/filebrowser/database" \
+    "$FILEBROWSER_RUNTIME_OWNER"
 
 log "Storage validation summary"
 
