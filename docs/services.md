@@ -193,13 +193,14 @@ with:
 
 Homepage control shortcuts
 
-The Homepage dashboard now includes a shortcut panel with working links to
-the secure OpenClaw UI at `/openclaw/`, Hermes, Kuma, File Browser, Portainer,
-Netdata, and the Aisha chat surface. Mission Control remains `coming soon`
-until a standalone page is implemented. The shortcut wiring lives in
-`configs/homepage/custom.js` and `configs/homepage/custom.css`. The main
-dashboard cards live in `configs/homepage/services.yaml`, which now includes a
-live Hermes card that points at the Hermes dashboard.
+The Homepage dashboard exposes service cards for operational surfaces such as
+Hermes, n8n, Kuma, File Browser, Portainer, and Netdata. It does not inject a
+floating Aisha chat launcher, and it does not include an Aisha chat card. The
+compose-backed Aisha chat route remains available directly at `/aisha/`; keep
+Homepage buttons focused on tools and dashboards. The disabled custom asset
+placeholders live in `configs/homepage/custom.js` and
+`configs/homepage/custom.css`. The main dashboard cards live in
+`configs/homepage/services.yaml`.
 
 Configuration
 

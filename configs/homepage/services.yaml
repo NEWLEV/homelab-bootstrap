@@ -1,8 +1,4 @@
 - Assistant Runtimes:
-    - Aisha:
-        icon: mdi-robot
-        href: https://aisha.tail4553c9.ts.net/aisha/
-        description: Chat and local knowledge gateway
     - Hermes:
         icon: mdi-brain
         href: http://aisha:9119/

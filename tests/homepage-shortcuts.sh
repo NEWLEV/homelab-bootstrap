@@ -24,7 +24,7 @@ assert_not_contains() {
     if grep -Fq -- "$rejected" "$file"; then fail "$name"; else pass "$name"; fi
 }
 
-assert_contains "Aisha shortcut points to the chat gateway" \
+assert_not_contains "Homepage does not expose an Aisha chat shortcut" \
     "https://aisha.tail4553c9.ts.net/aisha/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
 assert_not_contains "Aisha launcher does not treat native OpenClaw as chat" \
