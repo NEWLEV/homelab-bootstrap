@@ -50,6 +50,18 @@ path_has_content() {
     sudo test -s "$path" 2>/dev/null
 }
 
+compose() {
+    if [[ -r "$env_file" ]]; then
+        docker compose "$@"
+        return 0
+    fi
+
+    require_sudo
+    sudo HERMES_ENV_FILE="$env_file" \
+        LOCAL_RAG_API_TOKEN_FILE="$local_rag_token_file" \
+        docker compose "$@"
+}
+
 repair_failed_gateway_state() {
     local state_file="$runtime_dir/gateway_state.json"
     local backup_file
@@ -127,8 +139,8 @@ repair_failed_gateway_state
 export HERMES_ENV_FILE="$env_file"
 export LOCAL_RAG_API_TOKEN_FILE="$local_rag_token_file"
 
-docker compose "${compose_args[@]}" -f "$compose_file" config --quiet
-docker compose "${compose_args[@]}" -f "$compose_file" up -d --force-recreate --remove-orphans
+compose "${compose_args[@]}" -f "$compose_file" config --quiet
+compose "${compose_args[@]}" -f "$compose_file" up -d --force-recreate --remove-orphans
 
 printf 'Hermes runtime is ready.\n'
 printf 'Dashboard: http://aisha:9119/\n'

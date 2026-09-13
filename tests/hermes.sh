@@ -93,6 +93,8 @@ test_hermes_installer_handles_container_owned_runtime() {
     assert_contains "hermes installer tests unreadable existing files" 'path_has_content()' "$output"
     assert_contains "hermes installer falls back for mkdir" 'sudo mkdir -p "$@"' "$output"
     assert_contains "hermes installer falls back for chmod" 'sudo chmod "$mode" "$path"' "$output"
+    assert_contains "hermes installer falls back for compose env file reads" \
+        'sudo HERMES_ENV_FILE="$env_file"' "$output"
 }
 
 test_hermes_installer_repairs_transient_startup_state() {
