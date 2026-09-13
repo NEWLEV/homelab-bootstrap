@@ -113,7 +113,8 @@ test_launcher_contract() {
         "$ui_markup"
     local panel_styles
     panel_styles="$(cat "$REPO_ROOT/configs/homepage/custom.css")"
-    assert_contains "homepage panel has responsive sizing" '#aisha-panel' \
+    assert_contains "homepage custom styles keep launcher disabled" \
+        "does not style a floating Aisha chat launcher" \
         "$panel_styles"
 
     if [[ -x "$REPO_ROOT/scripts/install-homepage-aisha-launcher" ]]; then
