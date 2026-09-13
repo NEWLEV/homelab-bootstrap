@@ -418,9 +418,12 @@ sudo bash scripts/configure-tailscale-ingress
 The installer creates `/srv/data/services/n8n/n8n.env` with a local
 `N8N_ENCRYPTION_KEY` if one does not exist. Do not commit that file.
 
-The n8n editor is exposed directly on the tailnet IP. The current n8n image
-does not serve its JavaScript assets correctly when mounted under a `/n8n`
-subpath, so do not proxy it there until that behavior is revalidated.
+The n8n editor is exposed directly on the tailnet IP. Keep n8n pinned to
+`n8nio/n8n:1.120.1` or newer after verifying the frontend bundle: the
+`1.119.x` images serve HTML that references a missing polyfills asset, which
+can leave the browser at a blank app shell. n8n also does not serve correctly
+under a `/n8n` subpath, so do not proxy it there until that behavior is
+revalidated.
 
 ```text
 http://100.106.201.14:5678/

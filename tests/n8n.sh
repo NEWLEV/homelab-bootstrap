@@ -21,6 +21,7 @@ installer="$REPO_ROOT/scripts/install-n8n-service.sh"
 [[ -s "$installer" ]] && pass "n8n installer exists" || fail "n8n installer exists"
 
 assert_contains "n8n publishes direct tailnet port" 'published: "5678"' "$compose"
+assert_contains "n8n pins a frontend asset fix release" 'n8nio/n8n:1.120.1' "$compose"
 assert_contains "n8n binds to tailnet IP" 'host_ip: ${TAILNET_BIND_IP:-100.106.201.14}' "$compose"
 assert_contains "n8n persists runtime data" '/srv/data/services/n8n:/home/node/.n8n' "$compose"
 assert_contains "n8n can reach Ollama by Docker DNS" 'http://local-rag-ollama:11434' "$compose"

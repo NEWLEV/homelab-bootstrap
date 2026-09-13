@@ -231,6 +231,12 @@ https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
 http://100.96.211.56:5678/ 200
 ```
 
+n8n originally rendered a blank editor shell on the Mac mini with
+`n8nio/n8n:1.119.2` because its HTML referenced
+`/assets/polyfills-Bk2vGo0i.js`, but the image did not ship that asset.
+`n8nio/n8n:1.120.1` was validated to ship the referenced polyfills asset and
+is the pinned default.
+
 Hermes pulled and bound to the Mac mini tailnet IP after loading
 `/srv/data/services/host.env`, but the mutable `nousresearch/hermes-agent:latest`
 image pulled on the Mac mini crashed with `Illegal instruction` during

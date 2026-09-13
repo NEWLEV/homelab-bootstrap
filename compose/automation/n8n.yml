@@ -2,7 +2,7 @@ name: n8n
 
 services:
   n8n:
-    image: ${N8N_IMAGE:-n8nio/n8n:1.119.2}
+    image: ${N8N_IMAGE:-n8nio/n8n:1.120.1}
     container_name: n8n
     restart: unless-stopped
 
