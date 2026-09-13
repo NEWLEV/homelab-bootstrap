@@ -229,7 +229,12 @@ on loopback port `18789`, with Tailscale Serve publishing it at:
 https://aisha-macmini.tail4553c9.ts.net/openclaw/
 ```
 
-The Homepage OpenClaw card points to that native Control UI. The
+The gateway config sets `gateway.controlUi.basePath=/openclaw`,
+`gateway.publicOrigin=https://aisha-macmini.tail4553c9.ts.net`, and trusts
+only loopback proxy CIDRs for forwarded client attribution. Those settings are
+required so the Control UI emits `/openclaw/assets/...` URLs and accepts the
+Tailscale Serve proxy without exposing the gateway off loopback. The Homepage
+OpenClaw card points to that native Control UI. The
 compose-backed Aisha chat surface remains available directly at `/aisha/`,
 but it is not labeled as OpenClaw on the dashboard. Pironman5 Max is omitted
 from the Mac mini Homepage runtime because this device does not have that
