@@ -149,6 +149,9 @@ The 2026-09-12 Mac mini deployment validated:
 - non-secret core services started on the guest tailnet IP
 - Compose tailnet host references parameterized for non-Aisha hosts
 - Tailscale Serve HTTPS root published to the local Traefik entrypoint
+- Mac mini SOPS bundle restored with a host-local Age identity
+- Local RAG indexed the Mac mini repository checkout
+- OpenClaw started through the compose-backed `/aisha/` route
 
 The bootstrap phases completed successfully:
 
@@ -184,7 +187,7 @@ http://100.96.211.56:19999 200
 http://100.96.211.56:3001 302
 ```
 
-Secret-backed services remain blocked until runtime secrets are restored:
+The restored Mac mini secret-backed files are:
 
 ```text
 SOPS_AGE_KEY_FILE
@@ -213,3 +216,18 @@ https://aisha-macmini.tail4553c9.ts.net/aisha/
 
 The older `/openclaw` shortcut is only published when a native loopback gateway
 is present on the VM.
+
+The 2026-09-12 secret-backed verification reached:
+
+```text
+Local RAG health: ok, 179 chunks indexed
+OpenClaw health: ok, Local RAG reachable
+https://aisha-macmini.tail4553c9.ts.net/aisha/ 200
+```
+
+Hermes pulled and bound to the Mac mini tailnet IP after loading
+`/srv/data/services/host.env`, but the upstream `nousresearch/hermes-agent`
+runtime did not become healthy on this ARM64 VM. The container logged
+`Illegal instruction` during profile reconciliation and was stopped to avoid a
+restart loop. Treat Hermes as pending upstream runtime/profile repair on this
+deployment.
