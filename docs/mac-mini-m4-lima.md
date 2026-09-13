@@ -203,3 +203,13 @@ recipient=age1p8h774x7ty2v62239hw0sdyd6840k4wkemwv4uu2nej78ss655ms2uvg08
 ```
 
 Do not commit Tailscale auth keys, node keys, or other secrets.
+
+After Local RAG and OpenClaw are started, the compose-backed chat surface is
+available through Traefik at:
+
+```text
+https://aisha-macmini.tail4553c9.ts.net/aisha/
+```
+
+The older `/openclaw` shortcut is only published when a native loopback gateway
+is present on the VM.

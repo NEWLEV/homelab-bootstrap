@@ -31,12 +31,11 @@ curl --fail --silent --show-error --max-time 5 \
         exit 1
 }
 
-curl --fail --silent --show-error --max-time 5 \
-    "$OPENCLAW_BACKEND/openclaw/" >/dev/null || {
-        printf 'Native OpenClaw is not ready at %s/openclaw/.\n' \
-            "$OPENCLAW_BACKEND" >&2
-        exit 1
-    }
+native_openclaw_available=0
+if curl --fail --silent --show-error --max-time 5 \
+    "$OPENCLAW_BACKEND/openclaw/" >/dev/null 2>&1; then
+    native_openclaw_available=1
+fi
 
 # Replace the managed Serve configuration so stale path handlers cannot keep
 # sending traffic to old container IPs. The --bg flag makes the result
@@ -55,11 +54,17 @@ else
         "$N8N_BACKEND"
 fi
 
-# The native gateway owns this path. Its loopback bind keeps the Control UI off
-# the LAN while Tailscale Serve supplies the tailnet-only HTTPS boundary.
-tailscale serve --yes --bg --https="$SERVE_PORT" \
-    --set-path=/openclaw "$OPENCLAW_BACKEND/openclaw"
-printf 'Published native OpenClaw at /openclaw via %s.\n' "$OPENCLAW_BACKEND"
+# The compose-backed OpenClaw route is served through Traefik at /aisha. Older
+# native gateway installs may also expose /openclaw on loopback; preserve that
+# shortcut when it is detected, but do not require it on fresh installs.
+if ((native_openclaw_available)); then
+    tailscale serve --yes --bg --https="$SERVE_PORT" \
+        --set-path=/openclaw "$OPENCLAW_BACKEND/openclaw"
+    printf 'Published native OpenClaw at /openclaw via %s.\n' "$OPENCLAW_BACKEND"
+else
+    printf 'Native OpenClaw was not detected at %s/openclaw; using Traefik /aisha.\n' \
+        "$OPENCLAW_BACKEND"
+fi
 
 printf 'Tailscale Serve now terminates HTTPS on port %s and proxies to %s.\n' \
     "$SERVE_PORT" "$TRAEFIK_BACKEND"
