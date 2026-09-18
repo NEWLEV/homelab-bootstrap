@@ -172,6 +172,20 @@ export PATH="$HOME/.local/bin:$PATH"
 limactl shell aisha-macmini
 ```
 
+The Mac host also has a user LaunchAgent to keep the Lima VM started after
+login or reboot:
+
+```text
+~/Library/LaunchAgents/com.aisha.lima.aisha-macmini.plist
+```
+
+The agent runs `~/.local/bin/limactl start aisha-macmini` at load and every
+five minutes. `limactl start` is idempotent when the VM is already running,
+so the agent is a lightweight guard rather than a second supervisor for the
+guest services. Inside the guest, Docker containers use `unless-stopped`,
+Docker, containerd, and tailscaled are enabled, and the native OpenClaw
+gateway is enabled as a lingering user service.
+
 Tailnet-native administration is available after installing and authenticating
 Tailscale inside the Debian guest:
 
