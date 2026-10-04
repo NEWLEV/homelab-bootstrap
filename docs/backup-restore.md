@@ -38,6 +38,7 @@ Both jobs back up:
 - `/home/nlc`
 - `/srv/data/git`
 - `/srv/data/services`
+- `/srv/marketing-os`
 
 Both jobs exclude transient caches, secrets, and the dedicated knowledge index
 source through `configs/restic-excludes.txt`.

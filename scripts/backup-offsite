@@ -45,6 +45,7 @@ restic backup \
     /home/nlc \
     /srv/data/git \
     /srv/data/services \
+    /srv/marketing-os \
     --exclude-file "$EXCLUDES" \
     --one-file-system \
     --tag aisha \

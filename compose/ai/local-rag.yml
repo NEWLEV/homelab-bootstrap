@@ -20,6 +20,12 @@ services:
     volumes:
       - /srv/data/services/local-rag/ollama:/root/.ollama
 
+    ports:
+      - target: 11434
+        published: "11434"
+        host_ip: 127.0.0.1
+        protocol: tcp
+
     networks:
       - rag-private
 

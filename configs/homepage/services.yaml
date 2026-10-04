@@ -9,6 +9,11 @@
         description: Live Hermes dashboard
 
 - Automation:
+    - Marketing OS:
+        icon: mdi-chart-timeline-variant
+        href: http://100.106.201.14:8088
+        description: NLC marketing mission control
+        target: _blank
     - n8n:
         icon: n8n
         href: http://100.106.201.14:5678/
