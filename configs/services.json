@@ -149,6 +149,21 @@
       "backup_paths": [
         "/srv/data/services/hermes"
       ]
+    },
+    {
+      "name": "paperclip",
+      "compose_file": "compose/ai/paperclip.yml",
+      "compose_service": "server",
+      "container": "paperclip",
+      "required": false,
+      "validation": "http",
+      "url": "http://100.106.201.14:3100/api/health",
+      "expected_status": [200],
+      "backup_paths": [
+        "/srv/data/services/paperclip/data",
+        "/srv/data/services/paperclip/postgres",
+        "/srv/data/services/paperclip/paperclip.env"
+      ]
     }
   ],
   "systemd_units": [

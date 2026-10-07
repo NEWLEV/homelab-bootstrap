@@ -13,6 +13,7 @@ declare -A STACKS=(
   [traefik]="$REPO/compose/networking/traefik.yml"
   [openclaw]="$REPO/compose/ai/openclaw.yml"
   [hermes]="$REPO/compose/ai/hermes.yml"
+  [paperclip]="$REPO/compose/ai/paperclip.yml"
 )
 
 usage() {

@@ -42,6 +42,12 @@ assert_contains "Homepage custom script disables floating chat button" \
 assert_contains "Hermes shortcut is present" \
     "http://aisha:9119/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "Paperclip shortcut is present" \
+    "http://aisha:3100/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "God's Eye View shortcut is present" \
+    "http://aisha:4173/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "n8n shortcut points to direct tailnet automation UI" \
     "http://100.106.201.14:5678/" \
     "$REPO_ROOT/configs/homepage/services.yaml"

@@ -260,6 +260,61 @@ runtime is installed with:
 bash scripts/install-hermes-service.sh
 ```
 
+## Paperclip
+
+Purpose
+
+Paperclip is the authenticated, private agent-organization control plane for
+Aisha. It provides goals, tasks, org charts, budgets, approvals, agent
+heartbeats, shared skills, MCP connection governance, and built-in adapters for
+OpenClaw and Hermes.
+
+Implementation
+
+```
+compose/ai/paperclip.yml
+scripts/install-paperclip-service.sh
+```
+
+Install with the pinned upstream source revision:
+
+```bash
+bash scripts/install-paperclip-service.sh
+```
+
+The installer keeps the source checkout, image build context, database, local
+storage, backups, and generated secrets under `/srv/data/services/paperclip/`.
+It does not print secret values. The server is reachable at
+`http://aisha:3100/` on the appliance and at `http://100.106.201.14:3100/`
+over the tailnet. It has a Paperclip card on the Homepage at
+`http://100.106.201.14:8000/`.
+
+Integration boundaries
+
+- OpenClaw: register the existing gateway using the built-in
+  `openclaw_gateway` adapter and the internal URL `ws://openclaw:18789`.
+- Hermes: use the built-in `hermes_gateway` adapter and `http://hermes:8642`,
+  with the existing Hermes API server key stored as a Paperclip connection
+  secret.
+- Local RAG: use `http://local-rag-api:8080` over the shared private network
+  with the Local RAG bearer token stored as a Paperclip secret.
+- n8n: use `http://n8n:5678` for approved webhook or HTTP connections; do not
+  expose new host ports for Paperclip-to-n8n traffic.
+- MCP and skills: use Paperclip's built-in MCP runtime and Skill Studio. Keep
+  MCP connections allowlisted and approval-gated; do not auto-discover
+  arbitrary stdio commands.
+- Jev: no native Paperclip adapter is present in the pinned upstream release.
+  Treat Jev as an optional model/agent runtime and register it through a
+  supported HTTP, CLI, or MCP boundary after its endpoint and permissions have
+  been verified.
+
+Verify
+
+```bash
+docker compose -f compose/ai/paperclip.yml ps
+curl -fsS http://100.106.201.14:3100/api/health
+```
+
 The dashboard is exposed on `http://aisha:9119/` and binds only to the
 Tailscale IPv4 address. Do not publish a Hermes API port until that listener
 has been enabled and live-proven on the target host.

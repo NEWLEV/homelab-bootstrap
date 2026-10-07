@@ -1,4 +1,9 @@
 - Assistant Runtimes:
+    - Paperclip:
+        icon: mdi-clipboard-text-outline
+        href: http://aisha:3100/
+        description: Agent organization, goals, skills, MCP, and governance
+        target: _blank
     - OpenClaw:
         icon: mdi-robot-outline
         href: https://aisha.tail4553c9.ts.net/openclaw/
@@ -41,3 +46,7 @@
         icon: mdi-server
         href: http://aisha:34001
         description: Hardware telemetry
+    - God's Eye View:
+        icon: mdi-earth
+        href: http://aisha:4173/
+        description: Live global intelligence globe

@@ -1,0 +1,107 @@
+name: paperclip
+
+# Paperclip is the control plane for Aisha's agent organization. The server is
+# attached to the existing private service networks so its built-in adapters
+# can reach OpenClaw, Hermes, n8n, and Local RAG without publishing those
+# backends on a new interface.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: paperclip-db
+    restart: unless-stopped
+
+    env_file:
+      - path: ${PAPERCLIP_ENV_FILE:-/srv/data/services/paperclip/paperclip.env}
+        required: false
+
+    environment:
+      POSTGRES_USER: paperclip
+      POSTGRES_DB: paperclip
+
+    volumes:
+      - /srv/data/services/paperclip/postgres:/var/lib/postgresql/data
+
+    networks:
+      - paperclip-private
+
+    security_opt:
+      - no-new-privileges=true
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  server:
+    image: ${PAPERCLIP_IMAGE:-paperclip:local}
+    container_name: paperclip
+    restart: unless-stopped
+    pids_limit: 2048
+
+    env_file:
+      - path: ${PAPERCLIP_ENV_FILE:-/srv/data/services/paperclip/paperclip.env}
+        required: false
+
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3100"
+      SERVE_UI: "true"
+      PAPERCLIP_HOME: /paperclip
+      PAPERCLIP_DEPLOYMENT_MODE: authenticated
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: private
+      PAPERCLIP_BIND: lan
+      PAPERCLIP_ALLOWED_HOSTNAMES: ${PAPERCLIP_ALLOWED_HOSTNAMES:-aisha,localhost,127.0.0.1,100.106.201.14}
+      PAPERCLIP_HTTP_ADAPTER_PRIVATE_ENDPOINT_ALLOWLIST: ${PAPERCLIP_HTTP_ADAPTER_PRIVATE_ENDPOINT_ALLOWLIST:-http://hermes:8642,http://n8n:5678,http://local-rag-api:8080}
+      PAPERCLIP_STORAGE_PROVIDER: local_disk
+      PAPERCLIP_STORAGE_LOCAL_DIR: /paperclip/storage
+      PAPERCLIP_DB_BACKUP_ENABLED: "true"
+      PAPERCLIP_DB_BACKUP_DIR: /paperclip/backups
+
+    ports:
+      - target: 3100
+        published: "3100"
+        host_ip: ${TAILNET_BIND_IP:-100.106.201.14}
+        protocol: tcp
+      # The appliance hostname resolves to 127.0.1.1 locally.
+      - target: 3100
+        published: "3100"
+        host_ip: 127.0.1.1
+        protocol: tcp
+
+    volumes:
+      - /srv/data/services/paperclip/data:/paperclip
+      - /srv/data/git/homelab-bootstrap:/workspace/homelab-bootstrap:ro
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - paperclip-private
+      - rag-private
+      - openclaw-private
+      - hermes-private
+
+    security_opt:
+      - no-new-privileges=true
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3100/api/health >/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  paperclip-private:
+    name: paperclip_private
+  rag-private:
+    external: true
+    name: local-rag_rag-private
+  openclaw-private:
+    external: true
+    name: openclaw_openclaw-private
+  hermes-private:
+    external: true
+    name: hermes_hermes-private
