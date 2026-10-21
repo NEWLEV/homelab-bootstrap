@@ -50,3 +50,8 @@
         icon: mdi-earth
         href: http://aisha:4173/
         description: Live global intelligence globe
+    - Acquisition Watch:
+        icon: mdi-briefcase-search-outline
+        href: http://100.106.201.14:8092/
+        description: Private South Florida business acquisition review dashboard
+        target: _blank
