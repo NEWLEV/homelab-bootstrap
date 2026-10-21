@@ -45,6 +45,9 @@ assert_contains "Hermes shortcut is present" \
 assert_contains "n8n shortcut points to direct tailnet automation UI" \
     "http://100.106.201.14:5678/" \
     "$REPO_ROOT/configs/homepage/services.yaml"
+assert_contains "Acquisition Watch shortcut is present" \
+    "http://100.106.201.14:8092/" \
+    "$REPO_ROOT/configs/homepage/services.yaml"
 assert_contains "Kuma shortcut is present" \
     "http://100.106.201.14:3001" \
     "$REPO_ROOT/configs/homepage/services.yaml"

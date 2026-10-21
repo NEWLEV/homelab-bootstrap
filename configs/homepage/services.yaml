@@ -14,6 +14,11 @@
         href: http://100.106.201.14:5678/
         description: Workflow automation and orchestration
         target: _blank
+    - Acquisition Watch:
+        icon: mdi-briefcase-search-outline
+        href: http://100.106.201.14:8092/
+        description: Private South Florida business acquisition review dashboard
+        target: _blank
 
 - Homelab:
     - Kuma:
